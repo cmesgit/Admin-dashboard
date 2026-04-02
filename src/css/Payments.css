@@ -1,0 +1,63 @@
+.payments-controls {
+  margin-bottom: 16px;
+}
+
+.payments-controls select {
+  padding: 10px 14px;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+}
+
+.payments-table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.payments-count {
+  padding: 14px 20px;
+  font-size: 0.85rem;
+  color: #666;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.payments-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.payments-table th {
+  text-align: left;
+  padding: 12px 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.payments-table td {
+  padding: 14px 20px;
+  font-size: 0.9rem;
+  color: #333;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.payments-user {
+  font-weight: 500;
+}
+
+.payments-email {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.payments-amount {
+  font-weight: 600;
+  color: #222;
+}

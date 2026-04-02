@@ -1,0 +1,78 @@
+/* Reuses dashboard card pattern from main frontend */
+.dashboard-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.dashboard-title {
+  font-size: 28px;
+  margin-bottom: 30px;
+  color: #222;
+}
+
+.dashboard-loading {
+  text-align: center;
+  margin: 80px 0;
+  font-size: 18px;
+  color: #555;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.dashboard-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.dashboard-card h3 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.dashboard-card p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 0;
+}
+
+.dashboard-card.empty {
+  background: #fafafa;
+  border: 2px dashed #ddd;
+  text-align: left;
+}
+
+.dashboard-card.empty p {
+  margin-bottom: 0;
+}
+
+/* Stat card specifics */
+.stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}

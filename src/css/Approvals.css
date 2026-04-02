@@ -1,0 +1,78 @@
+.approvals-table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.approvals-count {
+  padding: 14px 20px;
+  font-size: 0.85rem;
+  color: #666;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.approvals-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.approvals-table th {
+  text-align: left;
+  padding: 12px 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.approvals-table td {
+  padding: 14px 20px;
+  font-size: 0.9rem;
+  color: #333;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.approvals-name {
+  font-weight: 500;
+}
+
+.approvals-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.approve-btn,
+.reject-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.approve-btn {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.approve-btn:hover {
+  background: #bbf7d0;
+}
+
+.reject-btn {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.reject-btn:hover {
+  background: #fecaca;
+}
+
+.approvals-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}

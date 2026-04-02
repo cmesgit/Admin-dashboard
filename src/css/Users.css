@@ -1,0 +1,147 @@
+.users-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.users-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 240px;
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  padding: 0 12px;
+}
+
+.users-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 10px 0;
+  font-size: 0.92rem;
+  background: transparent;
+}
+
+.users-search svg {
+  color: #999;
+}
+
+.users-controls select {
+  padding: 10px 14px;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+}
+
+.users-table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.users-count {
+  padding: 14px 20px;
+  font-size: 0.85rem;
+  color: #666;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table th {
+  text-align: left;
+  padding: 12px 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.users-table td {
+  padding: 14px 20px;
+  font-size: 0.9rem;
+  color: #333;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.users-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.users-row:hover {
+  background: #f8f9ff;
+}
+
+.users-row td:first-child {
+  font-weight: 500;
+}
+
+.users-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 0.95rem;
+}
+
+/* Pagination */
+.users-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding-bottom: 20px;
+}
+
+.users-pagination span {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.page-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #333;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-btn:hover {
+  background: #f0f0f0;
+}
+
+.page-btn.active {
+  background: #4f6df5;
+  color: #fff;
+  border-color: #4f6df5;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-ellipsis {
+  padding: 0 4px;
+  color: #999;
+}
