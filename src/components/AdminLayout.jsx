@@ -7,6 +7,7 @@ import {
   MessageSquare,
   UserCheck,
   CreditCard,
+  FileCheck,
   LogOut,
 } from "lucide-react";
 import "../css/AdminLayout.css";
@@ -17,6 +18,7 @@ const navItems = [
   { to: "/courses", icon: BookOpen, label: "Courses" },
   { to: "/forum", icon: MessageSquare, label: "Forum" },
   { to: "/approvals", icon: UserCheck, label: "Approvals" },
+  { to: "/enrollment-requests", icon: FileCheck, label: "Enrollments" },
   { to: "/payments", icon: CreditCard, label: "Payments" },
 ];
 

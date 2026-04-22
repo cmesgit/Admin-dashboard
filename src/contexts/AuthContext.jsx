@@ -1,14 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import api from "../api/apiClient";
 
 const AuthContext = createContext(null);
-
-const MOCK_ADMIN = {
-  id: "admin-001",
-  email: "admin@shikshacom.com",
-  username: "admin",
-  is_staff: true,
-  roles: ["ADMIN"],
-};
 
 const STORAGE_KEY = "shiksha_admin_session";
 
@@ -35,17 +28,20 @@ export const AuthProvider = ({ children }) => {
   }, [bootstrap]);
 
   const login = async (email, password) => {
-    if (!email || !password) {
-      return Promise.reject({ message: "Email and password are required." });
+    await api.post("/accounts/login/", { email, password });
+    const { data } = await api.get("/accounts/me/");
+    const isAdmin = Array.isArray(data.roles) && data.roles.map((r) => String(r).toUpperCase()).includes("ADMIN");
+    if (!isAdmin) {
+      await api.post("/accounts/logout/").catch(() => { });
+      throw { message: "Not authorized for admin access." };
     }
-
-    const mockUser = { ...MOCK_ADMIN, email };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mockUser));
-    setUser(mockUser);
-    return mockUser;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    setUser(data);
+    return data;
   };
 
   const logout = async () => {
+    try { await api.post("/accounts/logout/"); } catch { }
     localStorage.removeItem(STORAGE_KEY);
     setUser(null);
   };

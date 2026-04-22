@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { mockOrders } from "../data/mockData";
+import { useEffect, useState } from "react";
+import { getPayments } from "../api/admin";
 import StatusBadge from "../components/StatusBadge";
 import "../css/Payments.css";
 
@@ -11,13 +11,20 @@ const formatAmount = (paise) => `₹${(paise / 100).toLocaleString("en-IN")}`;
 const statusColor = { PAID: "green", FAILED: "red", CREATED: "yellow" };
 
 const Payments = () => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
 
-  const orders = filter
-    ? mockOrders.filter((o) => o.status === filter)
-    : mockOrders;
+  useEffect(() => {
+    setLoading(true);
+    const params = filter ? { status: filter } : {};
+    getPayments(params)
+      .then((data) => setOrders(data.results || []))
+      .catch(() => setOrders([]))
+      .finally(() => setLoading(false));
+  }, [filter]);
 
-  const totalPaid = mockOrders
+  const totalPaid = orders
     .filter((o) => o.status === "PAID")
     .reduce((sum, o) => sum + o.amount, 0);
 
@@ -31,11 +38,11 @@ const Payments = () => {
           <p className="stat-label">Total Revenue</p>
         </div>
         <div className="dashboard-card">
-          <p className="stat-value">{mockOrders.filter((o) => o.status === "PAID").length}</p>
+          <p className="stat-value">{orders.filter((o) => o.status === "PAID").length}</p>
           <p className="stat-label">Paid Orders</p>
         </div>
         <div className="dashboard-card">
-          <p className="stat-value">{mockOrders.filter((o) => o.status === "CREATED").length}</p>
+          <p className="stat-value">{orders.filter((o) => o.status === "CREATED").length}</p>
           <p className="stat-label">Pending Orders</p>
         </div>
       </div>
@@ -50,34 +57,42 @@ const Payments = () => {
       </div>
 
       <div className="dashboard-card payments-table-card">
-        <div className="payments-count">{orders.length} order{orders.length !== 1 ? "s" : ""}</div>
-        <table className="payments-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Course</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((o) => (
-              <tr key={o.id}>
-                <td>
-                  <div className="payments-user">{o.user_name}</div>
-                  <div className="payments-email">{o.user_email}</div>
-                </td>
-                <td>{o.course_title}</td>
-                <td className="payments-amount">{formatAmount(o.amount)}</td>
-                <td>
-                  <StatusBadge color={statusColor[o.status]}>{o.status}</StatusBadge>
-                </td>
-                <td>{formatDate(o.created_at)}</td>
+        <div className="payments-count">
+          {orders.length} order{orders.length !== 1 ? "s" : ""}
+        </div>
+        {loading ? (
+          <div className="dashboard-loading">Loading...</div>
+        ) : orders.length === 0 ? (
+          <div className="dashboard-loading">No orders found.</div>
+        ) : (
+          <table className="payments-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Course</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {orders.map((o) => (
+                <tr key={o.id}>
+                  <td>
+                    <div className="payments-user">{o.user_name}</div>
+                    <div className="payments-email">{o.user_email}</div>
+                  </td>
+                  <td>{o.course_title}</td>
+                  <td className="payments-amount">{formatAmount(o.amount)}</td>
+                  <td>
+                    <StatusBadge color={statusColor[o.status]}>{o.status}</StatusBadge>
+                  </td>
+                  <td>{formatDate(o.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

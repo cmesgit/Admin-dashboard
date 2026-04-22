@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { mockApprovals } from "../data/mockData";
+import { useEffect, useState } from "react";
+import { getApprovals, actOnApproval } from "../api/admin";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
 import "../css/Approvals.css";
@@ -8,31 +8,34 @@ const formatDate = (d) =>
   new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
 const Approvals = () => {
-  const [pending, setPending] = useState([...mockApprovals]);
-  const [approved, setApproved] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState(null);
 
-  const handleApprove = (id) => {
-    const item = pending.find((a) => a.id === id);
-    setConfirm({
-      title: "Approve Teacher?",
-      message: `Approve ${item.user_name} as a teacher?`,
-      onConfirm: () => {
-        setPending((prev) => prev.filter((a) => a.id !== id));
-        setApproved((prev) => [...prev, { ...item, status: "approved" }]);
-        setConfirm(null);
-      },
-    });
+  const fetchPending = () => {
+    setLoading(true);
+    getApprovals()
+      .then((data) => setPending(Array.isArray(data) ? data : []))
+      .catch(() => setPending([]))
+      .finally(() => setLoading(false));
   };
 
-  const handleReject = (id) => {
-    const item = pending.find((a) => a.id === id);
+  useEffect(() => {
+    fetchPending();
+  }, []);
+
+  const handleAction = (item, action) => {
+    const verb = action === "approve" ? "Approve" : "Reject";
     setConfirm({
-      title: "Reject Request?",
-      message: `Reject teacher request from ${item.user_name}?`,
-      onConfirm: () => {
-        setPending((prev) => prev.filter((a) => a.id !== id));
-        setConfirm(null);
+      title: `${verb} ${action === "approve" ? "Teacher" : "Request"}?`,
+      message: `${verb} teacher request from ${item.user_name}?`,
+      onConfirm: async () => {
+        try {
+          await actOnApproval(item.id, action);
+          setPending((prev) => prev.filter((a) => a.id !== item.id));
+        } finally {
+          setConfirm(null);
+        }
       },
     });
   };
@@ -45,7 +48,9 @@ const Approvals = () => {
         <div className="approvals-count">
           {pending.length} pending request{pending.length !== 1 ? "s" : ""}
         </div>
-        {pending.length === 0 ? (
+        {loading ? (
+          <div className="approvals-empty">Loading...</div>
+        ) : pending.length === 0 ? (
           <div className="approvals-empty">No pending approvals.</div>
         ) : (
           <table className="approvals-table">
@@ -64,10 +69,10 @@ const Approvals = () => {
                   <td>{a.user_email}</td>
                   <td>{formatDate(a.requested_at)}</td>
                   <td className="approvals-actions">
-                    <button className="approve-btn" onClick={() => handleApprove(a.id)}>
+                    <button className="approve-btn" onClick={() => handleAction(a, "approve")}>
                       Approve
                     </button>
-                    <button className="reject-btn" onClick={() => handleReject(a.id)}>
+                    <button className="reject-btn" onClick={() => handleAction(a, "reject")}>
                       Reject
                     </button>
                   </td>
@@ -77,30 +82,6 @@ const Approvals = () => {
           </table>
         )}
       </div>
-
-      {approved.length > 0 && (
-        <div className="dashboard-card approvals-table-card" style={{ marginTop: 24 }}>
-          <div className="approvals-count">{approved.length} recently approved</div>
-          <table className="approvals-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {approved.map((a) => (
-                <tr key={a.id}>
-                  <td className="approvals-name">{a.user_name}</td>
-                  <td>{a.user_email}</td>
-                  <td><StatusBadge color="green">Approved</StatusBadge></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
 
       {confirm && (
         <ConfirmModal

@@ -10,6 +10,7 @@ import Courses from "./pages/Courses";
 import Forum from "./pages/Forum";
 import Approvals from "./pages/Approvals";
 import Payments from "./pages/Payments";
+import EnrollmentRequests from "./pages/EnrollmentRequests";
 
 const AppLoader = ({ children }) => {
   const { loading } = useAuth();
@@ -56,6 +57,7 @@ const App = () => {
           <Route path="courses" element={<Courses />} />
           <Route path="forum" element={<Forum />} />
           <Route path="approvals" element={<Approvals />} />
+          <Route path="enrollment-requests" element={<EnrollmentRequests />} />
           <Route path="payments" element={<Payments />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

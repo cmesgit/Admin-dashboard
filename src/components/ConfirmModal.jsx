@@ -1,11 +1,12 @@
 import "../css/ConfirmModal.css";
 
-const ConfirmModal = ({ title, message, onConfirm, onCancel }) => {
+const ConfirmModal = ({ title, message, extra, onConfirm, onCancel }) => {
   return (
     <div className="confirm-overlay" onClick={onCancel}>
       <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
         <h3>{title}</h3>
         <p>{message}</p>
+        {extra}
         <div className="confirm-actions">
           <button className="confirm-cancel" onClick={onCancel}>
             Cancel
