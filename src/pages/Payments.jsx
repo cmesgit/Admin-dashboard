@@ -16,12 +16,31 @@ const Payments = () => {
   const [filter, setFilter] = useState("");
 
   useEffect(() => {
-    setLoading(true);
-    const params = filter ? { status: filter } : {};
-    getPayments(params)
-      .then((data) => setOrders(data.results || []))
-      .catch(() => setOrders([]))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    const fetchAll = async () => {
+      setLoading(true);
+      const baseParams = filter ? { status: filter } : {};
+      const pageSize = 100;
+      const all = [];
+      try {
+        let page = 1;
+        while (true) {
+          const data = await getPayments({ ...baseParams, page, page_size: pageSize });
+          const results = data.results || [];
+          all.push(...results);
+          const count = typeof data.count === "number" ? data.count : all.length;
+          if (results.length < pageSize || all.length >= count) break;
+          page += 1;
+        }
+        if (!cancelled) setOrders(all);
+      } catch {
+        if (!cancelled) setOrders([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchAll();
+    return () => { cancelled = true; };
   }, [filter]);
 
   const totalPaid = orders
