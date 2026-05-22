@@ -14,3 +14,33 @@ export const deleteThread     = async (id)     => (await api.delete(`/forum/thre
 export const getEnrollmentRequests      = async (params) => (await api.get("/enrollments/admin/requests/", { params })).data;
 export const actOnEnrollmentRequest     = async (id, action, admin_note = "") =>
   (await api.post(`/enrollments/admin/requests/${id}/action/`, { action, admin_note })).data;
+
+// ── Boards ──────────────────────────────────────────────
+export const getBoards     = async ()      => (await api.get("/courses/admin/boards/")).data;
+export const createBoard   = async (data)  => (await api.post("/courses/admin/boards/", data)).data;
+export const updateBoard   = async (id, d) => (await api.patch(`/courses/admin/boards/${id}/`, d)).data;
+export const deleteBoard   = async (id)    => (await api.delete(`/courses/admin/boards/${id}/`)).data;
+
+// ── Courses (per board) ─────────────────────────────────
+export const getBoardCourses = async (boardId) =>
+  (await api.get(`/courses/admin/boards/${boardId}/courses/`)).data;
+export const createCourse  = async (data) => (await api.post("/courses/admin/courses/", data)).data;
+export const deleteCourse  = async (id)   => (await api.delete(`/courses/admin/courses/${id}/`)).data;
+
+// ── Subjects (per course) ───────────────────────────────
+export const getCourseSubjects = async (courseId) =>
+  (await api.get(`/courses/admin/courses/${courseId}/subjects/`)).data;
+export const createSubject = async (courseId, data) => {
+  // data may include an image File → send as FormData
+  if (data && data.image instanceof File) {
+    const fd = new FormData();
+    Object.entries(data).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") fd.append(k, v);
+    });
+    return (await api.post(`/courses/admin/courses/${courseId}/subjects/`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })).data;
+  }
+  return (await api.post(`/courses/admin/courses/${courseId}/subjects/`, data)).data;
+};
+export const deleteSubject = async (id) => (await api.delete(`/courses/admin/subjects/${id}/`)).data;
