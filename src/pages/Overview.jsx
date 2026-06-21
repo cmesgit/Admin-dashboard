@@ -60,8 +60,16 @@ const Overview = () => {
 
       <div className="dashboard-cards" style={{ marginTop: 32 }}>
         <div className="dashboard-card empty">
-          <h3>Recent Activity</h3>
-          <p>Activity feed will appear here in a future update.</p>
+          <h3>Payment mode</h3>
+          <p>
+            {stats
+              ? ({
+                  free: "Free — no payment is collected. Enrollments are instant.",
+                  manual_upi: "Manual UPI — students upload a receipt; approve under Enrollments.",
+                  razorpay: "Razorpay gateway is active.",
+                }[stats.payment_provider] || stats.payment_provider || "Free")
+              : "—"}
+          </p>
         </div>
         <div className="dashboard-card empty">
           <h3>Quick Actions</h3>

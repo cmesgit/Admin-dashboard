@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getEnrollmentRequests, actOnEnrollmentRequest } from "../api/admin";
+import { getEnrollmentRequests, actOnEnrollmentRequest, getPaymentConfig } from "../api/admin";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
 import "../css/EnrollmentRequests.css";
@@ -18,6 +18,9 @@ const EnrollmentRequests = () => {
   const [statusFilter, setStatusFilter] = useState("PENDING");
   const [previewReceipt, setPreviewReceipt] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const [config, setConfig] = useState(null);
+
+  useEffect(() => { getPaymentConfig().then(setConfig); }, []);
 
   const fetchRequests = () => {
     setLoading(true);
@@ -71,6 +74,16 @@ const EnrollmentRequests = () => {
   return (
     <div className="dashboard-wrapper">
       <h1 className="dashboard-title">Enrollment Requests</h1>
+
+      {config && (
+        <div className="er-mode-banner">
+          {config.is_free
+            ? "Free mode: new enrollments are granted instantly. This list shows any manual requests still on file."
+            : config.provider === "manual_upi"
+              ? "Manual UPI: check the UTR and amount against the receipt before approving."
+              : `Payment mode: ${config.label}.`}
+        </div>
+      )}
 
       <div className="er-controls">
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>

@@ -1,7 +1,8 @@
 import axios from "axios";
+import { API_URL } from "../config/urls";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://api.shikshacom.com/api",
+  baseURL: API_URL,
   withCredentials: true,
 });
 
@@ -17,12 +18,17 @@ api.interceptors.response.use(
   (r) => r,
   async (error) => {
     const originalRequest = error.config;
+    const url = originalRequest?.url || "";
+    // Never bounce on the auth probes themselves.
     if (
       error.response?.status !== 401 ||
       originalRequest._retry ||
-      originalRequest.url?.includes("/accounts/refresh/") ||
-      originalRequest.url?.includes("/accounts/login/")
-    ) return Promise.reject(error);
+      url.includes("/accounts/refresh/") ||
+      url.includes("/accounts/login/") ||
+      url.includes("/accounts/me/")
+    ) {
+      return Promise.reject(error);
+    }
 
     if (isRefreshing) {
       return new Promise((resolve, reject) => failedQueue.push({ resolve, reject }))
@@ -32,11 +38,7 @@ api.interceptors.response.use(
     originalRequest._retry = true;
     isRefreshing = true;
     try {
-      await axios.post(
-        `${import.meta.env.VITE_API_URL || "https://api.shikshacom.com/api"}/accounts/refresh/`,
-        {},
-        { withCredentials: true }
-      );
+      await axios.post(`${API_URL}/accounts/refresh/`, {}, { withCredentials: true });
       processQueue(null);
       return api(originalRequest);
     } catch (refreshError) {

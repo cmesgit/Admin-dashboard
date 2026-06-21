@@ -58,6 +58,7 @@ const Approvals = () => {
               <tr>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Track</th>
                 <th>Requested</th>
                 <th>Actions</th>
               </tr>
@@ -67,6 +68,7 @@ const Approvals = () => {
                 <tr key={a.id}>
                   <td className="approvals-name">{a.user_name}</td>
                   <td>{a.user_email}</td>
+                  <td>{a.track_label || "Teacher"}</td>
                   <td>{formatDate(a.requested_at)}</td>
                   <td className="approvals-actions">
                     <button className="approve-btn" onClick={() => handleAction(a, "approve")}>
