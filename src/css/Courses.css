@@ -59,3 +59,179 @@
   background: #f1f5ff; color: #3b4cca; border: 1px solid #dbe3ff;
   padding: 6px 12px; border-radius: 999px; font-size: 0.84rem; font-weight: 600;
 }
+
+/* ───────── Course management: header bar, breadcrumb, actions, form modal ───────── */
+
+.cm-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.cm-card-head .courses-count {
+  padding: 0;
+  border-bottom: none;
+}
+
+.cm-add-btn {
+  border: none;
+  background: #4f6df5;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cm-add-btn:hover { background: #4361e0; }
+
+/* Breadcrumb */
+.cm-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+}
+.cm-crumb {
+  border: none;
+  background: none;
+  color: #4f6df5;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.cm-crumb:hover:not(:disabled) { text-decoration: underline; }
+.cm-crumb:disabled { color: #6b7280; cursor: default; }
+.cm-crumb--current { color: #111827; font-weight: 600; }
+.cm-crumb-sep { color: #c4c8d0; }
+
+/* In-table link (board / course name) */
+.cm-link {
+  border: none;
+  background: none;
+  color: #2540c4;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+.cm-link:hover { text-decoration: underline; }
+
+/* Row actions */
+.cm-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.cm-icon-btn {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cm-icon-btn:hover { background: #f3f4f6; }
+.cm-icon-btn--danger { color: #b91c1c; border-color: #f0c9c9; }
+.cm-icon-btn--danger:hover { background: #fdecec; }
+
+.cm-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  vertical-align: middle;
+}
+
+/* Create/Edit form modal — reuses .confirm-overlay backdrop */
+.cm-form-card {
+  width: min(92%, 460px);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: 26px 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+}
+.cm-form-card h3 {
+  margin: 0 0 18px;
+  font-size: 1.15rem;
+  color: #1f2937;
+}
+
+.cm-field {
+  display: block;
+  margin-bottom: 14px;
+}
+.cm-field > span {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 5px;
+}
+.cm-field input,
+.cm-field select,
+.cm-field textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 0.9rem;
+  color: #1f2937;
+  box-sizing: border-box;
+  background: #fff;
+}
+.cm-field input:focus,
+.cm-field select:focus,
+.cm-field textarea:focus {
+  outline: none;
+  border-color: #4f6df5;
+  box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.15);
+}
+.cm-field textarea { resize: vertical; }
+
+.cm-row { display: flex; gap: 12px; }
+.cm-row .cm-field { flex: 1; }
+
+.cm-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #374151;
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+.cm-check input { width: 16px; height: 16px; }
+
+.cm-hint {
+  margin: -4px 0 14px;
+  font-size: 0.78rem;
+  color: #8a8f98;
+  line-height: 1.45;
+}
+.cm-file-name {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #4f6df5;
+}
+
+.cm-form-error {
+  background: #fdecec;
+  border: 1px solid #f5c2c2;
+  color: #b91c1c;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  margin-bottom: 14px;
+}

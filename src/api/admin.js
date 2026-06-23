@@ -34,6 +34,39 @@ export const getPaymentConfig = async () =>
 export const getAcademicCourses = async (params) =>
   safe(async () => (await api.get("/courses/admin/", { params })).data, []);
 
+/* ── Academic course management: Boards → Courses → Subjects ──
+   GETs are wrapped in safe() so a transient error doesn't blank the page;
+   create/update/delete intentionally throw so the form can show the
+   server's validation message. */
+
+// Boards (STATE / CENTRAL)
+export const getBoards   = async () =>
+  safe(async () => (await api.get("/courses/admin/boards/")).data, []);
+export const createBoard = async (data) =>
+  (await api.post("/courses/admin/boards/", data)).data;
+export const updateBoard = async (id, data) =>
+  (await api.patch(`/courses/admin/boards/${id}/`, data)).data;
+export const deleteBoard = async (id) =>
+  (await api.delete(`/courses/admin/boards/${id}/`)).data;
+
+// Courses (scoped to a board)
+export const getBoardCourses = async (boardId) =>
+  safe(async () => (await api.get(`/courses/admin/boards/${boardId}/courses/`)).data, []);
+export const createCourse = async (data) =>
+  (await api.post("/courses/admin/courses/", data)).data;
+export const deleteCourse = async (id) =>
+  (await api.delete(`/courses/admin/courses/${id}/`)).data;
+
+// Subjects (scoped to a course; create takes multipart for the optional image)
+export const getCourseSubjects = async (courseId) =>
+  safe(async () => (await api.get(`/courses/admin/courses/${courseId}/subjects/`)).data, []);
+export const createSubject = async (courseId, formData) =>
+  (await api.post(`/courses/admin/courses/${courseId}/subjects/`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })).data;
+export const deleteSubject = async (subjectId) =>
+  (await api.delete(`/courses/admin/subjects/${subjectId}/`)).data;
+
 export const getSkillCategories = async () =>
   safe(async () => (await api.get("/skill/categories/")).data, []);
 export const getSkillExperts = async (params) =>
