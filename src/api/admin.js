@@ -33,13 +33,10 @@ export const getPaymentConfig = async () =>
 /* ── Courses: academic (courses app) + skill (skills app) ── */
 export const getAcademicCourses = async (params) =>
   safe(async () => (await api.get("/courses/admin/", { params })).data, []);
+// alias kept so older pages calling getCourses keep working
+export const getCourses = getAcademicCourses;
 
-/* ── Academic course management: Boards → Courses → Subjects ──
-   GETs are wrapped in safe() so a transient error doesn't blank the page;
-   create/update/delete intentionally throw so the form can show the
-   server's validation message. */
-
-// Boards (STATE / CENTRAL)
+/* ── Academic course management: Boards → Courses → Subjects ── */
 export const getBoards   = async () =>
   safe(async () => (await api.get("/courses/admin/boards/")).data, []);
 export const createBoard = async (data) =>
@@ -49,7 +46,6 @@ export const updateBoard = async (id, data) =>
 export const deleteBoard = async (id) =>
   (await api.delete(`/courses/admin/boards/${id}/`)).data;
 
-// Courses (scoped to a board)
 export const getBoardCourses = async (boardId) =>
   safe(async () => (await api.get(`/courses/admin/boards/${boardId}/courses/`)).data, []);
 export const createCourse = async (data) =>
@@ -57,7 +53,6 @@ export const createCourse = async (data) =>
 export const deleteCourse = async (id) =>
   (await api.delete(`/courses/admin/courses/${id}/`)).data;
 
-// Subjects (scoped to a course; create takes multipart for the optional image)
 export const getCourseSubjects = async (courseId) =>
   safe(async () => (await api.get(`/courses/admin/courses/${courseId}/subjects/`)).data, []);
 export const createSubject = async (courseId, formData) =>
@@ -82,3 +77,15 @@ export const getPayments = async (params) =>
 export const getThreads   = async (params) =>
   safe(async () => (await api.get("/forum/threads/", { params })).data, { results: [] });
 export const deleteThread = async (id) => (await api.delete(`/forum/threads/${id}/delete/`)).data;
+
+/* ── Payment settings (global_settings.AdminGlobalSettingsView) ── */
+export const getSettings    = async ()  => (await api.get("/admin/settings/")).data;
+export const updateSettings = async (d) => (await api.patch("/admin/settings/", d)).data;
+
+/* ── Skill-dev: evaluation submit + course review ── */
+export const submitEvaluation  = async (appId, d) =>
+  (await api.post(`/skill/admin/interviews/${appId}/evaluation/`, d)).data;
+export const getSkillCourses   = async (params) =>
+  safe(async () => (await api.get("/skill/admin/courses/", { params })).data, []);
+export const reviewSkillCourse = async (id, action, reason="") =>
+  (await api.post(`/skill/admin/courses/${id}/review/`, { action, reason })).data;
