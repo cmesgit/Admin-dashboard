@@ -178,3 +178,9 @@
   font-size: 0.9rem;
   resize: vertical;
 }
+
+/* Payment-mode banner */
+.er-mode-banner {
+  background: #f1f5ff; border: 1px solid #dbe3ff; color: #3b4cca;
+  padding: 10px 14px; border-radius: 10px; font-size: 0.86rem; margin-bottom: 16px;
+}

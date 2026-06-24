@@ -61,3 +61,11 @@
   font-weight: 600;
   color: #222;
 }
+
+/* Payment mode card */
+.pay-mode-card {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.pay-mode-label { margin: 0; color: #6b7280; font-size: 0.8rem; }
+.pay-mode-value { margin: 4px 0 0; font-size: 1.15rem; font-weight: 700; color: #1f2937; }

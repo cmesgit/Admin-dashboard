@@ -1,626 +1,516 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
-  getBoards,
-  createBoard,
-  deleteBoard,
-  updateBoard,
-  getBoardCourses,
-  createCourse,
-  deleteCourse,
-  getCourseSubjects,
-  createSubject,
-  deleteSubject,
+  getBoards, createBoard, updateBoard, deleteBoard,
+  getBoardCourses, createCourse, deleteCourse,
+  getCourseSubjects, createSubject, deleteSubject,
+  getSkillCategories, getSkillExperts, getSkillApplications,
 } from "../api/admin";
+import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
 import "../css/Courses.css";
 
-const BOARD_TYPES = [
-  { value: "CENTRAL", label: "Central Board" },
-  { value: "STATE", label: "State Board" },
+const formatDate = (d) =>
+  d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const rupees = (paise) =>
+  paise === null || paise === undefined ? "—" : `₹${(paise / 100).toLocaleString("en-IN")}`;
+
+const TABS = [
+  { key: "academy", label: "Academy" },
+  { key: "skill", label: "Skill Dev" },
 ];
 
-/* ─────────────────────────────────────────────────────────── */
-
-const Breadcrumb = ({ items, onClick }) => (
-  <div className="adm-courses__crumbs">
-    {items.map((it, i) => {
-      const isLast = i === items.length - 1;
-      return (
-        <span key={it.key}>
-          <button
-            type="button"
-            className={`adm-courses__crumb ${isLast ? "is-active" : ""}`}
-            onClick={() => !isLast && onClick(it.key)}
-            disabled={isLast}
-          >
-            {it.label}
-          </button>
-          {!isLast && <span className="adm-courses__crumb-sep">›</span>}
-        </span>
-      );
-    })}
-  </div>
-);
-
-/* ─────────────────────────────────────────────────────────── */
-
-const CreateBoardModal = ({ onClose, onCreate }) => {
-  const [name, setName] = useState("");
-  const [boardType, setBoardType] = useState("CENTRAL");
-  const [description, setDescription] = useState("");
-  const [isActive, setIsActive] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState("");
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setSubmitting(true);
-    setErr("");
-    try {
-      await onCreate({
-        name: name.trim(),
-        board_type: boardType,
-        description: description.trim(),
-        is_active: isActive,
-      });
-      onClose();
-    } catch (e2) {
-      setErr(e2?.response?.data?.detail || e2?.response?.data?.name?.[0] || "Failed to create board.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="adm-modal-overlay" onClick={onClose}>
-      <form className="adm-modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <h3>Add Board</h3>
-
-        <label className="adm-field">
-          <span>Name *</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. CBSE, MBSE" autoFocus />
-        </label>
-
-        <label className="adm-field">
-          <span>Type *</span>
-          <select value={boardType} onChange={(e) => setBoardType(e.target.value)}>
-            {BOARD_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </select>
-        </label>
-
-        <label className="adm-field">
-          <span>Description</span>
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Short description shown on the public site"
-          />
-        </label>
-
-        <label className="adm-field adm-field--check">
-          <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-          <span>Active (uncheck for dormant / Coming Soon)</span>
-        </label>
-
-        {err && <p className="adm-modal__err">{err}</p>}
-
-        <div className="adm-modal__actions">
-          <button type="button" className="adm-btn adm-btn--ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="adm-btn adm-btn--primary" disabled={submitting}>
-            {submitting ? "Adding…" : "Add Board"}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
+/* Turn an axios error into a human string (detail or collected field errors). */
+const errText = (e) => {
+  const d = e?.response?.data;
+  if (!d) return "Something went wrong. Please try again.";
+  if (typeof d === "string") return d;
+  if (d.detail) return d.detail;
+  try { return Object.values(d).flat().join(" ") || "Request failed."; }
+  catch { return "Request failed."; }
 };
 
-/* ─────────────────────────────────────────────────────────── */
+/* ───────────────────────── Create/Edit modal ───────────────────────── */
+function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
+  const [form, setForm] = useState(initial || {});
+  const [file, setFile] = useState(null);
 
-const CreateCourseModal = ({ board, onClose, onCreate }) => {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priceRupees, setPriceRupees] = useState("");
-  const [durationDays, setDurationDays] = useState("30");
-  const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState("");
+  const set = (k) => (e) =>
+    setForm((f) => ({
+      ...f,
+      [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value,
+    }));
 
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    setSubmitting(true);
-    setErr("");
-    try {
-      await onCreate({
-        title: title.trim(),
-        description: description.trim(),
-        price: Math.round((Number(priceRupees) || 0) * 100), // ₹ → paise
-        subscription_duration_days: Number(durationDays) || 30,
-        board_id: board.id,
-      });
-      onClose();
-    } catch (e2) {
-      setErr(e2?.response?.data?.detail || "Failed to create course.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const heading =
+    `${mode === "edit" ? "Edit" : "New"} ` +
+    { board: "Board", course: "Course", subject: "Subject" }[type];
 
   return (
-    <div className="adm-modal-overlay" onClick={onClose}>
-      <form className="adm-modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <h3>Add Course in {board.name}</h3>
+    <div className="confirm-overlay" onClick={busy ? undefined : onCancel}>
+      <div className="cm-form-card" onClick={(e) => e.stopPropagation()}>
+        <h3>{heading}</h3>
 
-        <label className="adm-field">
-          <span>Title *</span>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Class 10" autoFocus />
-        </label>
+        {type === "board" && (
+          <>
+            <label className="cm-field">
+              <span>Name</span>
+              <input value={form.name || ""} onChange={set("name")} placeholder="e.g. CBSE" autoFocus />
+            </label>
+            <label className="cm-field">
+              <span>Type</span>
+              <select value={form.board_type || "CENTRAL"} onChange={set("board_type")}>
+                <option value="CENTRAL">Central</option>
+                <option value="STATE">State</option>
+              </select>
+            </label>
+            <label className="cm-field">
+              <span>Description</span>
+              <input value={form.description || ""} onChange={set("description")} placeholder="Optional" />
+            </label>
+            <label className="cm-check">
+              <input type="checkbox" checked={form.is_active ?? true} onChange={set("is_active")} />
+              <span>Active (visible on the public site)</span>
+            </label>
+          </>
+        )}
 
-        <label className="adm-field">
-          <span>Description</span>
-          <textarea
-            rows={2}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Short course description"
-          />
-        </label>
+        {type === "course" && (
+          <>
+            <label className="cm-field">
+              <span>Title</span>
+              <input value={form.title || ""} onChange={set("title")} placeholder="e.g. Class 12 Science" autoFocus />
+            </label>
+            <label className="cm-field">
+              <span>Description</span>
+              <textarea rows={3} value={form.description || ""} onChange={set("description")} placeholder="Optional" />
+            </label>
+            <div className="cm-row">
+              <label className="cm-field">
+                <span>Price (₹)</span>
+                <input type="number" min="0" value={form.price_rupees ?? 0} onChange={set("price_rupees")} />
+              </label>
+              <label className="cm-field">
+                <span>Access (days)</span>
+                <input type="number" min="1" value={form.subscription_duration_days ?? 30} onChange={set("subscription_duration_days")} />
+              </label>
+            </div>
+            <p className="cm-hint">
+              The platform is currently free — price applies only when a paid payment mode is switched on.
+            </p>
+          </>
+        )}
 
-        <div className="adm-field-row">
-          <label className="adm-field">
-            <span>Price (₹)</span>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              value={priceRupees}
-              onChange={(e) => setPriceRupees(e.target.value)}
-              placeholder="1500"
-            />
-          </label>
+        {type === "subject" && (
+          <>
+            <label className="cm-field">
+              <span>Name</span>
+              <input value={form.name || ""} onChange={set("name")} placeholder="e.g. Physics" autoFocus />
+            </label>
+            <label className="cm-field">
+              <span>Order</span>
+              <input type="number" min="1" value={form.order ?? ""} onChange={set("order")} placeholder="Auto (added to end)" />
+            </label>
+            <label className="cm-field">
+              <span>Image</span>
+              <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              {file && <small className="cm-file-name">{file.name}</small>}
+            </label>
+          </>
+        )}
 
-          <label className="adm-field">
-            <span>Subscription duration (days)</span>
-            <input
-              type="number"
-              min="1"
-              value={durationDays}
-              onChange={(e) => setDurationDays(e.target.value)}
-            />
-          </label>
-        </div>
+        {error && <div className="cm-form-error">{error}</div>}
 
-        {err && <p className="adm-modal__err">{err}</p>}
-
-        <div className="adm-modal__actions">
-          <button type="button" className="adm-btn adm-btn--ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="adm-btn adm-btn--primary" disabled={submitting}>
-            {submitting ? "Adding…" : "Add Course"}
+        <div className="confirm-actions">
+          <button className="confirm-cancel" onClick={onCancel} disabled={busy}>Cancel</button>
+          <button className="confirm-ok" onClick={() => onSubmit(form, file)} disabled={busy}>
+            {busy ? "Saving…" : mode === "edit" ? "Save" : "Create"}
           </button>
         </div>
-      </form>
+      </div>
     </div>
   );
-};
+}
 
-/* ─────────────────────────────────────────────────────────── */
-
-const CreateSubjectModal = ({ course, onClose, onCreate }) => {
-  const [name, setName] = useState("");
-  const [image, setImage] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [err, setErr] = useState("");
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setSubmitting(true);
-    setErr("");
-    try {
-      const payload = { name: name.trim() };
-      if (image) payload.image = image;
-      await onCreate(payload);
-      onClose();
-    } catch (e2) {
-      setErr(e2?.response?.data?.detail || "Failed to create subject.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="adm-modal-overlay" onClick={onClose}>
-      <form className="adm-modal" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
-        <h3>Add Subject in {course.title}</h3>
-
-        <label className="adm-field">
-          <span>Name *</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Mathematics" autoFocus />
-        </label>
-
-        <label className="adm-field">
-          <span>Image (optional)</span>
-          <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] || null)} />
-        </label>
-
-        {err && <p className="adm-modal__err">{err}</p>}
-
-        <div className="adm-modal__actions">
-          <button type="button" className="adm-btn adm-btn--ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="adm-btn adm-btn--primary" disabled={submitting}>
-            {submitting ? "Adding…" : "Add Subject"}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-};
-
-/* ─────────────────────────────────────────────────────────── */
-
+/* ───────────────────────────── Page ───────────────────────────── */
 const Courses = () => {
-  // ── Navigation state ──
-  const [view, setView] = useState("boards"); // "boards" | "courses" | "subjects"
-  const [selectedBoard, setSelectedBoard] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [tab, setTab] = useState("academy");
 
-  // ── Data ──
+  // Academy drill-down: boards → courses (per board) → subjects (per course)
+  const [nav, setNav] = useState({ level: "boards", board: null, course: null });
   const [boards, setBoards] = useState([]);
   const [courses, setCourses] = useState([]);
   const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // ── Modal state ──
-  const [showAddBoard, setShowAddBoard] = useState(false);
-  const [showAddCourse, setShowAddCourse] = useState(false);
-  const [showAddSubject, setShowAddSubject] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState(null); // { kind, id, label }
+  // Skill Dev (read-only overview, unchanged)
+  const [categories, setCategories] = useState([]);
+  const [experts, setExperts] = useState([]);
+  const [applications, setApplications] = useState([]);
 
-  // ── Load boards on mount + whenever returning to boards view ──
-  const loadBoards = async () => {
+  const [modal, setModal] = useState(null);     // { type, mode, initial }
+  const [confirm, setConfirm] = useState(null);  // { kind, item, message, error? }
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const loadBoards = useCallback(async () => {
     setLoading(true);
-    try {
-      const data = await getBoards();
-      setBoards(Array.isArray(data) ? data : []);
-    } catch {
-      setBoards([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadCourses = async (boardId) => {
+    const b = await getBoards();
+    setBoards(Array.isArray(b) ? b : []);
+    setLoading(false);
+  }, []);
+  const loadCourses = useCallback(async (boardId) => {
     setLoading(true);
-    try {
-      const data = await getBoardCourses(boardId);
-      setCourses(Array.isArray(data) ? data : []);
-    } catch {
-      setCourses([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSubjects = async (courseId) => {
+    const c = await getBoardCourses(boardId);
+    setCourses(Array.isArray(c) ? c : []);
+    setLoading(false);
+  }, []);
+  const loadSubjects = useCallback(async (courseId) => {
     setLoading(true);
+    const s = await getCourseSubjects(courseId);
+    setSubjects(Array.isArray(s) ? s : []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadBoards(); }, [loadBoards]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getSkillCategories(), getSkillExperts(), getSkillApplications()])
+      .then(([cats, exp, apps]) => {
+        if (cancelled) return;
+        setCategories(Array.isArray(cats) ? cats : cats.results || []);
+        setExperts(Array.isArray(exp) ? exp : exp.results || []);
+        setApplications(Array.isArray(apps) ? apps : apps.results || []);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  // navigation
+  const openBoard = (board) => { setNav({ level: "courses", board, course: null }); loadCourses(board.id); };
+  const openCourse = (course) => { setNav((n) => ({ ...n, level: "subjects", course })); loadSubjects(course.id); };
+  const goBoards = () => { setNav({ level: "boards", board: null, course: null }); loadBoards(); };
+  const goCourses = () => { setNav((n) => ({ ...n, level: "courses", course: null })); if (nav.board) loadCourses(nav.board.id); };
+
+  const openCreate = (type, initial = {}) => { setFormError(""); setModal({ type, mode: "create", initial }); };
+  const openEdit = (type, initial) => { setFormError(""); setModal({ type, mode: "edit", initial }); };
+
+  const handleSubmit = async (form, file) => {
+    setBusy(true); setFormError("");
     try {
-      const data = await getCourseSubjects(courseId);
-      setSubjects(Array.isArray(data) ? data : []);
-    } catch {
-      setSubjects([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadBoards(); }, []);
-
-  // ── Navigation handlers ──
-  const openBoard = (board) => {
-    if (!board.is_active) return; // dormant boards aren't drillable
-    setSelectedBoard(board);
-    setView("courses");
-    loadCourses(board.id);
-  };
-
-  const openCourse = (course) => {
-    setSelectedCourse(course);
-    setView("subjects");
-    loadSubjects(course.id);
-  };
-
-  const navigateTo = (key) => {
-    if (key === "boards") {
-      setSelectedBoard(null);
-      setSelectedCourse(null);
-      setView("boards");
-    } else if (key === "courses") {
-      setSelectedCourse(null);
-      setView("courses");
-    }
-  };
-
-  // ── Mutations ──
-  const handleCreateBoard = async (payload) => {
-    await createBoard(payload);
-    await loadBoards();
-  };
-
-  const handleCreateCourse = async (payload) => {
-    await createCourse(payload);
-    await loadCourses(selectedBoard.id);
-  };
-
-  const handleCreateSubject = async (payload) => {
-    await createSubject(selectedCourse.id, payload);
-    await loadSubjects(selectedCourse.id);
-  };
-
-  const handleToggleBoardActive = async (board, e) => {
-    e.stopPropagation();
-    await updateBoard(board.id, { is_active: !board.is_active });
-    loadBoards();
-  };
-
-  const confirmDelete = async () => {
-    if (!pendingDelete) return;
-    try {
-      if (pendingDelete.kind === "board") {
-        await deleteBoard(pendingDelete.id);
-        loadBoards();
-      } else if (pendingDelete.kind === "course") {
-        await deleteCourse(pendingDelete.id);
-        loadCourses(selectedBoard.id);
-      } else if (pendingDelete.kind === "subject") {
-        await deleteSubject(pendingDelete.id);
-        loadSubjects(selectedCourse.id);
+      if (modal.type === "board") {
+        const payload = {
+          name: (form.name || "").trim(),
+          board_type: form.board_type || "CENTRAL",
+          description: form.description || "",
+          is_active: form.is_active ?? true,
+        };
+        if (modal.mode === "edit") await updateBoard(modal.initial.id, payload);
+        else await createBoard(payload);
+        setModal(null);
+        await loadBoards();
+      } else if (modal.type === "course") {
+        const payload = {
+          title: (form.title || "").trim(),
+          description: form.description || "",
+          price: Math.max(0, Math.round((parseFloat(form.price_rupees) || 0) * 100)),
+          subscription_duration_days: Math.max(1, parseInt(form.subscription_duration_days, 10) || 30),
+          board_id: nav.board.id,
+        };
+        await createCourse(payload);
+        setModal(null);
+        await loadCourses(nav.board.id);
+      } else if (modal.type === "subject") {
+        const fd = new FormData();
+        fd.append("name", (form.name || "").trim());
+        if (form.order) fd.append("order", form.order);
+        if (file) fd.append("image", file);
+        await createSubject(nav.course.id, fd);
+        setModal(null);
+        await loadSubjects(nav.course.id);
       }
     } catch (e) {
-      alert(e?.response?.data?.detail || "Delete failed.");
+      setFormError(errText(e));
     } finally {
-      setPendingDelete(null);
+      setBusy(false);
     }
   };
 
-  // ── Grouped boards (for visual grouping by Central / State) ──
-  const groupedBoards = useMemo(() => {
-    const central = boards.filter((b) => b.board_type === "CENTRAL");
-    const state = boards.filter((b) => b.board_type === "STATE");
-    return { central, state };
-  }, [boards]);
+  const handleDelete = async () => {
+    if (!confirm) return;
+    const { kind, item } = confirm;
+    setBusy(true);
+    try {
+      if (kind === "board") { await deleteBoard(item.id); setConfirm(null); await loadBoards(); }
+      else if (kind === "course") { await deleteCourse(item.id); setConfirm(null); await loadCourses(nav.board.id); }
+      else if (kind === "subject") { await deleteSubject(item.id); setConfirm(null); await loadSubjects(nav.course.id); }
+    } catch (e) {
+      setConfirm((c) => ({ ...c, error: errText(e) }));
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  /* ── Render ───────────────────────────────────────────── */
+  /* ── renderers ── */
+  const renderBoards = () => (
+    <div className="dashboard-card courses-table-card">
+      <div className="cm-card-head">
+        <div className="courses-count">{boards.length} board{boards.length !== 1 ? "s" : ""}</div>
+        <button className="cm-add-btn" onClick={() => openCreate("board", { board_type: "CENTRAL", is_active: true })}>
+          + New Board
+        </button>
+      </div>
+      {loading ? (
+        <div className="dashboard-loading">Loading…</div>
+      ) : boards.length === 0 ? (
+        <div className="dashboard-loading">No boards yet. Create one to start adding courses.</div>
+      ) : (
+        <table className="courses-table">
+          <thead>
+            <tr><th>Board</th><th>Type</th><th>Courses</th><th>Status</th><th aria-label="actions" /></tr>
+          </thead>
+          <tbody>
+            {boards.map((b) => (
+              <tr key={b.id}>
+                <td className="courses-title">
+                  <button className="cm-link" onClick={() => openBoard(b)}>{b.name}</button>
+                </td>
+                <td>{b.board_type === "STATE" ? "State" : "Central"}</td>
+                <td>{b.course_count ?? 0}</td>
+                <td>
+                  <StatusBadge color={b.is_active ? "green" : "gray"}>
+                    {b.is_active ? "Active" : "Hidden"}
+                  </StatusBadge>
+                </td>
+                <td className="cm-actions">
+                  <button className="cm-icon-btn" onClick={() => openBoard(b)}>Open</button>
+                  <button className="cm-icon-btn" onClick={() => openEdit("board", {
+                    id: b.id, name: b.name, board_type: b.board_type,
+                    description: b.description, is_active: b.is_active,
+                  })}>Edit</button>
+                  <button className="cm-icon-btn cm-icon-btn--danger"
+                    onClick={() => setConfirm({ kind: "board", item: b, message: `Delete board "${b.name}"? A board with courses can't be deleted — remove its courses first.` })}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
 
-  const crumbs = (() => {
-    if (view === "boards") return [{ key: "boards", label: "Boards" }];
-    if (view === "courses") return [
-      { key: "boards", label: "Boards" },
-      { key: "courses", label: selectedBoard?.name || "Board" },
-    ];
-    return [
-      { key: "boards", label: "Boards" },
-      { key: "courses", label: selectedBoard?.name || "Board" },
-      { key: "subjects", label: selectedCourse?.title || "Course" },
-    ];
-  })();
+  const renderCourses = () => (
+    <div className="dashboard-card courses-table-card">
+      <div className="cm-card-head">
+        <div className="courses-count">
+          {courses.length} course{courses.length !== 1 ? "s" : ""} in {nav.board?.name}
+        </div>
+        <button className="cm-add-btn" onClick={() => openCreate("course", { price_rupees: 0, subscription_duration_days: 30 })}>
+          + New Course
+        </button>
+      </div>
+      {loading ? (
+        <div className="dashboard-loading">Loading…</div>
+      ) : courses.length === 0 ? (
+        <div className="dashboard-loading">No courses in this board yet. Create the first one.</div>
+      ) : (
+        <table className="courses-table">
+          <thead>
+            <tr><th>Course</th><th>Fee</th><th>Access</th><th>Subjects</th><th>Enrolled</th><th aria-label="actions" /></tr>
+          </thead>
+          <tbody>
+            {courses.map((c) => (
+              <tr key={c.id}>
+                <td className="courses-title">
+                  <button className="cm-link" onClick={() => openCourse(c)}>{c.title}</button>
+                </td>
+                <td>{rupees(c.price)}</td>
+                <td>{c.subscription_duration_days ? `${c.subscription_duration_days}d` : "—"}</td>
+                <td>{c.subject_count ?? 0}</td>
+                <td>{c.enrollment_count ?? 0}</td>
+                <td className="cm-actions">
+                  <button className="cm-icon-btn" onClick={() => openCourse(c)}>Subjects</button>
+                  <button className="cm-icon-btn cm-icon-btn--danger"
+                    onClick={() => setConfirm({ kind: "course", item: c, message: `Delete course "${c.title}"? Its subjects and content links are removed too. This can't be undone.` })}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+
+  const renderSubjects = () => (
+    <div className="dashboard-card courses-table-card">
+      <div className="cm-card-head">
+        <div className="courses-count">
+          {subjects.length} subject{subjects.length !== 1 ? "s" : ""} in {nav.course?.title}
+        </div>
+        <button className="cm-add-btn" onClick={() => openCreate("subject", {})}>
+          + Add Subject
+        </button>
+      </div>
+      {loading ? (
+        <div className="dashboard-loading">Loading…</div>
+      ) : subjects.length === 0 ? (
+        <div className="dashboard-loading">No subjects yet. Add the first one to this course.</div>
+      ) : (
+        <table className="courses-table">
+          <thead>
+            <tr><th>#</th><th>Subject</th><th>Image</th><th aria-label="actions" /></tr>
+          </thead>
+          <tbody>
+            {subjects.map((s) => (
+              <tr key={s.id}>
+                <td>{s.order}</td>
+                <td className="courses-title">{s.name}</td>
+                <td>{s.image ? <img src={s.image} alt="" className="cm-thumb" /> : "—"}</td>
+                <td className="cm-actions">
+                  <button className="cm-icon-btn cm-icon-btn--danger"
+                    onClick={() => setConfirm({ kind: "subject", item: s, message: `Delete subject "${s.name}"?` })}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
 
   return (
     <div className="dashboard-wrapper">
-      <div className="adm-courses__head">
-        <h1 className="dashboard-title">Course Management</h1>
-        <Breadcrumb items={crumbs} onClick={navigateTo} />
+      <h1 className="dashboard-title">Course Management</h1>
+
+      <div className="courses-tabs">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            className={`courses-tab${tab === t.key ? " active" : ""}`}
+            onClick={() => setTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* ── BOARDS VIEW ── */}
-      {view === "boards" && (
-        <div className="dashboard-card adm-courses__card">
-          <div className="adm-courses__bar">
-            <div className="adm-courses__count">
-              {boards.length} board{boards.length !== 1 ? "s" : ""}
-            </div>
-            <button className="adm-btn adm-btn--primary" onClick={() => setShowAddBoard(true)}>
-              + Add Board
-            </button>
+      {/* ── ACADEMY: Boards → Courses → Subjects ── */}
+      {tab === "academy" && (
+        <>
+          <div className="cm-crumbs">
+            <button className="cm-crumb" onClick={goBoards} disabled={nav.level === "boards"}>Boards</button>
+            {nav.board && (
+              <>
+                <span className="cm-crumb-sep">/</span>
+                <button className="cm-crumb" onClick={goCourses} disabled={nav.level === "courses"}>{nav.board.name}</button>
+              </>
+            )}
+            {nav.course && (
+              <>
+                <span className="cm-crumb-sep">/</span>
+                <span className="cm-crumb cm-crumb--current">{nav.course.title}</span>
+              </>
+            )}
           </div>
 
-          {loading ? (
-            <div className="dashboard-loading">Loading…</div>
-          ) : boards.length === 0 ? (
-            <div className="dashboard-loading">No boards yet. Add your first board.</div>
-          ) : (
-            <>
-              {["central", "state"].map((groupKey) => {
-                const list = groupedBoards[groupKey];
-                if (list.length === 0) return null;
-                return (
-                  <div key={groupKey} className="adm-courses__group">
-                    <h3 className="adm-courses__group-title">
-                      {groupKey === "central" ? "Central Board" : "State Board"}
-                    </h3>
-                    <div className="adm-courses__grid">
-                      {list.map((b) => (
-                        <article
-                          key={b.id}
-                          className={`adm-tile${b.is_active ? "" : " adm-tile--dormant"}`}
-                          onClick={() => openBoard(b)}
-                        >
-                          {!b.is_active && (
-                            <span className="adm-tile__badge">Coming Soon</span>
-                          )}
-                          <div className="adm-tile__title">{b.name}</div>
-                          {b.description && (
-                            <div className="adm-tile__desc">{b.description}</div>
-                          )}
-                          <div className="adm-tile__meta">
-                            {b.course_count} course{b.course_count !== 1 ? "s" : ""}
-                          </div>
-                          <div className="adm-tile__actions">
-                            <button
-                              className="adm-tile__action"
-                              onClick={(e) => handleToggleBoardActive(b, e)}
-                              title={b.is_active ? "Mark as dormant" : "Mark as active"}
-                            >
-                              {b.is_active ? "Mark dormant" : "Mark active"}
-                            </button>
-                            <button
-                              className="adm-tile__action adm-tile__action--danger"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPendingDelete({ kind: "board", id: b.id, label: b.name });
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </>
-          )}
-        </div>
+          {nav.level === "boards" && renderBoards()}
+          {nav.level === "courses" && renderCourses()}
+          {nav.level === "subjects" && renderSubjects()}
+        </>
       )}
 
-      {/* ── COURSES VIEW ── */}
-      {view === "courses" && selectedBoard && (
-        <div className="dashboard-card adm-courses__card">
-          <div className="adm-courses__bar">
-            <div className="adm-courses__count">
-              {courses.length} course{courses.length !== 1 ? "s" : ""} in {selectedBoard.name}
-            </div>
-            <button className="adm-btn adm-btn--primary" onClick={() => setShowAddCourse(true)}>
-              + Add Course
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="dashboard-loading">Loading…</div>
-          ) : courses.length === 0 ? (
-            <div className="dashboard-loading">No courses yet. Add the first one.</div>
-          ) : (
-            <div className="adm-courses__grid">
-              {courses.map((c) => (
-                <article
-                  key={c.id}
-                  className="adm-tile"
-                  onClick={() => openCourse(c)}
-                >
-                  <div className="adm-tile__title">
-                    {c.title}
-                    {c.stream_name && <span className="adm-tile__stream"> · {c.stream_name}</span>}
-                  </div>
-                  {c.description && <div className="adm-tile__desc">{c.description}</div>}
-                  <div className="adm-tile__meta">
-                    <span>₹{(c.price / 100).toLocaleString("en-IN")}</span>
-                    <span> · {c.subject_count} subject{c.subject_count !== 1 ? "s" : ""}</span>
-                    <span> · {c.enrollment_count} enrolled</span>
-                  </div>
-                  <div className="adm-tile__actions">
-                    <button
-                      className="adm-tile__action adm-tile__action--danger"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPendingDelete({ kind: "course", id: c.id, label: c.title });
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── SUBJECTS VIEW ── */}
-      {view === "subjects" && selectedCourse && (
-        <div className="dashboard-card adm-courses__card">
-          <div className="adm-courses__bar">
-            <div className="adm-courses__count">
-              {subjects.length} subject{subjects.length !== 1 ? "s" : ""} in {selectedCourse.title}
-            </div>
-            <button className="adm-btn adm-btn--primary" onClick={() => setShowAddSubject(true)}>
-              + Add Subject
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="dashboard-loading">Loading…</div>
-          ) : subjects.length === 0 ? (
-            <div className="dashboard-loading">No subjects yet. Add the first subject.</div>
-          ) : (
-            <table className="adm-subjects-table">
-              <thead>
-                <tr>
-                  <th style={{ width: 60 }}>Order</th>
-                  <th>Name</th>
-                  <th style={{ width: 80 }}>Image</th>
-                  <th style={{ width: 110 }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {subjects.map((s) => (
-                  <tr key={s.id}>
-                    <td>{s.order}</td>
-                    <td>{s.name}</td>
-                    <td>
-                      {s.image ? (
-                        <img src={s.image} alt={s.name} className="adm-subjects-table__img" />
-                      ) : (
-                        <span className="adm-subjects-table__no-img">—</span>
-                      )}
-                    </td>
-                    <td>
-                      <button
-                        className="adm-tile__action adm-tile__action--danger"
-                        onClick={() =>
-                          setPendingDelete({ kind: "subject", id: s.id, label: s.name })
-                        }
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
+      {/* ── SKILL DEV (read-only overview) ── */}
+      {tab === "skill" && (
+        <>
+          <div className="dashboard-card courses-table-card">
+            <div className="courses-count">Skill categories</div>
+            {categories.length === 0 ? (
+              <div className="dashboard-loading">No categories yet.</div>
+            ) : (
+              <div className="courses-chips">
+                {categories.map((cat) => (
+                  <span key={cat.id || cat.slug} className="courses-chip">
+                    {cat.icon ? `${cat.icon} ` : ""}{cat.label}
+                  </span>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+
+          <div className="dashboard-card courses-table-card">
+            <div className="courses-count">
+              {applications.length} skill application{applications.length !== 1 ? "s" : ""} in review
+            </div>
+            {applications.length === 0 ? (
+              <div className="dashboard-loading">No pending skill applications.</div>
+            ) : (
+              <table className="courses-table">
+                <thead>
+                  <tr><th>Applicant</th><th>Skill</th><th>Stage</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                  {applications.map((a) => (
+                    <tr key={a.id}>
+                      <td className="courses-title">{a.user_name || a.user_email || a.applicant || "—"}</td>
+                      <td>{a.skill_name || "—"}</td>
+                      <td>{a.stage || "—"}</td>
+                      <td><StatusBadge color="yellow">{a.status || "—"}</StatusBadge></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <div className="dashboard-card courses-table-card">
+            <div className="courses-count">
+              {experts.length} listed expert{experts.length !== 1 ? "s" : ""}
+            </div>
+            {experts.length === 0 ? (
+              <div className="dashboard-loading">No experts listed yet.</div>
+            ) : (
+              <table className="courses-table">
+                <thead>
+                  <tr><th>Expert</th><th>Headline</th><th>Rate</th></tr>
+                </thead>
+                <tbody>
+                  {experts.map((e) => (
+                    <tr key={e.id}>
+                      <td className="courses-title">{e.display_name || e.name || "—"}</td>
+                      <td className="courses-desc">{e.headline || "—"}</td>
+                      <td>{rupees(e.hourly_rate)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
       )}
 
-      {/* ── Modals ── */}
-      {showAddBoard && (
-        <CreateBoardModal
-          onClose={() => setShowAddBoard(false)}
-          onCreate={handleCreateBoard}
+      {modal && (
+        <FormModal
+          type={modal.type}
+          mode={modal.mode}
+          initial={modal.initial}
+          busy={busy}
+          error={formError}
+          onSubmit={handleSubmit}
+          onCancel={() => setModal(null)}
         />
       )}
-      {showAddCourse && selectedBoard && (
-        <CreateCourseModal
-          board={selectedBoard}
-          onClose={() => setShowAddCourse(false)}
-          onCreate={handleCreateCourse}
-        />
-      )}
-      {showAddSubject && selectedCourse && (
-        <CreateSubjectModal
-          course={selectedCourse}
-          onClose={() => setShowAddSubject(false)}
-          onCreate={handleCreateSubject}
-        />
-      )}
-      {pendingDelete && (
+
+      {confirm && (
         <ConfirmModal
-          title={`Delete ${pendingDelete.kind}?`}
-          message={`This will permanently delete "${pendingDelete.label}". This cannot be undone.`}
-          onConfirm={confirmDelete}
-          onCancel={() => setPendingDelete(null)}
+          title={`Delete ${confirm.kind}`}
+          message={confirm.message}
+          extra={confirm.error ? <div className="cm-form-error">{confirm.error}</div> : null}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirm(null)}
         />
       )}
     </div>
