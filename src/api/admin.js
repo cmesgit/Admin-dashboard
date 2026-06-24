@@ -15,7 +15,6 @@ export const getEnrollmentRequests      = async (params) => (await api.get("/enr
 export const actOnEnrollmentRequest     = async (id, action, admin_note = "") =>
   (await api.post(`/enrollments/admin/requests/${id}/action/`, { action, admin_note })).data;
 
-<<<<<<< HEAD
 // ── Boards ──────────────────────────────────────────────
 export const getBoards     = async ()      => (await api.get("/courses/admin/boards/")).data;
 export const createBoard   = async (data)  => (await api.post("/courses/admin/boards/", data)).data;
@@ -45,7 +44,7 @@ export const createSubject = async (courseId, data) => {
   return (await api.post(`/courses/admin/courses/${courseId}/subjects/`, data)).data;
 };
 export const deleteSubject = async (id) => (await api.delete(`/courses/admin/subjects/${id}/`)).data;
-=======
+
 // --- payment settings (global_settings.AdminGlobalSettingsView) ---
 export const getSettings    = async ()  => (await api.get("/admin/settings/")).data;
 export const updateSettings = async (d) => (await api.patch("/admin/settings/", d)).data;
@@ -57,4 +56,3 @@ export const submitEvaluation     = async (appId, d) => (await api.post(`/skill/
 // --- skill-dev course review ---
 export const getSkillCourses   = async (params)              => (await api.get("/skill/admin/courses/", { params })).data;
 export const reviewSkillCourse = async (id, action, reason="") => (await api.post(`/skill/admin/courses/${id}/review/`, { action, reason })).data;
->>>>>>> cc3301e (sdsdsdsd)
