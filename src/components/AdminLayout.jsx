@@ -8,9 +8,13 @@ import {
   UserCheck,
   CreditCard,
   FileCheck,
+  ClipboardList,
   Settings,
   GraduationCap,
   BookCheck,
+  Megaphone,
+  Users2,
+  CalendarClock,
   LogOut,
 } from "lucide-react";
 import "../css/AdminLayout.css";
@@ -22,10 +26,14 @@ const navItems = [
   { to: "/forum", icon: MessageSquare, label: "Forum" },
   { to: "/approvals", icon: UserCheck, label: "Approvals" },
   { to: "/enrollment-requests", icon: FileCheck, label: "Enrollments" },
+  { to: "/enrollments", icon: ClipboardList, label: "Enrollment Mgmt" },
   { to: "/payments", icon: CreditCard, label: "Payments" },
   { to: "/payment-settings", icon: Settings, label: "Payment Settings" },
   { to: "/skill-approvals", icon: GraduationCap, label: "Skill Approvals" },
+  { to: "/skill-experts", icon: Users2, label: "Skill Experts" },
+  { to: "/skill-sessions", icon: CalendarClock, label: "Sessions" },
   { to: "/skill-courses", icon: BookCheck, label: "Skill Courses" },
+  { to: "/ad-subscriptions", icon: Megaphone, label: "Ad Subscriptions" },
 ];
 
 const AdminLayout = () => {

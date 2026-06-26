@@ -14,6 +14,10 @@ import EnrollmentRequests from "./pages/EnrollmentRequests";
 import PaymentSettings from "./pages/PaymentSettings";
 import SkillApprovals from "./pages/SkillApprovals";
 import SkillCourses from "./pages/SkillCourses";
+import AdSubscriptions from "./pages/AdSubscriptions";
+import SkillExperts from "./pages/SkillExperts";
+import SkillSessionsAdmin from "./pages/SkillSessionsAdmin";
+import EnrollmentManagement from "./pages/EnrollmentManagement";
 
 const AppLoader = ({ children }) => {
   const { loading } = useAuth();
@@ -61,10 +65,14 @@ const App = () => {
           <Route path="forum" element={<Forum />} />
           <Route path="approvals" element={<Approvals />} />
           <Route path="enrollment-requests" element={<EnrollmentRequests />} />
+          <Route path="enrollments" element={<EnrollmentManagement />} />
           <Route path="payments" element={<Payments />} />
           <Route path="payment-settings" element={<PaymentSettings />} />
           <Route path="skill-approvals" element={<SkillApprovals />} />
+          <Route path="skill-experts" element={<SkillExperts />} />
+          <Route path="skill-sessions" element={<SkillSessionsAdmin />} />
           <Route path="skill-courses" element={<SkillCourses />} />
+          <Route path="ad-subscriptions" element={<AdSubscriptions />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
