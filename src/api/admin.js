@@ -89,3 +89,36 @@ export const getSkillCourses   = async (params) =>
   safe(async () => (await api.get("/skill/admin/courses/", { params })).data, []);
 export const reviewSkillCourse = async (id, action, reason="") =>
   (await api.post(`/skill/admin/courses/${id}/review/`, { action, reason })).data;
+
+/* ── Skill-dev: expert advertising subscriptions (manual UPI) ──
+   Teachers submit a UPI payment under "Promote my profile"; admin verifies the
+   receipt here and approves (activates the ad) or rejects (back to pending). */
+export const getAdSubscriptions    = async (params) =>
+  safe(async () => (await api.get("/skill/admin/ad-subscriptions/", { params })).data, []);
+export const approveAdSubscription = async (id) =>
+  (await api.post(`/skill/admin/ad-subscriptions/${id}/approve/`, {})).data;
+export const rejectAdSubscription  = async (id, reason="") =>
+  (await api.post(`/skill/admin/ad-subscriptions/${id}/reject/`, { reason })).data;
+
+/* ── Skill-dev: platform-wide session monitor (read-only) ── */
+export const getSkillSessions = async (params) =>
+  safe(async () => (await api.get("/skill/admin/sessions/", { params })).data,
+       { sessions: [], counts: {} });
+
+/* ── Skill-dev: per-user skill context (expert status + learner sessions) ── */
+export const getUserSkillProfile = async (userId) =>
+  safe(async () => (await api.get(`/skill/admin/users/${userId}/skill-profile/`)).data,
+       { is_expert: false, expert: null, learner_sessions: [] });
+
+/* ── Email verification: admin/self-service resend (public endpoint) ── */
+export const resendVerification = async (email) =>
+  (await api.post("/accounts/resend-verification/", { email })).data;
+
+/* ── Academic course enrollment management ──
+   GET  /enrollments/admin/enrollments/?status=ACTIVE|REVOKED&q=<text>
+   POST /enrollments/admin/enrollments/<id>/action/  { action: revoke|reactivate } */
+export const getEnrollments = async (params) =>
+  safe(async () => (await api.get("/enrollments/admin/enrollments/", { params })).data,
+       { results: [] });
+export const actOnEnrollment = async (id, action, note = "") =>
+  (await api.post(`/enrollments/admin/enrollments/${id}/action/`, { action, note })).data;

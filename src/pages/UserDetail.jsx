@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { getUser, updateUser } from "../api/admin";
+import { getUser, updateUser, getUserSkillProfile, resendVerification } from "../api/admin";
+import { HOME_URL } from "../config/urls";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
 import "../css/UserDetail.css";
@@ -12,6 +13,9 @@ const UserDetail = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState(null);
+  const [skill, setSkill] = useState(null);
+  const [resendMsg, setResendMsg] = useState("");
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -19,7 +23,21 @@ const UserDetail = () => {
       .then(setUser)
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
+    getUserSkillProfile(id).then(setSkill).catch(() => setSkill(null));
   }, [id]);
+
+  const doResend = async () => {
+    if (!user?.email) return;
+    setResending(true); setResendMsg("");
+    try {
+      await resendVerification(user.email);
+      setResendMsg("✓ Verification email sent.");
+    } catch (e) {
+      setResendMsg(e?.response?.data?.detail || e?.response?.data?.email || "Could not send.");
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleToggle = (field) => {
     const newVal = !user[field];
@@ -146,6 +164,21 @@ const UserDetail = () => {
                 {user.is_verified ? "Unverify" : "Verify"}
               </button>
             </div>
+            {!user.is_verified && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4, paddingTop: 10, borderTop: "1px solid #eef0f3" }}>
+                <div style={{ flex: 1, fontSize: 13, color: "#6b7280" }}>
+                  Email not verified — resend the verification link.
+                </div>
+                <button className="ud-toggle-btn" onClick={doResend} disabled={resending}>
+                  {resending ? "Sending…" : "Resend verification"}
+                </button>
+              </div>
+            )}
+            {resendMsg && (
+              <div style={{ marginTop: 8, fontSize: 13, color: resendMsg.startsWith("✓") ? "#16a34a" : "#dc2626" }}>
+                {resendMsg}
+              </div>
+            )}
           </div>
 
           {/* Enrollments */}
@@ -178,6 +211,65 @@ const UserDetail = () => {
               </table>
             ) : (
               <p className="ud-empty">No enrollments.</p>
+            )}
+          </div>
+
+          {/* Skill Dev — expert status */}
+          <div className="dashboard-card">
+            <h3>Skill Dev</h3>
+            {skill?.is_expert && skill.expert ? (
+              <div>
+                <div className="ud-field">
+                  <label>Expert</label>
+                  <span>
+                    {skill.expert.name}{" "}
+                    {skill.expert.featured
+                      ? <StatusBadge color="purple">Featured</StatusBadge>
+                      : skill.expert.advertised
+                        ? <StatusBadge color="green">Advertised</StatusBadge>
+                        : skill.expert.listed
+                          ? <StatusBadge color="gray">Listed</StatusBadge>
+                          : <StatusBadge color="red">Unlisted</StatusBadge>}
+                  </span>
+                </div>
+                <div className="ud-field"><label>Rating</label><span>{skill.expert.rating ? Number(skill.expert.rating).toFixed(1) : "—"}</span></div>
+                <div className="ud-field"><label>Sessions</label><span>{skill.expert.sessions ?? 0}</span></div>
+                <div className="ud-field"><label>Reach</label><span>{(skill.expert.reach ?? 0).toLocaleString("en-IN")}</span></div>
+                <a href={`${HOME_URL}/experts/${skill.expert.id}`} target="_blank" rel="noreferrer"
+                  style={{ fontWeight: 600 }}>View public profile →</a>
+              </div>
+            ) : (
+              <p className="ud-empty">Not a Skill-Dev expert.</p>
+            )}
+          </div>
+
+          {/* Skill sessions (as learner) */}
+          <div className="dashboard-card">
+            <h3>Skill sessions</h3>
+            {skill?.learner_sessions?.length ? (
+              <table className="ud-enroll-table">
+                <thead>
+                  <tr><th>Expert</th><th>Status</th><th>Booked</th></tr>
+                </thead>
+                <tbody>
+                  {skill.learner_sessions.map((s) => (
+                    <tr key={s.id}>
+                      <td>{s.expert}</td>
+                      <td>
+                        <StatusBadge color={
+                          s.status === "completed" ? "green"
+                          : s.status === "confirmed" ? "blue"
+                          : s.status === "cancelled" ? "red" : "gray"}>
+                          {s.status === "requested" ? "pending" : s.status}
+                        </StatusBadge>
+                      </td>
+                      <td>{formatDate(s.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="ud-empty">No skill sessions booked.</p>
             )}
           </div>
         </div>
