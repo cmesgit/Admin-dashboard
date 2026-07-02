@@ -15,6 +15,7 @@ import PaymentSettings from "./pages/PaymentSettings";
 import SkillApprovals from "./pages/SkillApprovals";
 import SkillCourses from "./pages/SkillCourses";
 import AdSubscriptions from "./pages/AdSubscriptions";
+import AgreementLetter from "./pages/AgreementLetter";
 import SkillExperts from "./pages/SkillExperts";
 import SkillSessionsAdmin from "./pages/SkillSessionsAdmin";
 import EnrollmentManagement from "./pages/EnrollmentManagement";
@@ -73,6 +74,7 @@ const App = () => {
           <Route path="skill-sessions" element={<SkillSessionsAdmin />} />
           <Route path="skill-courses" element={<SkillCourses />} />
           <Route path="ad-subscriptions" element={<AdSubscriptions />} />
+          <Route path="agreement-letter" element={<AgreementLetter />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

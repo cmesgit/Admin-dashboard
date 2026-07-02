@@ -76,3 +76,28 @@
   padding: 60px 20px;
   color: #999;
 }
+
+/* ── Approvals tabs: detail modal ── */
+.ap-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center; z-index: 60; padding: 20px;
+}
+.ap-modal {
+  background: #fff; border-radius: 14px; padding: 24px; width: 100%;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.ap-detail-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; margin-top: 16px;
+}
+.ap-detail-grid > div { display: flex; flex-direction: column; }
+.ap-detail-grid span { font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: #9ca3af; }
+.ap-detail-grid b { font-size: 14px; color: #1f2937; margin-top: 2px; }
+
+/* ── Agreement letter: formatted preview ── */
+.agreement-preview h1 { font-size: 20px; margin: 18px 0 8px; font-weight: 800; }
+.agreement-preview h2 { font-size: 17px; margin: 16px 0 6px; font-weight: 700; }
+.agreement-preview h3 { font-size: 15px; margin: 14px 0 6px; font-weight: 700; }
+.agreement-preview p  { margin: 0 0 10px; }
+.agreement-preview ol, .agreement-preview ul { margin: 0 0 10px; padding-left: 22px; }
+.agreement-preview li { margin: 3px 0; }
+.agreement-preview:empty::before { content: "Nothing to preview yet."; color: #9ca3af; }

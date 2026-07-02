@@ -15,8 +15,8 @@ export const updateUser = async (id, d)  => (await api.patch(`/accounts/admin/us
 
 /* ── Teacher approvals (track-aware: items carry { track, track_label }) ── */
 export const getApprovals  = async ()           => (await api.get("/accounts/admin/teacher-approvals/")).data;
-export const actOnApproval = async (id, action) =>
-  (await api.post(`/accounts/admin/teacher-approvals/${id}/action/`, { action })).data;
+export const actOnApproval = async (id, action, reason = "") =>
+  (await api.post(`/accounts/admin/teacher-approvals/${id}/action/`, { action, reason })).data;
 
 /* ── Enrollment requests (manual UPI flow) ── */
 export const getEnrollmentRequests  = async (params) =>
@@ -66,6 +66,14 @@ export const getSkillCategories = async () =>
   safe(async () => (await api.get("/skill/categories/")).data, []);
 export const getSkillExperts = async (params) =>
   safe(async () => (await api.get("/skill/teachers/", { params })).data, []);
+
+/* ── Admin skill-expert roster (incl. suspended) + detail + suspend ── */
+export const getAdminExperts = async () =>
+  safe(async () => (await api.get("/skill/admin/experts/")).data, []);
+export const getAdminExpert  = async (id) =>
+  (await api.get(`/skill/admin/experts/${id}/`)).data;
+export const suspendExpert   = async (id, action) =>
+  (await api.post(`/skill/admin/experts/${id}/suspend/`, { action })).data;
 export const getSkillApplications = async () =>
   safe(async () => (await api.get("/skill/admin/interview-queue/")).data, []);
 
@@ -122,3 +130,10 @@ export const getEnrollments = async (params) =>
        { results: [] });
 export const actOnEnrollment = async (id, action, note = "") =>
   (await api.post(`/enrollments/admin/enrollments/${id}/action/`, { action, note })).data;
+
+/* ── Agreement letters (admin editor + immutable version history) ── */
+export const getAgreement         = async (key)        => (await api.get(`/accounts/admin/agreements/${key}/`)).data;
+export const saveAgreement        = async (key, d)     => (await api.post(`/accounts/admin/agreements/${key}/save/`, d)).data;
+export const getAgreementVersions = async (key)        => safe(async () => (await api.get(`/accounts/admin/agreements/${key}/versions/`)).data, []);
+export const getAgreementVersion  = async (versionId)  => (await api.get(`/accounts/admin/agreements/versions/${versionId}/`)).data;
+export const restoreAgreement     = async (versionId)  => (await api.post(`/accounts/admin/agreements/versions/${versionId}/restore/`, {})).data;

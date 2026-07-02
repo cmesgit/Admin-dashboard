@@ -24,7 +24,7 @@ const TIERS = [
   { value: "expert",   label: "Expert" },
 ];
 
-const SkillApprovals = () => {
+const SkillApprovals = ({ embedded = false }) => {
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [active, setActive] = useState(null);   // application being evaluated
@@ -69,10 +69,10 @@ const SkillApprovals = () => {
   };
 
   return (
-    <div className="dashboard-wrapper">
-      <h1 className="dashboard-title">Skill Expert Approvals</h1>
+    <div className={embedded ? "" : "dashboard-wrapper"}>
+      {!embedded && <h1 className="dashboard-title">Skill Expert Approvals</h1>}
 
-      <div className="dashboard-card payments-table-card">
+      <div className={embedded ? "" : "dashboard-card payments-table-card"}>
         <div className="payments-count">{apps.length} application{apps.length !== 1 ? "s" : ""}</div>
         {loading ? (
           <div className="dashboard-loading">Loading...</div>
