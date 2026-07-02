@@ -13,6 +13,7 @@ import {
   GraduationCap,
   BookCheck,
   Megaphone,
+  FileText,
   Users2,
   CalendarClock,
   LogOut,
@@ -29,11 +30,12 @@ const navItems = [
   { to: "/enrollments", icon: ClipboardList, label: "Enrollment Mgmt" },
   { to: "/payments", icon: CreditCard, label: "Payments" },
   { to: "/payment-settings", icon: Settings, label: "Payment Settings" },
-  { to: "/skill-approvals", icon: GraduationCap, label: "Skill Approvals" },
+  // "Skill Approvals" removed from nav per admin spec (screening handled elsewhere).
   { to: "/skill-experts", icon: Users2, label: "Skill Experts" },
   { to: "/skill-sessions", icon: CalendarClock, label: "Sessions" },
   { to: "/skill-courses", icon: BookCheck, label: "Skill Courses" },
   { to: "/ad-subscriptions", icon: Megaphone, label: "Ad Subscriptions" },
+  { to: "/agreement-letter", icon: FileText, label: "Agreement Letter" },
 ];
 
 const AdminLayout = () => {
