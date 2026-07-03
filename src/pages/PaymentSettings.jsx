@@ -1,22 +1,30 @@
-// src/pages/PaymentSettings.jsx  (NEW)
+// src/pages/PaymentSettings.jsx  (REPLACE THE WHOLE FILE)
 //
-// Admin page to switch the platform payment mode (free / manual_upi / razorpay)
-// and set UPI + Razorpay credentials. Talks to GET/PATCH /admin/settings/
-// (backend: global_settings.AdminGlobalSettingsView).
+// Admin page to switch the platform payment mode. Talks to GET/PATCH
+// /admin/settings/ (backend: global_settings.AdminGlobalSettingsView).
 //
-// Matches the existing admin page style (dashboard-wrapper / dashboard-card).
-// The razorpay secret is write-only on the backend: the GET returns
-// razorpay_secret_set (bool), never the value, so we show "configured" and let
-// the admin overwrite it via a blank-able field.
+// FREE-LAUNCH BEHAVIOUR
+// ─────────────────────
+// The platform is free right now. `manual_upi` and `razorpay` are placeholders
+// for a later payments launch, so:
+//   • a persistent banner states the platform is in free launch mode,
+//   • the paid modes render disabled with a "coming soon" tag,
+//   • the free-trial switch cannot be turned off while a paid mode is selected
+//     (the backend serializer enforces the same rule, so this is belt+braces).
+// Credentials can still be pre-filled by temporarily selecting a paid mode?
+// No — the mode select is locked to the modes that are live. When a paid mode
+// ships, add it to LIVE_MODES here and flip PAID_MODES_LIVE in
+// global_settings/serializers.py.
 
 import { useEffect, useState } from "react";
 import { getSettings, updateSettings } from "../api/admin";
 
 const MODES = [
-  { value: "free",       label: "Free (no payment)" },
-  { value: "manual_upi", label: "Manual UPI + admin approval" },
-  { value: "razorpay",   label: "Razorpay gateway" },
+  { value: "free",       label: "Free (no payment)",           live: true  },
+  { value: "manual_upi", label: "Manual UPI + admin approval", live: false },
+  { value: "razorpay",   label: "Razorpay gateway",            live: false },
 ];
+const LIVE_MODES = MODES.filter((m) => m.live).map((m) => m.value);
 
 const PaymentSettings = () => {
   const [s, setS] = useState(null);
@@ -35,6 +43,8 @@ const PaymentSettings = () => {
   useEffect(() => { load(); }, []);
 
   const field = (k, v) => setS((prev) => ({ ...prev, [k]: v }));
+
+  const paidModeSelected = s && !LIVE_MODES.includes(s.payment_mode);
 
   const save = async () => {
     setSaving(true); setMsg(""); setErr("");
@@ -69,7 +79,18 @@ const PaymentSettings = () => {
     <div className="dashboard-wrapper">
       <h1 className="dashboard-title">Payment Settings</h1>
 
-      {/* Live status banner */}
+      {/* Free-launch banner */}
+      <div style={{
+        background: "#ecf8ee", border: "1px solid #bfe6c8", color: "#1f7a37",
+        borderRadius: 10, padding: "12px 16px", marginBottom: 20,
+        fontSize: 13.5, fontWeight: 600, display: "flex", gap: 8, alignItems: "center",
+      }}>
+        <span aria-hidden style={{ fontSize: 16 }}>●</span>
+        Platform is in free launch mode — nothing is charged anywhere.
+        Paid modes below are placeholders and will unlock when payments launch.
+      </div>
+
+      {/* Live status */}
       <div className="dashboard-cards" style={{ marginBottom: 24 }}>
         <div className="dashboard-card">
           <p className="stat-value" style={{ textTransform: "capitalize" }}>
@@ -84,11 +105,12 @@ const PaymentSettings = () => {
       </div>
 
       <div className="dashboard-card" style={{ padding: 24, maxWidth: 620 }}>
-        {/* Free-trial master switch */}
-        <label style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 18 }}>
+        {/* Free-trial master switch — locked ON while a paid mode is selected */}
+        <label style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 6 }}>
           <input
             type="checkbox"
             checked={s.free_trial_enabled}
+            disabled={paidModeSelected}
             onChange={(e) => field("free_trial_enabled", e.target.checked)}
           />
           <span>
@@ -96,6 +118,12 @@ const PaymentSettings = () => {
             regardless of the mode below. Turn OFF to start charging.
           </span>
         </label>
+        {paidModeSelected && (
+          <div style={{ fontSize: 12, color: "#b45309", margin: "0 0 14px 26px" }}>
+            Locked ON: the selected mode isn’t available yet.
+          </div>
+        )}
+        <div style={{ height: 12 }} />
 
         {/* Mode */}
         <div style={{ marginBottom: 18 }}>
@@ -105,11 +133,15 @@ const PaymentSettings = () => {
             onChange={(e) => field("payment_mode", e.target.value)}
             style={{ width: "100%", padding: 8 }}
           >
-            {MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            {MODES.map((m) => (
+              <option key={m.value} value={m.value} disabled={!m.live}>
+                {m.label}{m.live ? "" : " — coming soon"}
+              </option>
+            ))}
           </select>
         </div>
 
-        {/* Manual UPI fields */}
+        {/* Manual UPI fields (visible only if that mode is somehow selected) */}
         {s.payment_mode === "manual_upi" && (
           <div style={{ marginBottom: 12 }}>
             <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>UPI ID (VPA)</label>
