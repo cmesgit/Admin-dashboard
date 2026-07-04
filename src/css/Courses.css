@@ -235,3 +235,138 @@
   font-size: 0.84rem;
   margin-bottom: 14px;
 }
+
+/* ============================================================================
+   Batch management + teacher assignment + progress/roster
+   (same palette: #4f6df5 primary, #f1f5ff/#3b4cca chips, grey text)
+   ========================================================================== */
+
+/* Wider modal for assignment / progress / roster panels */
+.cm-form-card--wide { width: min(94%, 640px); }
+
+/* Small shared bits */
+.cm-muted { color: #9aa0aa; font-size: 0.85rem; }
+.cm-empty-note { color: #6b7280; font-size: 0.9rem; margin: 4px 0 16px; }
+.cm-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f1f5ff; color: #3b4cca; border: 1px solid #dbe3ff;
+  padding: 1px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 600;
+}
+
+/* Subjects | Batches segmented switcher (inside a course) */
+.cm-subnav { display: flex; gap: 6px; margin-bottom: 14px; }
+.cm-subnav-tab {
+  border: 1px solid #e5e7eb; background: #fff; color: #4b5563;
+  padding: 6px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer;
+}
+.cm-subnav-tab:hover { background: #f3f4f6; }
+.cm-subnav-tab.active { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
+
+/* Teacher chips in the subjects table */
+.cm-teacher-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cm-teacher-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #f6f7fb; border: 1px solid #e7e9f2; color: #374151;
+  padding: 3px 10px 3px 3px; border-radius: 999px; font-size: 0.82rem; font-weight: 500;
+}
+.cm-chip-avatar {
+  width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.cm-chip-avatar--fallback { background: #4f6df5; color: #fff; font-size: 0.72rem; font-weight: 700; }
+.cm-chip-role {
+  font-style: normal; font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.04em; color: #8a6d00; background: #fff3d6; border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Assignment modal */
+.cm-assign-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.cm-assign-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  border: 1px solid #eef0f5; border-radius: 10px; padding: 8px 10px;
+}
+.cm-assign-face { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cm-avatar {
+  width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.cm-avatar--fallback { background: #4f6df5; color: #fff; font-weight: 700; }
+.cm-assign-meta { display: flex; flex-direction: column; min-width: 0; }
+.cm-assign-name { font-weight: 600; color: #1f2937; font-size: 0.9rem; }
+.cm-assign-sub {
+  color: #8a8f98; font-size: 0.78rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px;
+}
+.cm-assign-controls { display: flex; align-items: center; gap: 8px; flex: none; }
+.cm-assign-controls select {
+  border: 1px solid #d1d5db; border-radius: 8px; padding: 6px 8px;
+  font-size: 0.82rem; color: #1f2937; background: #fff;
+}
+
+.cm-assign-add { border-top: 1px dashed #e5e7eb; padding-top: 14px; }
+.cm-assign-add-head {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+}
+.cm-assign-add-title { font-size: 0.85rem; font-weight: 700; color: #374151; }
+.cm-role-toggle { display: inline-flex; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+.cm-role-opt {
+  border: none; background: #fff; color: #6b7280; padding: 5px 12px;
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+}
+.cm-role-opt + .cm-role-opt { border-left: 1px solid #e5e7eb; }
+.cm-role-opt.active { background: #4f6df5; color: #fff; }
+
+.cm-search {
+  width: 100%; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 8px;
+  padding: 9px 11px; font-size: 0.88rem; color: #1f2937; margin-bottom: 10px;
+}
+.cm-search:focus { outline: none; border-color: #4f6df5; box-shadow: 0 0 0 3px rgba(79,109,245,0.15); }
+.cm-pool-list { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.cm-pool-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 7px 4px; border-bottom: 1px solid #f5f5f7;
+}
+.cm-pool-empty { color: #9aa0aa; font-size: 0.85rem; padding: 10px 2px; }
+
+/* Progress bars + checklist */
+.cm-progress { height: 8px; background: #eef0f5; border-radius: 999px; overflow: hidden; }
+.cm-progress__fill {
+  height: 100%; background: linear-gradient(90deg, #4f6df5, #6d86ff); border-radius: 999px;
+  transition: width 0.35s ease;
+}
+.cm-progress-overall { margin-bottom: 18px; }
+.cm-progress-overall-top {
+  display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px;
+  font-size: 0.88rem; color: #4b5563;
+}
+.cm-progress-overall-top strong { font-size: 1.15rem; color: #4f6df5; }
+
+.cm-prog-subjects { display: flex; flex-direction: column; gap: 16px; max-height: 50vh; overflow-y: auto; padding-right: 4px; }
+.cm-prog-subject-head {
+  display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px;
+}
+.cm-prog-subject-name { font-weight: 600; color: #1f2937; font-size: 0.9rem; }
+.cm-prog-subject-count { color: #8a8f98; font-size: 0.8rem; }
+.cm-chapter-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cm-chapter { display: flex; align-items: baseline; gap: 8px; font-size: 0.85rem; color: #6b7280; }
+.cm-chapter.done { color: #1f2937; }
+.cm-chapter-tick { color: #c4c8d0; font-weight: 700; flex: none; }
+.cm-chapter.done .cm-chapter-tick { color: #16a34a; }
+.cm-chapter-title { flex: 1; }
+.cm-chapter-note { color: #8a6d00; font-style: italic; font-size: 0.8rem; }
+
+/* Batch seats */
+.cm-seats { font-variant-numeric: tabular-nums; color: #374151; }
+.cm-seats--full { color: #b91c1c; font-weight: 700; }
+
+/* Quality floor: visible keyboard focus on the new interactive controls */
+.cm-subnav-tab:focus-visible,
+.cm-role-opt:focus-visible,
+.cm-search:focus-visible {
+  outline: 2px solid #4f6df5; outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cm-progress__fill { transition: none; }
+}
