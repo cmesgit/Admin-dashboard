@@ -21,8 +21,9 @@ export const actOnApproval = async (id, action, reason = "") =>
 /* ── Enrollment requests (manual UPI flow) ── */
 export const getEnrollmentRequests  = async (params) =>
   (await api.get("/enrollments/admin/requests/", { params })).data;
-export const actOnEnrollmentRequest = async (id, action, admin_note = "") =>
-  (await api.post(`/enrollments/admin/requests/${id}/action/`, { action, admin_note })).data;
+export const actOnEnrollmentRequest = async (id, action, admin_note = "", batch = undefined) =>
+  (await api.post(`/enrollments/admin/requests/${id}/action/`,
+    batch ? { action, admin_note, batch } : { action, admin_note })).data;
 
 /* ── Payment mode (pluggable: free / manual_upi / razorpay) ── */
 export const getPaymentConfig = async () =>
@@ -61,6 +62,37 @@ export const createSubject = async (courseId, formData) =>
   })).data;
 export const deleteSubject = async (subjectId) =>
   (await api.delete(`/courses/admin/subjects/${subjectId}/`)).data;
+
+/* ── Academy: batches (courses app) ── */
+export const getCourseBatches = async (courseId) =>
+  safe(async () => (await api.get(`/courses/admin/courses/${courseId}/batches/`)).data, []);
+export const createBatch = async (courseId, data) =>
+  (await api.post(`/courses/admin/courses/${courseId}/batches/`, data)).data;
+export const updateBatch = async (batchId, data) =>
+  (await api.patch(`/courses/admin/batches/${batchId}/`, data)).data;
+export const deleteBatch = async (batchId) =>
+  (await api.delete(`/courses/admin/batches/${batchId}/`)).data;
+
+/* Batch progress (read-only for admin) + roster. Requires the per-batch
+   progress endpoint and the Enrollment.batch FK from the backend patch. */
+export const getBatchProgress = async (batchId) =>
+  safe(async () => (await api.get(`/courses/batches/${batchId}/progress/`)).data, null);
+export const getBatchRoster = async (batchId, params = {}) =>
+  safe(async () =>
+    (await api.get(`/enrollments/admin/batch-roster/`, { params: { batch: batchId, ...params } })).data,
+    { results: [] });
+
+/* ── Academy: subject-teacher assignment ── */
+export const getAdminAcademyTeachers = async (q = "") =>
+  safe(async () => (await api.get(`/courses/admin/teachers/`, { params: q ? { q } : {} })).data, []);
+export const getSubjectTeachers = async (subjectId) =>
+  safe(async () => (await api.get(`/courses/admin/subjects/${subjectId}/teachers/`)).data, []);
+export const assignSubjectTeacher = async (subjectId, teacherId, display_role = "PRIMARY") =>
+  (await api.post(`/courses/admin/subjects/${subjectId}/teachers/`, { teacher_id: teacherId, display_role })).data;
+export const updateSubjectTeacher = async (assignmentId, display_role) =>
+  (await api.patch(`/courses/admin/subject-teachers/${assignmentId}/`, { display_role })).data;
+export const removeSubjectTeacher = async (assignmentId) =>
+  (await api.delete(`/courses/admin/subject-teachers/${assignmentId}/`)).data;
 
 export const getSkillCategories = async () =>
   safe(async () => (await api.get("/skill/categories/")).data, []);

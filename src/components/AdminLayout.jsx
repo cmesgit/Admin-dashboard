@@ -16,6 +16,7 @@ import {
   FileText,
   Users2,
   CalendarClock,
+  CalendarCheck2,
   LogOut,
 } from "lucide-react";
 import "../css/AdminLayout.css";
@@ -31,6 +32,9 @@ const navItems = [
   { to: "/payments", icon: CreditCard, label: "Payments" },
   { to: "/payment-settings", icon: Settings, label: "Payment Settings" },
   // "Skill Approvals" removed from nav per admin spec (screening handled elsewhere).
+  // Counselling has no other queue, so — unlike Skill Approvals — it stays visible.
+  { to: "/counselor-approvals", icon: GraduationCap, label: "Counsellor Approvals" },
+  { to: "/counseling-sessions", icon: CalendarCheck2, label: "Counselling Sessions" },
   { to: "/skill-experts", icon: Users2, label: "Skill Experts" },
   { to: "/skill-sessions", icon: CalendarClock, label: "Sessions" },
   { to: "/skill-courses", icon: BookCheck, label: "Skill Courses" },

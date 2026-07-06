@@ -19,6 +19,8 @@ import AgreementLetter from "./pages/AgreementLetter";
 import SkillExperts from "./pages/SkillExperts";
 import SkillSessionsAdmin from "./pages/SkillSessionsAdmin";
 import EnrollmentManagement from "./pages/EnrollmentManagement";
+import CounselorApprovals from "./pages/CounselorApprovals";
+import CounselingSessions from "./pages/CounselingSessions";
 
 const AppLoader = ({ children }) => {
   const { loading } = useAuth();
@@ -70,6 +72,8 @@ const App = () => {
           <Route path="payments" element={<Payments />} />
           <Route path="payment-settings" element={<PaymentSettings />} />
           <Route path="skill-approvals" element={<SkillApprovals />} />
+          <Route path="counselor-approvals" element={<CounselorApprovals />} />
+          <Route path="counseling-sessions" element={<CounselingSessions />} />
           <Route path="skill-experts" element={<SkillExperts />} />
           <Route path="skill-sessions" element={<SkillSessionsAdmin />} />
           <Route path="skill-courses" element={<SkillCourses />} />
