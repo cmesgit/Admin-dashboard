@@ -8,6 +8,9 @@ import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Courses from "./pages/Courses";
 import Forum from "./pages/Forum";
+import CommunicationReports from "./pages/CommunicationReports";
+import CommunicationBroadcast from "./pages/CommunicationBroadcast";
+import CommunicationSupport from "./pages/CommunicationSupport";
 import Approvals from "./pages/Approvals";
 import Payments from "./pages/Payments";
 import EnrollmentRequests from "./pages/EnrollmentRequests";
@@ -66,6 +69,9 @@ const App = () => {
           <Route path="users/:id" element={<UserDetail />} />
           <Route path="courses" element={<Courses />} />
           <Route path="forum" element={<Forum />} />
+          <Route path="communication/reports" element={<CommunicationReports />} />
+          <Route path="communication/broadcast" element={<CommunicationBroadcast />} />
+          <Route path="communication/support" element={<CommunicationSupport />} />
           <Route path="approvals" element={<Approvals />} />
           <Route path="enrollment-requests" element={<EnrollmentRequests />} />
           <Route path="enrollments" element={<EnrollmentManagement />} />

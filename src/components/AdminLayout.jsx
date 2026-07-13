@@ -18,6 +18,9 @@ import {
   CalendarClock,
   CalendarCheck2,
   LogOut,
+  Flag,
+  Send,
+  LifeBuoy,
 } from "lucide-react";
 import "../css/AdminLayout.css";
 
@@ -26,6 +29,9 @@ const navItems = [
   { to: "/users", icon: Users, label: "Users" },
   { to: "/courses", icon: BookOpen, label: "Courses" },
   { to: "/forum", icon: MessageSquare, label: "Forum" },
+  { to: "/communication/reports", icon: Flag, label: "Chat Reports" },
+  { to: "/communication/support", icon: LifeBuoy, label: "Support Tickets" },
+  { to: "/communication/broadcast", icon: Send, label: "Broadcast" },
   { to: "/approvals", icon: UserCheck, label: "Approvals" },
   { to: "/enrollment-requests", icon: FileCheck, label: "Enrollments" },
   { to: "/enrollments", icon: ClipboardList, label: "Enrollment Mgmt" },
