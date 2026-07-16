@@ -169,3 +169,14 @@ export const saveAgreement        = async (key, d)     => (await api.post(`/acco
 export const getAgreementVersions = async (key)        => safe(async () => (await api.get(`/accounts/admin/agreements/${key}/versions/`)).data, []);
 export const getAgreementVersion  = async (versionId)  => (await api.get(`/accounts/admin/agreements/versions/${versionId}/`)).data;
 export const restoreAgreement     = async (versionId)  => (await api.post(`/accounts/admin/agreements/versions/${versionId}/restore/`, {})).data;
+
+/* ── Academy Quizzes (admin verification queue) ──
+   GET  /quizzes/admin/?status=pending|approved|rejected|draft&subject=<id>&search=
+   GET  /quizzes/admin/<id>/                → full quiz + questions
+   POST /quizzes/admin/<id>/review/         { action: approve|reject, reason } */
+export const getAcademyQuizzes    = async (params) =>
+  safe(async () => (await api.get("/quizzes/admin/", { params })).data, []);
+export const getAcademyQuizDetail = async (id) =>
+  (await api.get(`/quizzes/admin/${id}/`)).data;
+export const reviewAcademyQuiz    = async (id, action, reason = "") =>
+  (await api.post(`/quizzes/admin/${id}/review/`, { action, reason })).data;

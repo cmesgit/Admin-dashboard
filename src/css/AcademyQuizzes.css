@@ -1,0 +1,15 @@
+.aq-chip {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #eef1ff;
+  color: #4f6df5;
+}
+.aq-chip--muted {
+  background: #f1f5f9;
+  color: #64748b;
+  text-transform: capitalize;
+}

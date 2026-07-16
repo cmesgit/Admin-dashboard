@@ -8,6 +8,7 @@ import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Courses from "./pages/Courses";
 import Forum from "./pages/Forum";
+import AcademyQuizzes from "./pages/AcademyQuizzes";
 import CommunicationReports from "./pages/CommunicationReports";
 import CommunicationBroadcast from "./pages/CommunicationBroadcast";
 import CommunicationSupport from "./pages/CommunicationSupport";
@@ -68,6 +69,7 @@ const App = () => {
           <Route path="users" element={<Users />} />
           <Route path="users/:id" element={<UserDetail />} />
           <Route path="courses" element={<Courses />} />
+          <Route path="quizzes" element={<AcademyQuizzes />} />
           <Route path="forum" element={<Forum />} />
           <Route path="communication/reports" element={<CommunicationReports />} />
           <Route path="communication/broadcast" element={<CommunicationBroadcast />} />
