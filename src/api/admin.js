@@ -125,6 +125,10 @@ export const dismissReport     = async (id) => (await api.post(`/forum/mod/repor
 export const deleteReport      = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/delete/`, { note })).data;
 export const warnReportTarget  = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/warn/`, { note })).data;
 export const banReportTarget   = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/ban/`, { note })).data;
+export const suspendReportTarget = async (id, duration_days, note = "") =>
+  (await api.post(`/forum/mod/reports/${id}/suspend/`, { duration_days, note })).data;
+export const lockReport        = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/lock/`, { note })).data;
+export const unlockReport      = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/unlock/`, { note })).data;
 
 /* ── Moderator Panel: Auto-Rejected Queue ── */
 export const getAutoRejected        = async (params) =>
@@ -142,11 +146,27 @@ export const getModUsers = async (params) =>
 export const warnModUser  = async (id, note = "") => (await api.post(`/forum/mod/users/${id}/warn/`, { note })).data;
 export const banModUser   = async (id, note = "") => (await api.post(`/forum/mod/users/${id}/ban/`, { note })).data;
 export const unbanModUser = async (id, note = "") => (await api.post(`/forum/mod/users/${id}/unban/`, { note })).data;
+export const suspendModUser = async (id, duration_days, note = "") =>
+  (await api.post(`/forum/mod/users/${id}/suspend/`, { duration_days, note })).data;
 
-/* ── Moderator Panel: Analytics ── */
+/* ── Moderator Panel: Analytics ──
+   header_stats: { open_reports, high_priority, banned_users, actions_today } */
 export const getModAnalytics = async () =>
   safe(async () => (await api.get("/forum/mod/analytics/")).data,
-       { kpis: [], reports_by_reason: [], recent_actions: [], this_month: {} });
+       { kpis: [], reports_by_reason: [], recent_actions: [], this_month: {},
+         header_stats: { open_reports: 0, high_priority: 0, banned_users: 0, actions_today: 0 } });
+
+/* ── Moderator Panel: All Threads (moderator-only, sees locked/removed too) ── */
+export const getModThreads    = async (params) =>
+  safe(async () => (await api.get("/forum/mod/threads/", { params })).data, { results: [], count: 0 });
+export const lockThread       = async (id, note = "") => (await api.post(`/forum/mod/threads/${id}/lock/`, { note })).data;
+export const unlockThread     = async (id, note = "") => (await api.post(`/forum/mod/threads/${id}/unlock/`, { note })).data;
+export const deleteModThread  = async (id, note = "") => (await api.post(`/forum/mod/threads/${id}/delete/`, { note })).data;
+export const restoreModThread = async (id, note = "") => (await api.post(`/forum/mod/threads/${id}/restore/`, { note })).data;
+
+/* ── Moderator Panel: Activity Log ── */
+export const getModLog = async (params) =>
+  safe(async () => (await api.get("/forum/mod/log/", { params })).data, { results: [], count: 0 });
 
 /* ── Grant/revoke the MODERATOR role on a user (Users/UserDetail page) ── */
 export const updateUserModerator = async (id, isModerator) =>

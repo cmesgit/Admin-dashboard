@@ -86,6 +86,7 @@
 .mod-pill.type    { background: #f3f4f6; color: #4b5563; }
 .mod-pill.status-active { background: #e4f3e8; color: #125027; }
 .mod-pill.status-warned { background: #fff8e8; color: #7a4c00; }
+.mod-pill.status-suspended { background: #f5f3ff; color: #5b21b6; }
 .mod-pill.status-banned { background: #fdf0ee; color: #c0392b; }
 .mod-pill.autorejected { background: #fdf0ee; color: #c0392b; }
 
@@ -305,3 +306,276 @@
 
 .mod-month-stat .num { font-size: 1.3rem; font-weight: 700; color: #222; }
 .mod-month-stat .lab { font-size: 0.75rem; color: #666; margin-top: 4px; }
+
+/* ============================================================
+   Stat cards (persistent header row above the tab bar)
+   ============================================================ */
+.mod-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin: 4px 0 22px;
+}
+.mod-stat-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.mod-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mod-stat-icon.tone-blue   { background: #eff6ff; color: #2563eb; }
+.mod-stat-icon.tone-red    { background: #fef2f2; color: #dc2626; }
+.mod-stat-icon.tone-purple { background: #f5f3ff; color: #7c3aed; }
+.mod-stat-icon.tone-green  { background: #ecfdf5; color: #059669; }
+.mod-stat-value { font-size: 1.9rem; font-weight: 700; color: #222; line-height: 1; }
+.mod-stat-label { font-size: 0.86rem; color: #6b7280; font-weight: 500; margin-top: 3px; }
+
+@media (max-width: 900px) {
+  .mod-stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============================================================
+   Generic colored badge/pill system (mirrors the design's PAL)
+   ============================================================ */
+.mod-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.mod-badge.pal-green  { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.mod-badge.pal-red    { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+.mod-badge.pal-yellow { background: #fefce8; color: #854d0e; border-color: #fef08a; }
+.mod-badge.pal-gray   { background: #f3f4f6; color: #374151; border-color: #e5e7eb; }
+.mod-badge.pal-blue   { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+.mod-badge.pal-purple { background: #f5f3ff; color: #5b21b6; border-color: #ddd6fe; }
+
+/* ============================================================
+   Chips — filter tabs + suspend-duration picker
+   ============================================================ */
+.mod-chip {
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #4b5563;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.mod-chip.active {
+  color: #fff;
+  background: #4f6df5;
+  border-color: #4f6df5;
+  font-weight: 600;
+}
+.mod-chip-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+
+.mod-duration-picker { margin-top: 14px; }
+.mod-duration-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+.mod-duration-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.mod-duration-chips .mod-chip.active { background: #7c3aed; border-color: #7c3aed; }
+
+/* ============================================================
+   Reports tab — two-column queue + review layout
+   ============================================================ */
+.mod-reports-grid {
+  display: grid;
+  grid-template-columns: 390px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 1000px) {
+  .mod-reports-grid { grid-template-columns: 1fr; }
+}
+
+.mod-queue-col { display: flex; flex-direction: column; gap: 10px; }
+.mod-queue-count { font-size: 0.8rem; color: #6b7280; font-weight: 600; padding: 0 2px 2px; }
+.mod-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 340px);
+  min-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.mod-report-card {
+  background: #fff;
+  border: 1px solid #eceef2;
+  border-radius: 12px;
+  padding: 14px 15px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  text-align: left;
+  width: 100%;
+  display: block;
+  font: inherit;
+}
+.mod-report-card:hover { border-color: #c7d0f5; box-shadow: 0 2px 8px rgba(79, 109, 245, 0.08); }
+.mod-report-card.selected { border-color: #4f6df5; box-shadow: 0 4px 14px rgba(79, 109, 245, 0.14); }
+.mod-report-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.mod-report-card-head .mod-time { font-size: 11px; }
+.mod-report-card-title { font-weight: 600; font-size: 13.5px; color: #1f2937; line-height: 1.4; margin-bottom: 6px; }
+.mod-report-card-reason { font-size: 12px; color: #6b7280; margin-bottom: 9px; }
+.mod-report-card-meta { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: #9ca3af; flex-wrap: wrap; }
+.mod-report-card-meta .mod-badge { margin-left: auto; }
+
+/* Review panel */
+.mod-review-panel {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+.mod-review-head { padding: 20px 24px; border-bottom: 1px solid #f0f0f0; }
+.mod-review-head .flags { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; font-size: 12px; color: #6b7280; }
+.mod-review-head h2 { margin: 0; font-size: 19px; color: #1f2937; line-height: 1.35; }
+.mod-review-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; }
+
+.mod-reporter-box {
+  background: #fef8f6;
+  border: 1px solid #fadcd4;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.mod-reporter-box .head { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.mod-reporter-box .head .label {
+  font-size: 11.5px; font-weight: 700; color: #b91c1c; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.mod-reporter-box .head .time { margin-left: auto; font-size: 11.5px; color: #9ca3af; }
+.mod-reporter-box .desc { font-size: 13.5px; color: #4b5563; line-height: 1.6; }
+.mod-reporter-box .count { margin-top: 9px; font-size: 12px; color: #9ca3af; }
+
+.mod-review-section-label {
+  font-size: 11.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 9px;
+}
+
+.mod-reported-content {
+  border: 1px solid #eef0f3;
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: #fcfcfd;
+}
+.mod-reported-content .author-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.mod-reported-content .author-name { font-size: 13.5px; font-weight: 600; color: #1f2937; }
+.mod-reported-content .author-meta { font-size: 11.5px; color: #9ca3af; margin-top: 1px; }
+.mod-reported-content .type-pill {
+  font-size: 11.5px; color: #6b7280; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 12px; padding: 3px 10px;
+}
+.mod-reported-content .body { font-size: 13.5px; color: #374151; line-height: 1.65; }
+
+.mod-review-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.mod-btn.info    { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.mod-btn.suspend { background: #f5f3ff; border-color: #ddd6fe; color: #6d28d9; }
+.mod-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+
+.mod-review-empty {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  padding: 70px 24px;
+  text-align: center;
+  color: #9ca3af;
+}
+.mod-review-empty svg { margin-bottom: 14px; color: #cbd5e1; }
+.mod-review-empty .title { font-size: 16px; font-weight: 600; color: #4b5563; }
+.mod-review-empty .sub { font-size: 13.5px; margin-top: 6px; }
+
+.mod-substatus { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+
+/* ============================================================
+   Threads tab
+   ============================================================ */
+.mod-threads-table-wrap {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+.mod-table-count { padding: 14px 20px; font-size: 0.85rem; color: #666; border-bottom: 1px solid #f0f0f0; }
+.mod-thread-table { width: 100%; border-collapse: collapse; }
+.mod-thread-table th {
+  text-align: left; padding: 12px 20px; font-size: 0.8rem; font-weight: 600; color: #666;
+  text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #f0f0f0; background: #fafafa;
+}
+.mod-thread-table td { padding: 13px 20px; font-size: 0.9rem; color: #333; border-bottom: 1px solid #f5f5f5; }
+.mod-thread-table tr:hover td { background: #f8f9ff; }
+.mod-thread-title { font-weight: 500; color: #1f2937; }
+.mod-thread-meta { font-size: 11.5px; color: #9ca3af; margin-top: 2px; }
+.mod-thread-actions { display: flex; gap: 7px; justify-content: flex-end; }
+.mod-btn.small { padding: 6px 11px; font-size: 12px; }
+
+/* ============================================================
+   Activity Log tab
+   ============================================================ */
+.mod-log-list {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  padding: 8px 24px 12px;
+}
+.mod-log-row { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px solid #f2f2f4; }
+.mod-log-row:last-child { border-bottom: none; }
+.mod-log-icon {
+  width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.mod-log-icon.bad  { background: #fef2f2; color: #dc2626; }
+.mod-log-icon.warn { background: #fffbeb; color: #d97706; }
+.mod-log-icon.ok   { background: #ecfdf5; color: #059669; }
+.mod-log-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.mod-log-text { font-size: 13.5px; color: #1f2937; font-weight: 500; }
+.mod-log-note { margin-top: 6px; font-size: 12.5px; color: #6b7280; background: #f8f9fb; border-radius: 7px; padding: 7px 11px; line-height: 1.5; }
+.mod-log-meta { margin-top: 6px; font-size: 11.5px; color: #9ca3af; }
+.mod-log-loadmore { display: block; margin: 18px auto 4px; }
+
+/* ============================================================
+   Toast — bottom-center, dark, auto-dismiss
+   ============================================================ */
+@keyframes mod-toast-slide-up {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+.mod-toast {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: #1e293b;
+  color: #fff;
+  padding: 13px 20px;
+  border-radius: 11px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.4);
+  animation: mod-toast-slide-up 0.28s ease;
+  max-width: 520px;
+}
+.mod-toast-icon { color: #4ade80; flex-shrink: 0; }
+.mod-toast span { font-size: 13.5px; font-weight: 500; }

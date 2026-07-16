@@ -1,104 +1,127 @@
 import { useEffect, useState } from "react";
-import { Trash2 } from "lucide-react";
-import { getThreads, deleteThread } from "../../api/admin";
-import ConfirmModal from "../../components/ConfirmModal";
-import "../../css/Forum.css";
+import { Lock, Unlock, Trash2, RotateCcw } from "lucide-react";
+import { getModThreads, lockThread, unlockThread, deleteModThread, restoreModThread } from "../../api/admin";
+import NoteConfirmModal from "../../components/NoteConfirmModal";
 
 const formatDate = (d) =>
   new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
-const mapThread = (t) => ({
-  id: t.id,
-  title: t.title,
-  author: t.author_username,
-  created_at: t.created_at,
-  reply_count: t.reply_count ?? 0,
-  upvote_count: t.upvote_count ?? 0,
-});
-
-// Raw thread browsing + delete — kept as a tab so nothing regresses from the
-// old standalone "Forum" page it replaces; reported/flagged content now has
-// its own dedicated review flow in the other tabs.
-const AllThreads = () => {
-  const [posts, setPosts] = useState([]);
+// Moderator-only thread list — unlike the public thread browser, this can
+// see (and act on) locked and removed threads too.
+const AllThreads = ({ onAction }) => {
+  const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [confirm, setConfirm] = useState(null);
+  const [confirm, setConfirm] = useState(null); // { kind, row }
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetchAll = async () => {
-      setLoading(true);
-      const pageSize = 100;
-      const all = [];
-      try {
-        let page = 1;
-        while (true) {
-          const data = await getThreads({ page, page_size: pageSize, sort: "newest" });
-          const results = data.results || [];
-          all.push(...results);
-          const count = typeof data.count === "number" ? data.count : all.length;
-          if (results.length < pageSize || all.length >= count) break;
-          page += 1;
-        }
-        if (!cancelled) setPosts(all.map(mapThread));
-      } catch {
-        if (!cancelled) setPosts([]);
-      } finally {
-        if (!cancelled) setLoading(false);
+  const notify = (msg) => onAction && onAction(msg);
+
+  const load = async () => {
+    setLoading(true);
+    const pageSize = 100;
+    const all = [];
+    try {
+      let page = 1;
+      while (true) {
+        const data = await getModThreads({ page, page_size: pageSize });
+        const results = data.results || [];
+        all.push(...results);
+        const count = typeof data.count === "number" ? data.count : all.length;
+        if (results.length < pageSize || all.length >= count) break;
+        page += 1;
       }
-    };
-    fetchAll();
-    return () => { cancelled = true; };
-  }, []);
+      setThreads(all);
+    } catch {
+      setThreads([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleDelete = (id) => {
-    const post = posts.find((p) => p.id === id);
-    setConfirm({
-      title: "Delete Post?",
-      message: `Are you sure you want to delete "${post.title}"?`,
-      onConfirm: async () => {
-        try {
-          await deleteThread(id);
-          setPosts((prev) => prev.filter((p) => p.id !== id));
-        } finally {
-          setConfirm(null);
-        }
-      },
-    });
+  useEffect(() => { load(); }, []);
+
+  const patchRow = (id, patch) =>
+    setThreads((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+
+  const runConfirm = async (note) => {
+    const { kind, row } = confirm;
+    setConfirm(null);
+    if (kind === "lock") {
+      await lockThread(row.id, note);
+      patchRow(row.id, { is_locked: true });
+      notify(`Locked "${row.title}"`);
+    } else if (kind === "unlock") {
+      await unlockThread(row.id, note);
+      patchRow(row.id, { is_locked: false });
+      notify(`Unlocked "${row.title}"`);
+    } else if (kind === "delete") {
+      await deleteModThread(row.id, note);
+      patchRow(row.id, { is_removed: true });
+      notify(`Removed "${row.title}"`);
+    } else if (kind === "restore") {
+      await restoreModThread(row.id, note);
+      patchRow(row.id, { is_removed: false });
+      notify(`Restored "${row.title}"`);
+    }
   };
 
   return (
     <div>
-      <div className="dashboard-card forum-table-card">
-        <div className="forum-count">{posts.length} post{posts.length !== 1 ? "s" : ""}</div>
+      <div className="mod-threads-table-wrap">
+        <div className="mod-table-count">{threads.length} thread{threads.length !== 1 ? "s" : ""}</div>
         {loading ? (
           <div className="dashboard-loading">Loading...</div>
-        ) : posts.length === 0 ? (
-          <div className="forum-empty">No forum posts.</div>
+        ) : threads.length === 0 ? (
+          <div className="mod-empty"><h4>No forum threads.</h4></div>
         ) : (
-          <table className="forum-table">
+          <table className="mod-thread-table">
             <thead>
               <tr>
-                <th>Title</th>
+                <th>Thread</th>
                 <th>Author</th>
-                <th>Replies</th>
-                <th>Upvotes</th>
-                <th>Date</th>
-                <th>Action</th>
+                <th>Status</th>
+                <th style={{ textAlign: "right" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {posts.map((p) => (
-                <tr key={p.id}>
-                  <td className="forum-post-title">{p.title}</td>
-                  <td>{p.author}</td>
-                  <td>{p.reply_count}</td>
-                  <td>{p.upvote_count}</td>
-                  <td>{formatDate(p.created_at)}</td>
+              {threads.map((t) => (
+                <tr key={t.id}>
                   <td>
-                    <button className="forum-delete-btn" onClick={() => handleDelete(p.id)}>
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="mod-thread-title">{t.title}</div>
+                    <div className="mod-thread-meta">
+                      {t.reply_count ?? 0} replies · {t.upvote_count ?? 0} upvotes · {formatDate(t.created_at)}
+                    </div>
+                  </td>
+                  <td>{t.author}</td>
+                  <td>
+                    {t.is_removed ? (
+                      <span className="mod-badge pal-red">Removed</span>
+                    ) : t.is_locked ? (
+                      <span className="mod-badge pal-blue">Locked</span>
+                    ) : (
+                      <span className="mod-badge pal-green">Active</span>
+                    )}
+                  </td>
+                  <td>
+                    <div className="mod-thread-actions">
+                      {t.is_locked ? (
+                        <button className="mod-btn info small" onClick={() => setConfirm({ kind: "unlock", row: t })}>
+                          <Unlock size={13} /> Unlock
+                        </button>
+                      ) : (
+                        <button className="mod-btn info small" onClick={() => setConfirm({ kind: "lock", row: t })}>
+                          <Lock size={13} /> Lock
+                        </button>
+                      )}
+                      {t.is_removed ? (
+                        <button className="mod-btn success small" onClick={() => setConfirm({ kind: "restore", row: t })}>
+                          <RotateCcw size={13} /> Restore
+                        </button>
+                      ) : (
+                        <button className="mod-btn danger small" onClick={() => setConfirm({ kind: "delete", row: t })}>
+                          <Trash2 size={13} /> Remove
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -107,11 +130,39 @@ const AllThreads = () => {
         )}
       </div>
 
-      {confirm && (
-        <ConfirmModal
-          title={confirm.title}
-          message={confirm.message}
-          onConfirm={confirm.onConfirm}
+      {confirm?.kind === "lock" && (
+        <NoteConfirmModal
+          title="Lock Thread"
+          message="Keep the thread visible but stop any new replies."
+          notePlaceholder="Optional note for the audit log…"
+          onConfirm={runConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm?.kind === "unlock" && (
+        <NoteConfirmModal
+          title="Unlock Thread"
+          message="Re-open this thread so members can reply again."
+          notePlaceholder="Optional note for the audit log…"
+          onConfirm={runConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm?.kind === "delete" && (
+        <NoteConfirmModal
+          title="Remove Thread"
+          message="Remove this thread from the forum. You can restore it later from this tab."
+          notePlaceholder="Reason for removal…"
+          onConfirm={runConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm?.kind === "restore" && (
+        <NoteConfirmModal
+          title="Restore Thread"
+          message="Make this thread visible in the forum again."
+          notePlaceholder="Optional note…"
+          onConfirm={runConfirm}
           onCancel={() => setConfirm(null)}
         />
       )}

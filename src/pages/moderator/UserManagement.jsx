@@ -1,17 +1,25 @@
 import { useEffect, useState } from "react";
-import { getModUsers, warnModUser, banModUser, unbanModUser } from "../../api/admin";
+import { getModUsers, warnModUser, banModUser, unbanModUser, suspendModUser } from "../../api/admin";
 import NoteConfirmModal from "../../components/NoteConfirmModal";
 
-const STATUS_TABS = [["all", "All Users"], ["active", "Active"], ["warned", "Warned"], ["banned", "Banned"]];
+const STATUS_TABS = [["all", "All Users"], ["active", "Active"], ["warned", "Warned"], ["suspended", "Suspended"], ["banned", "Banned"]];
+const DURATIONS = [3, 7, 14, 30];
 
 const reportClass = (n) => (n > 4 ? "mod-report-count-red" : n > 1 ? "mod-report-count-amber" : "mod-report-count-green");
 
-const UserManagement = () => {
+const formatDate = (iso) => {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+};
+
+const UserManagement = ({ onAction }) => {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState(null); // { type, row }
+
+  const notify = (msg) => onAction && onAction(msg);
 
   const load = () => {
     setLoading(true);
@@ -26,18 +34,25 @@ const UserManagement = () => {
   const patchRow = (id, patch) =>
     setRows((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
 
-  const runConfirm = async (note) => {
+  const runConfirm = async (note, days) => {
     const { type, row } = confirm;
     setConfirm(null);
     if (type === "warn") {
       await warnModUser(row.id, note);
       patchRow(row.id, { status: "warned" });
+      notify(`Warned ${row.username}`);
     } else if (type === "ban") {
       await banModUser(row.id, note);
       patchRow(row.id, { status: "banned" });
-    } else if (type === "unban") {
+      notify(`Banned ${row.username}`);
+    } else if (type === "suspend") {
+      const res = await suspendModUser(row.id, days, note);
+      patchRow(row.id, { status: "suspended", suspended_until: res?.suspended_until });
+      notify(`Suspended ${row.username} for ${days} days`);
+    } else if (type === "reinstate") {
       await unbanModUser(row.id, note);
-      patchRow(row.id, { status: "active" });
+      patchRow(row.id, { status: "active", suspended_until: null });
+      notify(`Reinstated ${row.username}`);
     }
   };
 
@@ -67,34 +82,52 @@ const UserManagement = () => {
             <tr><th>User</th><th>Posts</th><th>Reports</th><th>Status</th><th>Actions</th></tr>
           </thead>
           <tbody>
-            {rows.map((u) => (
-              <tr key={u.id}>
-                <td>
-                  <div className="mod-person">
-                    <span className="mod-avatar" style={{ background: u.color }}>{u.initials}</span>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{u.username}</div>
-                      <div style={{ color: "#888", fontSize: "0.78rem" }}>{u.email}</div>
+            {rows.map((u) => {
+              const banned = u.status === "banned";
+              const suspended = u.status === "suspended";
+              return (
+                <tr key={u.id}>
+                  <td>
+                    <div className="mod-person">
+                      <span className="mod-avatar" style={{ background: u.color }}>{u.initials}</span>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{u.username}</div>
+                        <div style={{ color: "#888", fontSize: "0.78rem" }}>{u.email}</div>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td style={{ textAlign: "center", fontWeight: 700 }}>{u.posts}</td>
-                <td style={{ textAlign: "center" }}>
-                  <span className={reportClass(u.reports)}>{u.reports}</span>
-                </td>
-                <td><span className={`mod-pill status-${u.status}`}>{u.status[0].toUpperCase() + u.status.slice(1)}</span></td>
-                <td>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="mod-btn warn" onClick={() => setConfirm({ type: "warn", row: u })}>Warn</button>
-                    {u.status === "banned" ? (
-                      <button className="mod-btn success" onClick={() => setConfirm({ type: "unban", row: u })}>Unban</button>
-                    ) : (
-                      <button className="mod-btn danger" onClick={() => setConfirm({ type: "ban", row: u })}>Ban</button>
+                  </td>
+                  <td style={{ textAlign: "center", fontWeight: 700 }}>{u.posts}</td>
+                  <td style={{ textAlign: "center" }}>
+                    <span className={reportClass(u.reports)}>{u.reports}</span>
+                  </td>
+                  <td>
+                    <span
+                      className={`mod-pill status-${u.status}`}
+                      title={suspended && u.suspended_until ? `Suspended until ${formatDate(u.suspended_until)}` : undefined}
+                    >
+                      {u.status[0].toUpperCase() + u.status.slice(1)}
+                    </span>
+                    {suspended && u.suspended_until && (
+                      <div className="mod-substatus">until {formatDate(u.suspended_until)}</div>
                     )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {!banned && (
+                        <>
+                          <button className="mod-btn warn" onClick={() => setConfirm({ type: "warn", row: u })}>Warn</button>
+                          <button className="mod-btn suspend" onClick={() => setConfirm({ type: "suspend", row: u })}>Suspend</button>
+                          <button className="mod-btn danger" onClick={() => setConfirm({ type: "ban", row: u })}>Ban</button>
+                        </>
+                      )}
+                      {(banned || suspended) && (
+                        <button className="mod-btn success" onClick={() => setConfirm({ type: "reinstate", row: u })}>Reinstate</button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
@@ -108,6 +141,17 @@ const UserManagement = () => {
           onCancel={() => setConfirm(null)}
         />
       )}
+      {confirm?.type === "suspend" && (
+        <NoteConfirmModal
+          title="Suspend User"
+          message="Temporarily block this user from posting. Access returns automatically when the suspension ends."
+          notePlaceholder="Reason for suspension…"
+          durationOptions={DURATIONS}
+          defaultDays={7}
+          onConfirm={runConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
       {confirm?.type === "ban" && (
         <NoteConfirmModal
           title="Ban User"
@@ -117,10 +161,10 @@ const UserManagement = () => {
           onCancel={() => setConfirm(null)}
         />
       )}
-      {confirm?.type === "unban" && (
+      {confirm?.type === "reinstate" && (
         <NoteConfirmModal
-          title="Lift Ban"
-          message="This user will be restored to active status and can participate in the forum again."
+          title="Reinstate User"
+          message="This user will be restored to active status (clearing any ban or suspension) and can participate in the forum again."
           onConfirm={runConfirm}
           onCancel={() => setConfirm(null)}
         />
