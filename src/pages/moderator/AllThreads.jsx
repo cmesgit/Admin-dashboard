@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { getThreads, deleteThread } from "../api/admin";
-import ConfirmModal from "../components/ConfirmModal";
-import "../css/Forum.css";
+import { getThreads, deleteThread } from "../../api/admin";
+import ConfirmModal from "../../components/ConfirmModal";
+import "../../css/Forum.css";
 
 const formatDate = (d) =>
   new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -16,7 +16,10 @@ const mapThread = (t) => ({
   upvote_count: t.upvote_count ?? 0,
 });
 
-const Forum = () => {
+// Raw thread browsing + delete — kept as a tab so nothing regresses from the
+// old standalone "Forum" page it replaces; reported/flagged content now has
+// its own dedicated review flow in the other tabs.
+const AllThreads = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState(null);
@@ -65,9 +68,7 @@ const Forum = () => {
   };
 
   return (
-    <div className="dashboard-wrapper">
-      <h1 className="dashboard-title">Forum Moderation</h1>
-
+    <div>
       <div className="dashboard-card forum-table-card">
         <div className="forum-count">{posts.length} post{posts.length !== 1 ? "s" : ""}</div>
         {loading ? (
@@ -95,10 +96,7 @@ const Forum = () => {
                   <td>{p.upvote_count}</td>
                   <td>{formatDate(p.created_at)}</td>
                   <td>
-                    <button
-                      className="forum-delete-btn"
-                      onClick={() => handleDelete(p.id)}
-                    >
+                    <button className="forum-delete-btn" onClick={() => handleDelete(p.id)}>
                       <Trash2 size={16} />
                     </button>
                   </td>
@@ -121,4 +119,4 @@ const Forum = () => {
   );
 };
 
-export default Forum;
+export default AllThreads;

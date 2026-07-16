@@ -7,7 +7,7 @@ import Overview from "./pages/Overview";
 import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Courses from "./pages/Courses";
-import Forum from "./pages/Forum";
+import ModeratorPanel from "./pages/moderator/ModeratorPanel";
 import AcademyQuizzes from "./pages/AcademyQuizzes";
 import CommunicationReports from "./pages/CommunicationReports";
 import CommunicationBroadcast from "./pages/CommunicationBroadcast";
@@ -70,7 +70,7 @@ const App = () => {
           <Route path="users/:id" element={<UserDetail />} />
           <Route path="courses" element={<Courses />} />
           <Route path="quizzes" element={<AcademyQuizzes />} />
-          <Route path="forum" element={<Forum />} />
+          <Route path="moderator" element={<ModeratorPanel />} />
           <Route path="communication/reports" element={<CommunicationReports />} />
           <Route path="communication/broadcast" element={<CommunicationBroadcast />} />
           <Route path="communication/support" element={<CommunicationSupport />} />

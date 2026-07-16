@@ -30,8 +30,9 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     await api.post("/accounts/login/", { email, password });
     const { data } = await api.get("/accounts/me/");
-    const isAdmin = Array.isArray(data.roles) && data.roles.map((r) => String(r).toUpperCase()).includes("ADMIN");
-    if (!isAdmin) {
+    const roles = Array.isArray(data.roles) ? data.roles.map((r) => String(r).toUpperCase()) : [];
+    const isAuthorized = roles.includes("ADMIN") || roles.includes("MODERATOR");
+    if (!isAuthorized) {
       await api.post("/accounts/logout/").catch(() => { });
       throw { message: "Not authorized for admin access." };
     }

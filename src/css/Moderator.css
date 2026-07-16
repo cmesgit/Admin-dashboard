@@ -1,0 +1,307 @@
+.mod-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  overflow-x: auto;
+}
+
+.mod-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mod-tab.active {
+  color: #4f6df5;
+  border-bottom-color: #4f6df5;
+}
+
+.mod-tab-badge {
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 9px;
+  padding: 1px 7px;
+}
+
+.mod-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.mod-select, .mod-search {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: #333;
+  background: #fff;
+}
+
+.mod-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.mod-row {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+}
+
+.mod-row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.mod-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.mod-pill.reason  { background: #eef1ff; color: #4f6df5; }
+.mod-pill.type    { background: #f3f4f6; color: #4b5563; }
+.mod-pill.status-active { background: #e4f3e8; color: #125027; }
+.mod-pill.status-warned { background: #fff8e8; color: #7a4c00; }
+.mod-pill.status-banned { background: #fdf0ee; color: #c0392b; }
+.mod-pill.autorejected { background: #fdf0ee; color: #c0392b; }
+
+.mod-time {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.mod-content-box {
+  background: #f8f9fb;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.mod-content-box .t { font-weight: 600; color: #222; font-size: 0.92rem; }
+.mod-content-box .s { color: #666; font-size: 0.85rem; margin-top: 4px; }
+
+.mod-flags {
+  background: #fdf0ee;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.mod-flags .label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #c0392b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.mod-flag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid #f0c8c0;
+  color: #c0392b;
+  font-size: 0.78rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin: 0 6px 6px 0;
+}
+
+.mod-people-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 12px;
+}
+
+.mod-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.mod-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mod-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+}
+
+.mod-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.mod-btn.ghost   { background: #fff; border-color: #ddd; color: #444; }
+.mod-btn.danger  { background: #fdf0ee; border-color: #f0c8c0; color: #c0392b; }
+.mod-btn.warn    { background: #fff8e8; border-color: #ecd080; color: #7a4c00; }
+.mod-btn.success { background: #e4f3e8; border-color: #b8d8bc; color: #125027; }
+.mod-btn:hover { filter: brightness(0.97); }
+
+.mod-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}
+
+.mod-empty h4 { color: #444; margin-bottom: 6px; }
+
+.mod-banner {
+  background: #eef6ff;
+  border: 1px solid #cfe3ff;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+
+.mod-banner strong { color: #1d4ed8; }
+.mod-banner p { margin: 4px 0 0; font-size: 0.85rem; color: #444; }
+
+.mod-user-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.mod-user-table th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid #eee;
+  background: #fafafa;
+}
+
+.mod-user-table td {
+  padding: 12px 16px;
+  font-size: 0.88rem;
+  color: #333;
+  border-bottom: 1px solid #f5f5f5;
+  vertical-align: middle;
+}
+
+.mod-report-count-red   { color: #c0392b; font-weight: 700; }
+.mod-report-count-amber { color: #e07900; font-weight: 700; }
+.mod-report-count-green { color: #125027; font-weight: 700; }
+
+/* Analytics */
+.mod-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.mod-kpi {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.mod-kpi .label { font-size: 0.78rem; color: #666; margin-bottom: 8px; }
+.mod-kpi .value { font-size: 1.6rem; font-weight: 700; color: #222; }
+.mod-kpi .trend { font-size: 0.8rem; margin-top: 6px; }
+.mod-kpi .trend.good { color: #125027; }
+.mod-kpi .trend.bad { color: #c0392b; }
+.mod-kpi .trend.neutral { color: #666; }
+
+.mod-bar-row { margin-bottom: 12px; }
+.mod-bar-row .top { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
+.mod-bar-track { background: #eee; border-radius: 20px; height: 8px; overflow: hidden; }
+.mod-bar-fill { height: 100%; border-radius: 20px; }
+
+.mod-action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: 0.85rem;
+}
+
+.mod-action-tile {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mod-month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.mod-month-stat {
+  background: #f8f9fb;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+
+.mod-month-stat .num { font-size: 1.3rem; font-weight: 700; color: #222; }
+.mod-month-stat .lab { font-size: 0.75rem; color: #666; margin-top: 4px; }

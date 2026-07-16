@@ -113,10 +113,44 @@ export const getSkillApplications = async () =>
 export const getPayments = async (params) =>
   safe(async () => (await api.get("/payments/admin/orders/", { params })).data, { results: [] });
 
-/* ── Forum moderation ── */
+/* ── Forum moderation: All Threads tab (unchanged from before) ── */
 export const getThreads   = async (params) =>
   safe(async () => (await api.get("/forum/threads/", { params })).data, { results: [] });
 export const deleteThread = async (id) => (await api.delete(`/forum/threads/${id}/delete/`)).data;
+
+/* ── Moderator Panel: Reported Content ── */
+export const getReports        = async (params) =>
+  safe(async () => (await api.get("/forum/mod/reports/", { params })).data, { results: [], count: 0 });
+export const dismissReport     = async (id) => (await api.post(`/forum/mod/reports/${id}/dismiss/`, {})).data;
+export const deleteReport      = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/delete/`, { note })).data;
+export const warnReportTarget  = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/warn/`, { note })).data;
+export const banReportTarget   = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/ban/`, { note })).data;
+
+/* ── Moderator Panel: Auto-Rejected Queue ── */
+export const getAutoRejected        = async (params) =>
+  safe(async () => (await api.get("/forum/mod/auto-rejected/", { params })).data, { results: [], count: 0 });
+export const deleteAutoRejected     = async (id, note = "") =>
+  (await api.post(`/forum/mod/auto-rejected/${id}/delete/`, { note })).data;
+export const restoreAutoRejected    = async (id) =>
+  (await api.post(`/forum/mod/auto-rejected/${id}/restore/`, {})).data;
+export const banAutoRejectedAuthor  = async (id, note = "") =>
+  (await api.post(`/forum/mod/auto-rejected/${id}/ban-author/`, { note })).data;
+
+/* ── Moderator Panel: User Management ── */
+export const getModUsers = async (params) =>
+  safe(async () => (await api.get("/forum/mod/users/", { params })).data, { results: [], count: 0 });
+export const warnModUser  = async (id, note = "") => (await api.post(`/forum/mod/users/${id}/warn/`, { note })).data;
+export const banModUser   = async (id, note = "") => (await api.post(`/forum/mod/users/${id}/ban/`, { note })).data;
+export const unbanModUser = async (id, note = "") => (await api.post(`/forum/mod/users/${id}/unban/`, { note })).data;
+
+/* ── Moderator Panel: Analytics ── */
+export const getModAnalytics = async () =>
+  safe(async () => (await api.get("/forum/mod/analytics/")).data,
+       { kpis: [], reports_by_reason: [], recent_actions: [], this_month: {} });
+
+/* ── Grant/revoke the MODERATOR role on a user (Users/UserDetail page) ── */
+export const updateUserModerator = async (id, isModerator) =>
+  (await api.patch(`/accounts/admin/users/${id}/`, { is_moderator: isModerator })).data;
 
 /* ── Payment settings (global_settings.AdminGlobalSettingsView) ── */
 export const getSettings    = async ()  => (await api.get("/admin/settings/")).data;

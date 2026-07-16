@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { getUser, updateUser, getUserSkillProfile, resendVerification } from "../api/admin";
+import { getUser, updateUser, updateUserModerator, getUserSkillProfile, resendVerification } from "../api/admin";
 import { HOME_URL } from "../config/urls";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
@@ -47,6 +47,22 @@ const UserDetail = () => {
       message: `Are you sure you want to mark this user as ${newVal ? label : `not ${label}`}?`,
       onConfirm: async () => {
         const updated = await updateUser(id, { [field]: newVal });
+        setUser(updated);
+        setConfirm(null);
+      },
+    });
+  };
+
+  const isModerator = user?.roles?.includes("MODERATOR");
+  const handleToggleModerator = () => {
+    const grant = !isModerator;
+    setConfirm({
+      title: `${grant ? "Grant" : "Revoke"} Moderator role?`,
+      message: grant
+        ? "This user will be able to log into the Admin dashboard's Moderator Panel to review reports, the auto-rejected queue, and manage forum users."
+        : "This user will lose access to the Moderator Panel.",
+      onConfirm: async () => {
+        const updated = await updateUserModerator(id, grant);
         setUser(updated);
         setConfirm(null);
       },
@@ -162,6 +178,18 @@ const UserDetail = () => {
                 onClick={() => handleToggle("is_verified")}
               >
                 {user.is_verified ? "Unverify" : "Verify"}
+              </button>
+            </div>
+            <div className="ud-toggle-row">
+              <div>
+                <strong>Moderator</strong>
+                <p>Can access the Moderator Panel (reports, auto-rejected queue, user bans)</p>
+              </div>
+              <StatusBadge color={isModerator ? "green" : "gray"}>
+                {isModerator ? "Moderator" : "Not a moderator"}
+              </StatusBadge>
+              <button className="ud-toggle-btn" onClick={handleToggleModerator}>
+                {isModerator ? "Revoke" : "Grant"}
               </button>
             </div>
             {!user.is_verified && (
