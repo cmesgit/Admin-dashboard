@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Flag, ShieldAlert, Users, BarChart3, MessageSquare, History,
-  MessagesSquare, TriangleAlert, UserX, ShieldCheck,
+  MessagesSquare, TriangleAlert, UserX, ShieldCheck, LayoutGrid,
 } from "lucide-react";
 import ReportedContent from "./ReportedContent";
 import AutoRejected from "./AutoRejected";
@@ -9,6 +9,7 @@ import UserManagement from "./UserManagement";
 import Analytics from "./Analytics";
 import AllThreads from "./AllThreads";
 import ActivityLog from "./ActivityLog";
+import Categories from "./Categories";
 import Toast from "../../components/Toast";
 import { getModAnalytics } from "../../api/admin";
 import "../../css/Moderator.css";
@@ -19,6 +20,7 @@ const TABS = [
   { id: "users", label: "User Management", icon: Users },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "threads", label: "All Threads", icon: MessageSquare },
+  { id: "categories", label: "Categories", icon: LayoutGrid },
   { id: "log", label: "Activity Log", icon: History },
 ];
 
@@ -96,6 +98,7 @@ const ModeratorPanel = () => {
       )}
       {tab === "users" && <UserManagement onAction={onAction} />}
       {tab === "threads" && <AllThreads onAction={onAction} />}
+      {tab === "categories" && <Categories onAction={onAction} />}
       {tab === "analytics" && <Analytics />}
       {tab === "log" && <ActivityLog />}
 

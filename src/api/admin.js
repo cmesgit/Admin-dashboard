@@ -168,6 +168,14 @@ export const restoreModThread = async (id, note = "") => (await api.post(`/forum
 export const getModLog = async (params) =>
   safe(async () => (await api.get("/forum/mod/log/", { params })).data, { results: [], count: 0 });
 
+/* ── Moderator Panel: Categories ── */
+export const getModCategories    = async (params) =>
+  safe(async () => (await api.get("/forum/mod/categories/", { params })).data, { results: [], count: 0 });
+export const createModCategory   = async (data) => (await api.post("/forum/mod/categories/", data)).data;
+export const updateModCategory   = async (id, data) => (await api.post(`/forum/mod/categories/${id}/update/`, data)).data;
+export const deleteModCategory   = async (id) => (await api.post(`/forum/mod/categories/${id}/delete/`, {})).data;
+export const restoreModCategory  = async (id) => (await api.post(`/forum/mod/categories/${id}/restore/`, {})).data;
+
 /* ── Grant/revoke the MODERATOR role on a user (Users/UserDetail page) ── */
 export const updateUserModerator = async (id, isModerator) =>
   (await api.patch(`/accounts/admin/users/${id}/`, { is_moderator: isModerator })).data;
