@@ -8,6 +8,7 @@ import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Courses from "./pages/Courses";
 import ModeratorPanel from "./pages/moderator/ModeratorPanel";
+import ContentPanel from "./pages/content/ContentPanel";
 import AcademyQuizzes from "./pages/AcademyQuizzes";
 import CommunicationReports from "./pages/CommunicationReports";
 import CommunicationBroadcast from "./pages/CommunicationBroadcast";
@@ -71,6 +72,7 @@ const App = () => {
           <Route path="courses" element={<Courses />} />
           <Route path="quizzes" element={<AcademyQuizzes />} />
           <Route path="moderator" element={<ModeratorPanel />} />
+          <Route path="content" element={<ContentPanel />} />
           <Route path="communication/reports" element={<CommunicationReports />} />
           <Route path="communication/broadcast" element={<CommunicationBroadcast />} />
           <Route path="communication/support" element={<CommunicationSupport />} />

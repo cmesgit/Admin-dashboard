@@ -234,3 +234,85 @@ export const getAcademyQuizDetail = async (id) =>
   (await api.get(`/quizzes/admin/${id}/`)).data;
 export const reviewAcademyQuiz    = async (id, action, reason = "") =>
   (await api.post(`/quizzes/admin/${id}/review/`, { action, reason })).data;
+
+/* ══════════════════════════════════════════════════════════════════════
+   Content (CMS): blog posts, current affairs, FAQs, announcements,
+   homepage showcase cards, and tags. All endpoints require an is_staff
+   (full admin) account — same gate shape as everything else above.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Multipart is only used when a new file is actually picked; otherwise the
+   caller passes a plain object and this sends ordinary JSON (mirrors the
+   createSubject convention above). */
+const multipartConfig = { headers: { "Content-Type": "multipart/form-data" } };
+
+/* ── Content: Tags ── */
+export const getContentTags    = async (params) =>
+  safe(async () => (await api.get("/content/admin/tags/", { params })).data, []);
+export const createContentTag  = async (data) =>
+  (await api.post("/content/admin/tags/", data)).data;
+export const updateContentTag  = async (id, data) =>
+  (await api.patch(`/content/admin/tags/${id}/`, data)).data;
+export const deleteContentTag  = async (id) =>
+  (await api.delete(`/content/admin/tags/${id}/`)).data;
+
+/* ── Content: FAQs (list supports ?page=home|courses|counselling|skills|general) ── */
+export const getContentFaqs    = async (params) =>
+  safe(async () => (await api.get("/content/admin/faqs/", { params })).data, []);
+export const createContentFaq  = async (data) =>
+  (await api.post("/content/admin/faqs/", data)).data;
+export const updateContentFaq  = async (id, data) =>
+  (await api.patch(`/content/admin/faqs/${id}/`, data)).data;
+export const deleteContentFaq  = async (id) =>
+  (await api.delete(`/content/admin/faqs/${id}/`)).data;
+
+/* ── Content: Announcements ── */
+export const getContentAnnouncements   = async (params) =>
+  safe(async () => (await api.get("/content/admin/announcements/", { params })).data, []);
+export const createContentAnnouncement = async (data) =>
+  (await api.post("/content/admin/announcements/", data)).data;
+export const updateContentAnnouncement = async (id, data) =>
+  (await api.patch(`/content/admin/announcements/${id}/`, data)).data;
+export const deleteContentAnnouncement = async (id) =>
+  (await api.delete(`/content/admin/announcements/${id}/`)).data;
+
+/* ── Content: Showcase Courses (homepage "Featured courses" grid cards) ── */
+export const getContentShowcase    = async (params) =>
+  safe(async () => (await api.get("/content/admin/showcase/", { params })).data, []);
+export const createContentShowcase = async (data, isMultipart = false) =>
+  (await api.post("/content/admin/showcase/", data, isMultipart ? multipartConfig : undefined)).data;
+export const updateContentShowcase = async (id, data, isMultipart = false) =>
+  (await api.patch(`/content/admin/showcase/${id}/`, data, isMultipart ? multipartConfig : undefined)).data;
+export const deleteContentShowcase = async (id) =>
+  (await api.delete(`/content/admin/showcase/${id}/`)).data;
+
+/* ── Content: Blog Posts ── */
+export const getContentBlogs      = async (params) =>
+  safe(async () => (await api.get("/content/admin/blogs/", { params })).data, []);
+export const createContentBlog    = async (data, isMultipart = false) =>
+  (await api.post("/content/admin/blogs/", data, isMultipart ? multipartConfig : undefined)).data;
+export const updateContentBlog    = async (id, data, isMultipart = false) =>
+  (await api.patch(`/content/admin/blogs/${id}/`, data, isMultipart ? multipartConfig : undefined)).data;
+export const deleteContentBlog    = async (id) =>
+  (await api.delete(`/content/admin/blogs/${id}/`)).data;
+export const publishContentBlog   = async (id) =>
+  (await api.post(`/content/admin/blogs/${id}/publish/`, {})).data;
+export const unpublishContentBlog = async (id) =>
+  (await api.post(`/content/admin/blogs/${id}/unpublish/`, {})).data;
+
+/* ── Content: Current Affairs (same CRUD + publish/unpublish shape as Blog
+   Posts; the backend contract given to us didn't spell out the URL segment
+   for this resource, so — matching "blogs" being short plural of the model
+   name — this assumes "current-affairs". Flagged in the handoff report. ── */
+export const getContentAffairs      = async (params) =>
+  safe(async () => (await api.get("/content/admin/current-affairs/", { params })).data, []);
+export const createContentAffair    = async (data) =>
+  (await api.post("/content/admin/current-affairs/", data)).data;
+export const updateContentAffair    = async (id, data) =>
+  (await api.patch(`/content/admin/current-affairs/${id}/`, data)).data;
+export const deleteContentAffair    = async (id) =>
+  (await api.delete(`/content/admin/current-affairs/${id}/`)).data;
+export const publishContentAffair   = async (id) =>
+  (await api.post(`/content/admin/current-affairs/${id}/publish/`, {})).data;
+export const unpublishContentAffair = async (id) =>
+  (await api.post(`/content/admin/current-affairs/${id}/unpublish/`, {})).data;
