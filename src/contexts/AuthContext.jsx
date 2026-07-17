@@ -31,7 +31,8 @@ export const AuthProvider = ({ children }) => {
     await api.post("/accounts/login/", { email, password });
     const { data } = await api.get("/accounts/me/");
     const roles = Array.isArray(data.roles) ? data.roles.map((r) => String(r).toUpperCase()) : [];
-    const isAuthorized = roles.includes("ADMIN") || roles.includes("MODERATOR");
+    // Admin app is ADMIN-only; moderators use the public frontend panel.
+    const isAuthorized = roles.includes("ADMIN");
     if (!isAuthorized) {
       await api.post("/accounts/logout/").catch(() => { });
       throw { message: "Not authorized for admin access." };
@@ -56,6 +57,14 @@ export const AuthProvider = ({ children }) => {
     return false;
   };
 
+  // RBAC: /accounts/me/ returns a `permissions` codename array. Admins hold
+  // every permission server-side, so treat ADMIN as an implicit wildcard here.
+  const hasPermission = (codename) => {
+    if (!user) return false;
+    if (hasRole("ADMIN")) return true;
+    return Array.isArray(user.permissions) && user.permissions.includes(codename);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -65,6 +74,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         hasRole,
+        hasPermission,
         bootstrap,
       }}
     >

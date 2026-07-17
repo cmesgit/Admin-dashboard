@@ -1,0 +1,125 @@
+/* Roles & Permissions admin page. Reuses .mod-* classes from Moderator.css
+   for tabs/buttons/tables; this file adds the role-specific layout. */
+
+.rbac-page { padding: 24px 28px; }
+
+.rbac-header { margin-bottom: 18px; }
+.rbac-header h1 { margin: 0 0 4px; font-size: 1.5rem; color: #1a1a1a; }
+.rbac-sub { margin: 0; color: #667; font-size: 0.9rem; max-width: 720px; }
+
+.rbac-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.rbac-count { color: #778; font-size: 0.85rem; }
+
+/* ── Role cards ── */
+.rbac-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.rbac-role-card {
+  border: 1px solid #e6e8ee;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rbac-role-top { display: flex; justify-content: space-between; align-items: center; }
+.rbac-role-name {
+  font-weight: 700; font-size: 1rem; color: #1a1a1a; letter-spacing: 0.3px;
+  display: flex; align-items: center; gap: 8px;
+}
+.rbac-builtin {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+  color: #8a6d3b; background: #fbf3e0; padding: 2px 7px; border-radius: 20px;
+  letter-spacing: 0.4px;
+}
+.rbac-role-desc { margin: 0; color: #667; font-size: 0.85rem; }
+.rbac-role-stats { display: flex; gap: 8px; color: #889; font-size: 0.8rem; }
+.rbac-role-actions { display: flex; gap: 8px; margin-top: 6px; }
+
+/* ── Permission matrix modal ── */
+.rbac-matrix-card {
+  background: #fff; border-radius: 14px; padding: 22px;
+  width: min(680px, 94vw); max-height: 86vh; overflow-y: auto;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.22);
+}
+.rbac-matrix-card h3 { margin: 0 0 12px; }
+.rbac-warn {
+  background: #fff8e8; border: 1px solid #ecd080; color: #7a4c00;
+  padding: 8px 12px; border-radius: 8px; font-size: 0.82rem; margin: 0 0 14px;
+}
+.rbac-matrix { display: flex; flex-direction: column; gap: 16px; }
+.rbac-matrix-group h4 {
+  margin: 0 0 6px; font-size: 0.78rem; text-transform: uppercase;
+  letter-spacing: 0.6px; color: #99a;
+}
+.rbac-perm-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 8px; border-radius: 8px; cursor: pointer;
+}
+.rbac-perm-row:hover { background: #f5f7fb; }
+.rbac-perm-name { flex: 1; font-size: 0.88rem; color: #223; }
+.rbac-perm-code {
+  font-size: 0.72rem; color: #667; background: #eef1f6;
+  padding: 2px 7px; border-radius: 5px;
+}
+
+/* ── Inputs ── */
+.rbac-input {
+  width: 100%; box-sizing: border-box; padding: 9px 12px; margin: 6px 0;
+  border: 1px solid #d7dae2; border-radius: 8px; font-size: 0.9rem;
+  font-family: inherit;
+}
+.rbac-select { width: auto; min-width: 160px; margin: 0; }
+
+/* ── Assignments ── */
+.rbac-assign-box {
+  border: 1px solid #e6e8ee; border-radius: 12px; padding: 18px;
+  margin-bottom: 24px; background: #fafbfd;
+}
+.rbac-assign-box h3 { margin: 0 0 12px; font-size: 1rem; }
+.rbac-assign-controls { display: flex; gap: 12px; flex-wrap: wrap; }
+.rbac-search {
+  display: flex; align-items: center; gap: 8px; flex: 1; min-width: 220px;
+  border: 1px solid #d7dae2; border-radius: 8px; padding: 0 12px; background: #fff;
+}
+.rbac-search input { border: none; outline: none; padding: 9px 0; flex: 1; font-size: 0.9rem; background: transparent; }
+.rbac-result-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.rbac-result-row {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #fff; border: 1px solid #e6e8ee; border-radius: 10px; padding: 10px 14px;
+}
+.rbac-user-name { font-weight: 600; color: #223; }
+.rbac-user-email { color: #778; font-size: 0.82rem; }
+.rbac-user-roles { color: #99a; font-size: 0.75rem; margin-top: 2px; }
+
+.rbac-dir-group { margin-bottom: 26px; }
+.rbac-dir-group h3 { font-size: 1rem; margin: 0 0 10px; }
+
+/* ── Action history ── */
+.rbac-action-tag {
+  display: inline-block; padding: 2px 10px; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600;
+  background: #eef1f6; color: #556;
+}
+.rbac-action-tag.danger { background: #fdf0ee; color: #c0392b; }
+.rbac-action-tag.warn { background: #fff8e8; color: #7a4c00; }
+.rbac-action-tag.success { background: #e4f3e8; color: #125027; }
+.rbac-note-cell { max-width: 240px; color: #667; font-size: 0.83rem; }
+.rbac-pagination {
+  display: flex; align-items: center; gap: 16px; justify-content: center;
+  margin-top: 18px; color: #667; font-size: 0.85rem;
+}
+
+/* ── Permissions reference ── */
+.rbac-ref-group { margin-bottom: 22px; }
+.rbac-ref-group h3 { font-size: 1rem; margin: 0 0 10px; }

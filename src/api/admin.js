@@ -113,68 +113,11 @@ export const getSkillApplications = async () =>
 export const getPayments = async (params) =>
   safe(async () => (await api.get("/payments/admin/orders/", { params })).data, { results: [] });
 
-/* ── Forum moderation: All Threads tab (unchanged from before) ── */
-export const getThreads   = async (params) =>
-  safe(async () => (await api.get("/forum/threads/", { params })).data, { results: [] });
-export const deleteThread = async (id) => (await api.delete(`/forum/threads/${id}/delete/`)).data;
-
-/* ── Moderator Panel: Reported Content ── */
-export const getReports        = async (params) =>
-  safe(async () => (await api.get("/forum/mod/reports/", { params })).data, { results: [], count: 0 });
-export const dismissReport     = async (id) => (await api.post(`/forum/mod/reports/${id}/dismiss/`, {})).data;
-export const deleteReport      = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/delete/`, { note })).data;
-export const warnReportTarget  = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/warn/`, { note })).data;
-export const banReportTarget   = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/ban/`, { note })).data;
-export const suspendReportTarget = async (id, duration_days, note = "") =>
-  (await api.post(`/forum/mod/reports/${id}/suspend/`, { duration_days, note })).data;
-export const lockReport        = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/lock/`, { note })).data;
-export const unlockReport      = async (id, note = "") => (await api.post(`/forum/mod/reports/${id}/unlock/`, { note })).data;
-
-/* ── Moderator Panel: Auto-Rejected Queue ── */
-export const getAutoRejected        = async (params) =>
-  safe(async () => (await api.get("/forum/mod/auto-rejected/", { params })).data, { results: [], count: 0 });
-export const deleteAutoRejected     = async (id, note = "") =>
-  (await api.post(`/forum/mod/auto-rejected/${id}/delete/`, { note })).data;
-export const restoreAutoRejected    = async (id) =>
-  (await api.post(`/forum/mod/auto-rejected/${id}/restore/`, {})).data;
-export const banAutoRejectedAuthor  = async (id, note = "") =>
-  (await api.post(`/forum/mod/auto-rejected/${id}/ban-author/`, { note })).data;
-
-/* ── Moderator Panel: User Management ── */
-export const getModUsers = async (params) =>
-  safe(async () => (await api.get("/forum/mod/users/", { params })).data, { results: [], count: 0 });
-export const warnModUser  = async (id, note = "") => (await api.post(`/forum/mod/users/${id}/warn/`, { note })).data;
-export const banModUser   = async (id, note = "") => (await api.post(`/forum/mod/users/${id}/ban/`, { note })).data;
-export const unbanModUser = async (id, note = "") => (await api.post(`/forum/mod/users/${id}/unban/`, { note })).data;
-export const suspendModUser = async (id, duration_days, note = "") =>
-  (await api.post(`/forum/mod/users/${id}/suspend/`, { duration_days, note })).data;
-
-/* ── Moderator Panel: Analytics ──
-   header_stats: { open_reports, high_priority, banned_users, actions_today } */
-export const getModAnalytics = async () =>
-  safe(async () => (await api.get("/forum/mod/analytics/")).data,
-       { kpis: [], reports_by_reason: [], recent_actions: [], this_month: {},
-         header_stats: { open_reports: 0, high_priority: 0, banned_users: 0, actions_today: 0 } });
-
-/* ── Moderator Panel: All Threads (moderator-only, sees locked/removed too) ── */
-export const getModThreads    = async (params) =>
-  safe(async () => (await api.get("/forum/mod/threads/", { params })).data, { results: [], count: 0 });
-export const lockThread       = async (id, note = "") => (await api.post(`/forum/mod/threads/${id}/lock/`, { note })).data;
-export const unlockThread     = async (id, note = "") => (await api.post(`/forum/mod/threads/${id}/unlock/`, { note })).data;
-export const deleteModThread  = async (id, note = "") => (await api.post(`/forum/mod/threads/${id}/delete/`, { note })).data;
-export const restoreModThread = async (id, note = "") => (await api.post(`/forum/mod/threads/${id}/restore/`, { note })).data;
-
-/* ── Moderator Panel: Activity Log ── */
-export const getModLog = async (params) =>
-  safe(async () => (await api.get("/forum/mod/log/", { params })).data, { results: [], count: 0 });
-
-/* ── Moderator Panel: Categories ── */
-export const getModCategories    = async (params) =>
-  safe(async () => (await api.get("/forum/mod/categories/", { params })).data, { results: [], count: 0 });
-export const createModCategory   = async (data) => (await api.post("/forum/mod/categories/", data)).data;
-export const updateModCategory   = async (id, data) => (await api.post(`/forum/mod/categories/${id}/update/`, data)).data;
-export const deleteModCategory   = async (id) => (await api.post(`/forum/mod/categories/${id}/delete/`, {})).data;
-export const restoreModCategory  = async (id) => (await api.post(`/forum/mod/categories/${id}/restore/`, {})).data;
+/* ── Forum moderation moved out of the admin app ──
+   The Moderator Panel now lives exclusively in the public frontend
+   (shiksha-frontend/src/moderator). All `/forum/mod/*` service functions
+   were removed from here; the admin app governs moderation via Roles &
+   Permissions (src/api/rbac.js) and read-only action history instead. ── */
 
 /* ── Grant/revoke the MODERATOR role on a user (Users/UserDetail page) ── */
 export const updateUserModerator = async (id, isModerator) =>
