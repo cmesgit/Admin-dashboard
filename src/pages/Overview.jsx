@@ -7,6 +7,8 @@ import {
   MessageSquare,
   IndianRupee,
   UserCheck,
+  Radio,
+  Eye,
 } from "lucide-react";
 import {
   getStats,
@@ -16,6 +18,7 @@ import {
   getEnrollmentRequests,
   getSkillSessions,
 } from "../api/admin";
+import { getLiveNow } from "../api/livestream";
 import "../css/Overview.css";
 
 const cardDefs = [
@@ -46,9 +49,12 @@ const Overview = () => {
   const [loading, setLoading] = useState(true);
   const [queue, setQueue] = useState(null);   // needs-attention counts
   const [recent, setRecent] = useState([]);   // recent sessions
+  const [liveNow, setLiveNow] = useState([]); // live streams right now
 
   useEffect(() => {
     getStats().then(setStats).catch(() => setStats(null)).finally(() => setLoading(false));
+
+    getLiveNow().then((d) => setLiveNow(d.data || [])).catch(() => setLiveNow([]));
 
     // "What needs action" + recent activity — composed from existing endpoints,
     // each guarded so one failure never blanks the dashboard.
@@ -138,6 +144,47 @@ const Overview = () => {
             Manage payment settings →
           </Link>
         </div>
+      </div>
+
+      {/* Live now */}
+      <div className="dashboard-card empty" style={{ marginTop: 24, alignItems: "stretch", textAlign: "left" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <h3 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+            <Radio size={16} color="#ef4444" /> Live now
+          </h3>
+          <Link to="/live-streams" style={{ color: "#4f6df5", fontWeight: 600, fontSize: 13, textDecoration: "none" }}>
+            All streams →
+          </Link>
+        </div>
+        {liveNow.length === 0 ? (
+          <p style={{ color: "#6b7280", margin: 0 }}>No classes are live right now.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {liveNow.map((s) => (
+              <div key={s.id}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
+                         padding: "9px 12px", borderRadius: 8, background: "#fff",
+                         border: "1px solid #eef0f3" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, color: "#111827" }}>{s.title}</div>
+                  <div style={{ fontSize: 12, color: "#6b7280" }}>
+                    {s.batch_code ? `${s.batch_code} · ` : ""}{s.subject_name} · {s.teacher}
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "#6b7280", fontSize: 13 }}>
+                    <Eye size={13} /> {s.watching ?? 0}
+                  </span>
+                  <Link to={`/live-streams/monitor/${s.id}`}
+                    style={{ background: "#4f6df5", color: "#fff", padding: "5px 12px", borderRadius: 8,
+                             fontSize: 12, fontWeight: 600, textDecoration: "none" }}>
+                    Monitor
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Recent sessions history */}

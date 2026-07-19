@@ -94,6 +94,27 @@ export const updateSubjectTeacher = async (assignmentId, display_role) =>
 export const removeSubjectTeacher = async (assignmentId) =>
   (await api.delete(`/courses/admin/subject-teachers/${assignmentId}/`)).data;
 
+/* ── Teachers directory + detail (rich admin screen) ── */
+export const getTeacherDirectory = async (params) =>
+  safe(async () => (await api.get("/courses/admin/teacher-directory/", { params })).data, { data: [] });
+export const getTeacherDetail = async (userId) =>
+  (await api.get(`/courses/admin/teachers/${userId}/`)).data;
+
+/* ── Teacher Activity feed (activity app) ── */
+export const getTeacherActivity = async (range = "7d") =>
+  safe(async () => (await api.get("/activity/admin/teacher-activity/", { params: { range } })).data,
+       { kpis: {}, feed: [] });
+
+/* ── Moderator Activity overview (forum) ── */
+export const getModerationOverview = async (range = "7d") =>
+  safe(async () => (await api.get("/forum/admin/moderation-overview/", { params: { range } })).data,
+       { kpis: [], moderators: [], breakdown: [], queues: [] });
+
+/* ── Admin analytics (dashboard) ── */
+export const getAnalytics = async (params) =>
+  safe(async () => (await api.get("/dashboard/admin/analytics/", { params })).data,
+       { kpis: [], series: [], breakdowns: [] });
+
 export const getSkillCategories = async () =>
   safe(async () => (await api.get("/skill/categories/")).data, []);
 export const getSkillExperts = async (params) =>

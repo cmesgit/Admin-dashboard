@@ -5,6 +5,8 @@ const colors = {
   gray: { bg: "#f3f4f6", text: "#374151", border: "#e5e7eb" },
   blue: { bg: "#eff6ff", text: "#1e40af", border: "#bfdbfe" },
   purple: { bg: "#f5f3ff", text: "#5b21b6", border: "#ddd6fe" },
+  orange: { bg: "#fff7ed", text: "#9a3412", border: "#fed7aa" },
+  teal: { bg: "#f0fdfa", text: "#115e59", border: "#ccfbf1" },
 };
 
 const StatusBadge = ({ color = "gray", children }) => {

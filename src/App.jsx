@@ -26,6 +26,13 @@ import SkillSessionsAdmin from "./pages/SkillSessionsAdmin";
 import EnrollmentManagement from "./pages/EnrollmentManagement";
 import CounselorApprovals from "./pages/CounselorApprovals";
 import CounselingSessions from "./pages/CounselingSessions";
+import LiveStreams from "./pages/LiveStreams";
+import LivestreamMonitor from "./pages/LivestreamMonitor";
+import Recordings from "./pages/Recordings";
+import Teachers from "./pages/Teachers";
+import TeacherActivity from "./pages/TeacherActivity";
+import ModeratorActivity from "./pages/ModeratorActivity";
+import Analytics from "./pages/Analytics";
 
 const AppLoader = ({ children }) => {
   const { loading } = useAuth();
@@ -71,6 +78,14 @@ const App = () => {
           <Route path="users/:id" element={<UserDetail />} />
           <Route path="courses" element={<Courses />} />
           <Route path="quizzes" element={<AcademyQuizzes />} />
+          <Route path="teachers" element={<Teachers />} />
+          <Route path="teacher-activity" element={<TeacherActivity />} />
+          <Route path="moderator-activity" element={<ModeratorActivity />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="live-streams" element={<LiveStreams />} />
+          <Route path="live-streams/monitor" element={<LivestreamMonitor />} />
+          <Route path="live-streams/monitor/:id" element={<LivestreamMonitor />} />
+          <Route path="recordings" element={<Recordings />} />
           <Route path="roles" element={<RolesPage />} />
           <Route path="content" element={<ContentPanel />} />
           <Route path="communication/reports" element={<CommunicationReports />} />
