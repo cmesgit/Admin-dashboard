@@ -1,11 +1,7 @@
 /* Roles & Permissions admin page. Reuses .mod-* classes from Moderator.css
    for tabs/buttons/tables; this file adds the role-specific layout. */
 
-.rbac-page { padding: 24px 28px; }
-
-.rbac-header { margin-bottom: 18px; }
-.rbac-header h1 { margin: 0 0 4px; font-size: 1.5rem; color: #1a1a1a; }
-.rbac-sub { margin: 0; color: #667; font-size: 0.9rem; max-width: 720px; }
+.rbac-sub { margin: 0 0 18px; color: #667; font-size: 0.9rem; max-width: 720px; }
 
 .rbac-toolbar {
   display: flex;
@@ -23,7 +19,7 @@
   gap: 14px;
 }
 .rbac-role-card {
-  border: 1px solid #e6e8ee;
+  border: 1px solid #e8ebf1;
   border-radius: 12px;
   padding: 16px;
   background: #fff;
@@ -83,7 +79,7 @@
 
 /* ── Assignments ── */
 .rbac-assign-box {
-  border: 1px solid #e6e8ee; border-radius: 12px; padding: 18px;
+  border: 1px solid #e8ebf1; border-radius: 12px; padding: 18px;
   margin-bottom: 24px; background: #fafbfd;
 }
 .rbac-assign-box h3 { margin: 0 0 12px; font-size: 1rem; }
@@ -96,7 +92,7 @@
 .rbac-result-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
 .rbac-result-row {
   display: flex; justify-content: space-between; align-items: center;
-  background: #fff; border: 1px solid #e6e8ee; border-radius: 10px; padding: 10px 14px;
+  background: #fff; border: 1px solid #e8ebf1; border-radius: 10px; padding: 10px 14px;
 }
 .rbac-user-name { font-weight: 600; color: #223; }
 .rbac-user-email { color: #778; font-size: 0.82rem; }

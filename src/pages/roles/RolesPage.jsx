@@ -27,16 +27,12 @@ const RolesPage = () => {
   }, []);
 
   return (
-    <div className="rbac-page">
-      <header className="rbac-header">
-        <div>
-          <h1>Roles &amp; Permissions</h1>
-          <p className="rbac-sub">
-            Govern staff access, assign roles, and review moderator activity.
-            Moderators do their work in the public forum's Moderator Panel.
-          </p>
-        </div>
-      </header>
+    <div className="dashboard-wrapper">
+      <h1 className="dashboard-title" style={{ marginBottom: 4 }}>Roles &amp; Permissions</h1>
+      <p className="rbac-sub">
+        Govern staff access, assign roles, and review moderator activity.
+        Moderators do their work in the public forum's Moderator Panel.
+      </p>
 
       <div className="mod-tabs">
         {TABS.map(({ key, label, icon: Icon }) => (

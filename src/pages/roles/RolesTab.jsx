@@ -98,7 +98,7 @@ const RolesTab = ({ notify }) => {
   return (
     <div>
       <div className="rbac-toolbar">
-        <button className="mod-btn success" onClick={() => setCreating(true)}>
+        <button className="admin-new-btn" onClick={() => setCreating(true)}>
           <Plus size={15} /> New Role
         </button>
       </div>

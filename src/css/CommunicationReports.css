@@ -9,13 +9,13 @@
 .comm-tab { display: flex; align-items: center; gap: 6px; border: 1px solid #e5e5e5; background: #fff; color: #444;
   padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
 .comm-tab:hover { background: #fafafa; }
-.comm-tab-active { background: #222; color: #fff; border-color: #222; }
+.comm-tab-active { background: #4f6df5; color: #fff; border-color: #4f6df5; }
 
 .comm-filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .comm-filter-chip { border: 1px solid #e5e5e5; background: #fff; color: #444; padding: 6px 14px; border-radius: 999px;
   font-size: 0.8rem; font-weight: 600; cursor: pointer; }
 .comm-filter-chip:hover { background: #fafafa; }
-.comm-filter-chip-active { background: #111827; color: #fff; border-color: #111827; }
+.comm-filter-chip-active { background: #4f6df5; color: #fff; border-color: #4f6df5; }
 
 .comm-row-actions { display: flex; gap: 6px; }
 .comm-icon-btn { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #e5e5e5; background: #fff; color: #444;
@@ -37,9 +37,9 @@
   box-sizing: border-box; width: 100%; }
 .comm-broadcast-form textarea { resize: vertical; }
 
-.comm-btn-primary { display: inline-flex; align-items: center; gap: 6px; background: #111827; color: #fff; border: none;
+.comm-btn-primary { display: inline-flex; align-items: center; gap: 6px; background: #4f6df5; color: #fff; border: none;
   border-radius: 8px; padding: 9px 18px; font-weight: 700; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
-.comm-btn-primary:hover { background: #000; }
+.comm-btn-primary:hover { background: #4361e0; }
 .comm-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
 
 .comm-result { margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; }

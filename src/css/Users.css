@@ -13,7 +13,7 @@
   flex: 1;
   min-width: 240px;
   background: #fff;
-  border: 1px solid #dcdcdc;
+  border: 1px solid #e8ebf1;
   border-radius: 8px;
   padding: 0 12px;
 }
@@ -49,8 +49,8 @@
 .users-count {
   padding: 14px 20px;
   font-size: 0.85rem;
-  color: #666;
-  border-bottom: 1px solid #f0f0f0;
+  color: #6b7280;
+  border-bottom: 1px solid #e8ebf1;
 }
 
 .users-table {
@@ -63,18 +63,18 @@
   padding: 12px 20px;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #666;
+  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #e8ebf1;
   background: #fafafa;
 }
 
 .users-table td {
   padding: 14px 20px;
   font-size: 0.9rem;
-  color: #333;
-  border-bottom: 1px solid #f5f5f5;
+  color: #1f2937;
+  border-bottom: 1px solid #e8ebf1;
 }
 
 .users-row {
@@ -115,8 +115,8 @@
 .page-btn {
   width: 36px;
   height: 36px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid #e8ebf1;
+  border-radius: 8px;
   background: #fff;
   cursor: pointer;
   font-size: 0.9rem;
