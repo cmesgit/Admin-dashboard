@@ -28,3 +28,8 @@ export const getLiveNow = async () =>
 /* ── Recordings library (admin) ── */
 export const getAdminRecordings = async (params) =>
   safe(async () => (await api.get("/livestream/admin/recordings/", { params })).data, { data: [] });
+
+/* ── Webhook audit trail (admin) — LiveKitWebhookEvent, for diagnosing
+   processing failures independent of any single session ── */
+export const getAdminWebhookEvents = async (params) =>
+  safe(async () => (await api.get("/livestream/admin/webhook-events/", { params })).data, { data: [], counts: {} });

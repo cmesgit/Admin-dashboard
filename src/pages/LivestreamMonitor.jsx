@@ -29,6 +29,12 @@ const fmtTime = (iso) => {
 };
 const qualityColor = (q) =>
   ({ excellent: "teal", good: "green", fair: "yellow", poor: "red" }[q] || "gray");
+const fmtDuration = (secs) => {
+  if (!secs) return "0m";
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
 
 /* ── Multi-stream grid ── */
 function MonitorGrid() {
@@ -74,6 +80,68 @@ function MonitorGrid() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Shared minimal sparkline — values are plotted 0..max on a fixed-height
+// viewBox; `vectorEffect="non-scaling-stroke"` keeps the line 1.5px on
+// screen no matter how the viewBox gets stretched by preserveAspectRatio.
+function Sparkline({ values, color = "#2563eb", className = "" }) {
+  if (values.length < 2) return null;
+  const W = 100, H = 32;
+  const max = Math.max(1, ...values);
+  const step = W / (values.length - 1);
+  const points = values
+    .map((v, i) => `${(i * step).toFixed(2)},${(H - (v / max) * H).toFixed(2)}`)
+    .join(" ");
+  return (
+    <svg className={className} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function ViewerTrend({ samples = [] }) {
+  return (
+    <div className="dashboard-card lm-viewer-trend">
+      <div className="lm-card-title">
+        <Eye size={15} /> Viewer trend
+        {samples.length > 0 && <span className="lm-viewer-trend-now">{samples[samples.length - 1].viewers} now</span>}
+      </div>
+      {samples.length < 2 ? (
+        <p className="lm-empty">Not enough samples yet.</p>
+      ) : (
+        <Sparkline className="lm-viewer-trend-svg" values={samples.map((s) => s.viewers)} />
+      )}
+    </div>
+  );
+}
+
+const HEALTH_METRICS = [
+  { key: "bitrate_kbps", label: "Bitrate", color: "#2563eb", fmt: (v) => `${v} kbps` },
+  { key: "fps", label: "FPS", color: "#16a34a", fmt: (v) => `${v}` },
+  { key: "latency_ms", label: "Latency", color: "#d97706", fmt: (v) => `${v} ms` },
+  { key: "packet_loss", label: "Packet loss", color: "#dc2626", fmt: (v) => `${(v * 100).toFixed(1)}%` },
+];
+
+function HealthTrend({ samples = [] }) {
+  if (samples.length < 2) {
+    return <p className="lm-empty">Not enough samples yet for a trend.</p>;
+  }
+  return (
+    <div className="lm-health-trend-grid">
+      {HEALTH_METRICS.map((m) => {
+        const values = samples.map((s) => s[m.key]).filter((v) => v != null);
+        if (values.length < 2) return null;
+        return (
+          <div className="lm-health-trend-cell" key={m.key}>
+            <span className="lm-health-trend-label">{m.label}</span>
+            <Sparkline className="lm-health-trend-svg" values={values} color={m.color} />
+            <span className="lm-health-trend-val">{m.fmt(values[values.length - 1])}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -148,7 +216,7 @@ function MonitorSingle({ id }) {
     </div>
   );
 
-  const { stream, attendance = [], chat = [], health, viewer_samples = [] } = data;
+  const { stream, attendance = [], chat = [], health, health_samples = [], viewer_samples = [] } = data;
   const online = attendance.filter((a) => a.online).length;
 
   return (
@@ -194,6 +262,8 @@ function MonitorSingle({ id }) {
             </div>
           </div>
 
+          <ViewerTrend samples={viewer_samples} />
+
           <div className="dashboard-card lm-health">
             <div className="lm-card-title"><Wifi size={15} /> Stream health</div>
             {health ? (
@@ -207,6 +277,7 @@ function MonitorSingle({ id }) {
             ) : (
               <p className="lm-empty">No health telemetry received yet. Clients report health during the class.</p>
             )}
+            {health && <HealthTrend samples={health_samples} />}
           </div>
         </div>
 
@@ -248,7 +319,20 @@ function MonitorSingle({ id }) {
                 attendance.map((a, i) => (
                   <div key={i} className="lm-attend-row">
                     <span className={`lm-dot${a.online ? " on" : ""}`} />
-                    <span className="lm-attend-name">{a.user_name || a.user_email}</span>
+                    <span className="lm-attend-name">
+                      {a.user_name || a.user_email}
+                      {a.rejoin_count > 0 && (
+                        <span className="lm-attend-rejoin" title={`Rejoined ${a.rejoin_count} time(s)`}>
+                          ↻ {a.rejoin_count}
+                        </span>
+                      )}
+                      {a.reconciled && (
+                        <span className="lm-attend-reconciled" title="Session was closed by server-side reconciliation, not a normal leave">
+                          reconciled
+                        </span>
+                      )}
+                    </span>
+                    <span className="lm-attend-watch">{fmtDuration(a.total_seconds)}</span>
                     <span className="lm-attend-time">{a.online ? "online" : fmtTime(a.left_at)}</span>
                   </div>
                 ))

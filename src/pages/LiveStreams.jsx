@@ -1,10 +1,10 @@
 // Live Streams hub — list of Academy live/scheduled/recent streams and the
 // entry point to the Livestream Monitor. Data: GET /livestream/admin/streams/.
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Radio, Eye, MonitorPlay } from "lucide-react";
+import { Radio, Eye, MonitorPlay, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
-import { getAdminStreams } from "../api/livestream";
+import { getAdminStreams, getAdminWebhookEvents } from "../api/livestream";
 import "../css/LiveStreams.css";
 
 const FILTERS = [
@@ -12,6 +12,92 @@ const FILTERS = [
   { key: "live", label: "Live now" },
   { key: "scheduled", label: "Scheduled" },
 ];
+
+const WEBHOOK_FILTERS = [
+  { key: "failed", label: "Failed" },
+  { key: "unprocessed", label: "Unprocessed" },
+  { key: "all", label: "All" },
+];
+
+function WebhookEventsPanel() {
+  const [rows, setRows] = useState([]);
+  const [counts, setCounts] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState("failed");
+  const [expanded, setExpanded] = useState(null); // id of the row showing its full payload
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    getAdminWebhookEvents({ status: statusFilter })
+      .then((d) => {
+        if (!alive) return;
+        setRows(d.data || []);
+        setCounts(d.counts || {});
+      })
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, [statusFilter]);
+
+  return (
+    <>
+      <div className="ls-chips">
+        {WEBHOOK_FILTERS.map((f) => (
+          <button
+            key={f.key}
+            className={`ls-chip${statusFilter === f.key ? " active" : ""}`}
+            onClick={() => setStatusFilter(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+        <span className="ls-webhook-counts">
+          {counts.total ?? 0} total · {counts.unprocessed ?? 0} unprocessed · {counts.failed ?? 0} failed
+        </span>
+      </div>
+
+      <div className="dashboard-card payments-table-card">
+        {loading ? (
+          <div className="dashboard-loading">Loading…</div>
+        ) : rows.length === 0 ? (
+          <div className="dashboard-loading">No webhook events match this filter.</div>
+        ) : (
+          <table className="payments-table">
+            <thead>
+              <tr>
+                <th></th><th>Event type</th><th>Room</th><th>Session</th>
+                <th>Processed</th><th>Error</th><th>Received</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((w) => (
+                <Fragment key={w.id}>
+                  <tr className="ls-webhook-row" onClick={() => setExpanded(expanded === w.id ? null : w.id)}>
+                    <td>{expanded === w.id ? <ChevronDown size={14} /> : <ChevronRight size={14} />}</td>
+                    <td><code>{w.event_type}</code></td>
+                    <td>{w.room_name || "—"}</td>
+                    <td>{w.session_id ? <code>{w.session_id.slice(0, 8)}…</code> : "—"}</td>
+                    <td><StatusBadge color={w.processed ? "green" : "yellow"}>{w.processed ? "Processed" : "Unprocessed"}</StatusBadge></td>
+                    <td>{w.error ? <span className="ls-webhook-error"><AlertTriangle size={12} /> {w.error.slice(0, 60)}</span> : "—"}</td>
+                    <td>{new Date(w.received_at).toLocaleString()}</td>
+                  </tr>
+                  {expanded === w.id && (
+                    <tr className="ls-webhook-detail-row">
+                      <td colSpan={7}>
+                        {w.error && <div className="ls-webhook-detail-error">{w.error}</div>}
+                        <pre className="ls-webhook-payload">{JSON.stringify(w.payload, null, 2)}</pre>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
+  );
+}
 
 const STATUS_BADGE = {
   LIVE: "red",
@@ -38,6 +124,7 @@ const LiveStreams = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [tab, setTab] = useState("streams");
   const navigate = useNavigate();
 
   const load = (f) => {
@@ -68,59 +155,70 @@ const LiveStreams = () => {
         </div>
       </div>
 
-      <div className="ls-chips">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            className={`ls-chip${filter === f.key ? " active" : ""}`}
-            onClick={() => setFilter(f.key)}
-          >
-            {f.label}
-          </button>
-        ))}
+      <div className="ls-tabs">
+        <button className={`ls-tab${tab === "streams" ? " active" : ""}`} onClick={() => setTab("streams")}>Streams</button>
+        <button className={`ls-tab${tab === "webhooks" ? " active" : ""}`} onClick={() => setTab("webhooks")}>Webhook events</button>
       </div>
 
-      <div className="dashboard-card payments-table-card">
-        {loading ? (
-          <div className="dashboard-loading">Loading…</div>
-        ) : rows.length === 0 ? (
-          <div className="dashboard-loading">No streams to show.</div>
-        ) : (
-          <table className="payments-table">
-            <thead>
-              <tr>
-                <th>Session</th><th>Course · Subject</th><th>Batch</th>
-                <th>Teacher</th><th>Status</th><th>Watching</th><th>Start</th><th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((s) => (
-                <tr key={s.id}>
-                  <td>
-                    <span className="ls-title">
-                      {isLive(s) && <span className="ls-live-dot sm" />}
-                      {s.title}
-                    </span>
-                  </td>
-                  <td>{s.course_name}{s.subject_name ? ` · ${s.subject_name}` : ""}</td>
-                  <td>{s.batch_code || "—"}</td>
-                  <td>{s.teacher}</td>
-                  <td><StatusBadge color={STATUS_BADGE[s.status] || "gray"}>{s.status?.replace(/_/g, " ")}</StatusBadge></td>
-                  <td>
-                    <span className="ls-watch"><Eye size={13} /> {s.watching ?? 0}</span>
-                  </td>
-                  <td>{fmt(s.start_time)}</td>
-                  <td>
-                    <button className="ls-row-monitor" onClick={() => navigate(`/live-streams/monitor/${s.id}`)}>
-                      <Radio size={13} /> Monitor
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {tab === "webhooks" ? (
+        <WebhookEventsPanel />
+      ) : (
+        <>
+          <div className="ls-chips">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                className={`ls-chip${filter === f.key ? " active" : ""}`}
+                onClick={() => setFilter(f.key)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="dashboard-card payments-table-card">
+            {loading ? (
+              <div className="dashboard-loading">Loading…</div>
+            ) : rows.length === 0 ? (
+              <div className="dashboard-loading">No streams to show.</div>
+            ) : (
+              <table className="payments-table">
+                <thead>
+                  <tr>
+                    <th>Session</th><th>Course · Subject</th><th>Batch</th>
+                    <th>Teacher</th><th>Status</th><th>Watching</th><th>Start</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((s) => (
+                    <tr key={s.id}>
+                      <td>
+                        <span className="ls-title">
+                          {isLive(s) && <span className="ls-live-dot sm" />}
+                          {s.title}
+                        </span>
+                      </td>
+                      <td>{s.course_name}{s.subject_name ? ` · ${s.subject_name}` : ""}</td>
+                      <td>{s.batch_code || "—"}</td>
+                      <td>{s.teacher}</td>
+                      <td><StatusBadge color={STATUS_BADGE[s.status] || "gray"}>{s.status?.replace(/_/g, " ")}</StatusBadge></td>
+                      <td>
+                        <span className="ls-watch"><Eye size={13} /> {s.watching ?? 0}</span>
+                      </td>
+                      <td>{fmt(s.start_time)}</td>
+                      <td>
+                        <button className="ls-row-monitor" onClick={() => navigate(`/live-streams/monitor/${s.id}`)}>
+                          <Radio size={13} /> Monitor
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

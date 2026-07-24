@@ -28,6 +28,15 @@
 .comm-note-input { width: 100%; margin-top: 10px; border: 1px solid #e5e5e5; border-radius: 8px; padding: 8px 10px;
   font-size: 0.85rem; font-family: inherit; resize: vertical; box-sizing: border-box; }
 
+.comm-convo-card { width: min(92%, 560px); max-height: 80vh; display: flex; flex-direction: column; }
+.comm-convo-scroll { flex: 1; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; }
+.comm-convo-msg { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid #f1f3f7; }
+.comm-convo-msg:last-child { border-bottom: none; }
+.comm-convo-msg-flagged { background: #fef2f2; border-radius: 6px; padding: 8px 8px; margin: 2px 0; }
+.comm-convo-msg-sender { font-size: 0.78rem; font-weight: 700; color: #374151; }
+.comm-convo-msg-body { font-size: 0.85rem; color: #1f2937; word-break: break-word; }
+.comm-convo-msg-time { font-size: 0.72rem; color: #9ca3af; }
+
 .comm-suspend-form, .comm-broadcast-form { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; padding: 20px; margin-bottom: 20px; }
 .comm-broadcast-form { flex-direction: column; align-items: stretch; max-width: 620px; }
 .comm-suspend-form label, .comm-broadcast-form label { display: block; font-size: 0.78rem; font-weight: 700; color: #555;

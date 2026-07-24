@@ -61,11 +61,72 @@
   font-size: 12px;
 }
 
+.ls-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e8ebf1;
+}
+.ls-tab {
+  padding: 9px 4px;
+  margin-right: 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #6b7280;
+  border-bottom: 2px solid transparent;
+}
+.ls-tab.active {
+  color: #4f6df5;
+  border-bottom-color: #4f6df5;
+}
+
 .ls-chips {
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+  align-items: center;
+}
+.ls-webhook-counts {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: #6b7280;
+}
+.ls-webhook-row {
+  cursor: pointer;
+}
+.ls-webhook-row:hover {
+  background: #fafbfc;
+}
+.ls-webhook-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #dc2626;
+  font-size: 12px;
+}
+.ls-webhook-detail-row td {
+  background: #f9fafb;
+  padding: 12px 16px;
+}
+.ls-webhook-detail-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.ls-webhook-payload {
+  font-size: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  max-height: 300px;
+  margin: 0;
 }
 .ls-chip {
   padding: 7px 14px;
@@ -295,8 +356,27 @@
   margin-bottom: 12px;
 }
 
+.lm-viewer-trend {
+  text-align: left;
+}
+.lm-viewer-trend .lm-card-title {
+  margin-bottom: 8px;
+}
+.lm-viewer-trend-now {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+.lm-viewer-trend-svg {
+  display: block;
+  width: 100%;
+  height: 56px;
+}
+
 .lm-health {
   text-align: left;
+  margin-top: 16px;
 }
 .lm-health-grid {
   display: grid;
@@ -320,6 +400,34 @@
   color: #9ca3af;
   font-size: 13px;
   margin: 0;
+}
+
+.lm-health-trend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 20px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #f1f3f7;
+}
+.lm-health-trend-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lm-health-trend-label {
+  font-size: 11px;
+  color: #6b7280;
+}
+.lm-health-trend-svg {
+  display: block;
+  width: 100%;
+  height: 28px;
+}
+.lm-health-trend-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111827;
 }
 
 /* Chat */
@@ -430,8 +538,36 @@
 .lm-attend-name {
   flex: 1;
   color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lm-attend-rejoin {
+  font-size: 11px;
+  color: #d97706;
+  background: #fef3c7;
+  border-radius: 10px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+.lm-attend-reconciled {
+  font-size: 11px;
+  color: #6b7280;
+  background: #f1f3f7;
+  border-radius: 10px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+.lm-attend-watch {
+  color: #6b7280;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 .lm-attend-time {
   color: #9ca3af;
   font-size: 12px;
+  flex-shrink: 0;
 }

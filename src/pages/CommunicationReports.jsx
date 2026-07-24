@@ -7,9 +7,10 @@
 // page since they're the same workflow (review a report → optionally
 // suspend the person it's about) rather than two separate destinations.
 import { useEffect, useState } from "react";
-import { Flag, Ban, Trash2, Check, X } from "lucide-react";
+import { Flag, Ban, Trash2, Check, X, MessageSquare } from "lucide-react";
 import {
   getReports, resolveReport, getSuspensions, suspendIdentity, liftSuspension,
+  getAdminConversationMessages,
 } from "../api/admin_communication";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
@@ -21,12 +22,58 @@ const REASON_LABEL = {
 };
 const STATUS_COLOR = { OPEN: "yellow", REVIEWED: "blue", ACTION_TAKEN: "green", DISMISSED: "gray" };
 
+function ConversationViewerModal({ report, onClose }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    getAdminConversationMessages(report.conversation_id)
+      .then((d) => alive && setData(d))
+      .catch(() => alive && setError(true));
+    return () => { alive = false; };
+  }, [report.conversation_id]);
+
+  return (
+    <div className="confirm-overlay" onClick={onClose}>
+      <div className="confirm-card comm-convo-card" onClick={(e) => e.stopPropagation()}>
+        <h3>Conversation</h3>
+        <p>Context for the report on <code>{report.target_identity || "this thread"}</code>.</p>
+        <div className="comm-convo-scroll">
+          {error ? (
+            <p className="forum-empty">Couldn't load this conversation.</p>
+          ) : !data ? (
+            <p className="forum-empty">Loading…</p>
+          ) : data.messages.length === 0 ? (
+            <p className="forum-empty">No messages in this conversation.</p>
+          ) : (
+            data.messages.map((m) => (
+              <div
+                key={m.id}
+                className={"comm-convo-msg" + (m.id === report.message_id ? " comm-convo-msg-flagged" : "")}
+              >
+                <span className="comm-convo-msg-sender">{m.sender?.name || "Unknown"}</span>
+                <span className="comm-convo-msg-body">{m.deleted ? <em>Removed by a moderator</em> : m.body}</span>
+                <span className="comm-convo-msg-time">{new Date(m.created_at).toLocaleString()}</span>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="confirm-actions">
+          <button className="confirm-cancel" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReportsTab() {
   const [reports, setReports] = useState([]);
   const [statusFilter, setStatusFilter] = useState("OPEN");
   const [loading, setLoading] = useState(true);
   const [confirm, setConfirm] = useState(null); // { report, action }
   const [note, setNote] = useState("");
+  const [viewing, setViewing] = useState(null); // report being viewed in ConversationViewerModal
 
   const load = async () => {
     setLoading(true);
@@ -60,7 +107,7 @@ function ReportsTab() {
         <table className="forum-table">
           <thead>
             <tr>
-              <th>Reason</th><th>Target</th><th>Reporter</th><th>Message</th><th>Status</th><th>Filed</th><th></th>
+              <th>Reason</th><th>Target</th><th>Reporter</th><th>Message</th><th>Status</th><th>Resolution</th><th>Filed</th><th></th>
             </tr>
           </thead>
           <tbody>
@@ -71,28 +118,47 @@ function ReportsTab() {
                 <td>{r.reporter_name}</td>
                 <td className="forum-post-title">{r.message_preview || <em>No message (thread-level report)</em>}</td>
                 <td><StatusBadge color={STATUS_COLOR[r.status]}>{r.status.replace("_", " ")}</StatusBadge></td>
+                <td>
+                  {r.resolved_by ? (
+                    <>
+                      {r.resolved_by}
+                      <div className="comm-detail-text">{new Date(r.resolved_at).toLocaleDateString()}</div>
+                      {r.resolution_note && <div className="comm-detail-text">{r.resolution_note}</div>}
+                    </>
+                  ) : "—"}
+                </td>
                 <td>{new Date(r.created_at).toLocaleDateString()}</td>
                 <td>
-                  {r.status === "OPEN" && (
-                    <div className="comm-row-actions">
-                      {r.message_id && (
-                        <button className="comm-icon-btn" title="Remove message" onClick={() => setConfirm({ report: r, action: "remove_message" })}>
-                          <Trash2 size={15} />
+                  <div className="comm-row-actions">
+                    <button
+                      className="comm-icon-btn"
+                      title="View conversation"
+                      disabled={!r.conversation_id}
+                      onClick={() => setViewing(r)}
+                    >
+                      <MessageSquare size={15} />
+                    </button>
+                    {r.status === "OPEN" && (
+                      <>
+                        {r.message_id && (
+                          <button className="comm-icon-btn" title="Remove message" onClick={() => setConfirm({ report: r, action: "remove_message" })}>
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                        <button className="comm-icon-btn comm-icon-btn-danger" title="Suspend user" onClick={() => setConfirm({ report: r, action: "suspend_user" })}>
+                          <Ban size={15} />
                         </button>
-                      )}
-                      <button className="comm-icon-btn comm-icon-btn-danger" title="Suspend user" onClick={() => setConfirm({ report: r, action: "suspend_user" })}>
-                        <Ban size={15} />
-                      </button>
-                      <button className="comm-icon-btn" title="Dismiss" onClick={() => setConfirm({ report: r, action: "dismiss" })}>
-                        <X size={15} />
-                      </button>
-                    </div>
-                  )}
+                        <button className="comm-icon-btn" title="Dismiss" onClick={() => setConfirm({ report: r, action: "dismiss" })}>
+                          <X size={15} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
             {!loading && reports.length === 0 && (
-              <tr><td colSpan={7} className="forum-empty">No reports here.</td></tr>
+              <tr><td colSpan={8} className="forum-empty">No reports here.</td></tr>
             )}
           </tbody>
         </table>
@@ -118,6 +184,7 @@ function ReportsTab() {
           onCancel={() => { setConfirm(null); setNote(""); }}
         />
       )}
+      {viewing && <ConversationViewerModal report={viewing} onClose={() => setViewing(null)} />}
     </>
   );
 }

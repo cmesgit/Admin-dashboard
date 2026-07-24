@@ -13,6 +13,7 @@ import AcademyQuizzes from "./pages/AcademyQuizzes";
 import CommunicationReports from "./pages/CommunicationReports";
 import CommunicationBroadcast from "./pages/CommunicationBroadcast";
 import CommunicationSupport from "./pages/CommunicationSupport";
+import MessageSearch from "./pages/MessageSearch";
 import Approvals from "./pages/Approvals";
 import Payments from "./pages/Payments";
 import EnrollmentRequests from "./pages/EnrollmentRequests";
@@ -89,6 +90,7 @@ const App = () => {
           <Route path="roles" element={<RolesPage />} />
           <Route path="content" element={<ContentPanel />} />
           <Route path="communication/reports" element={<CommunicationReports />} />
+          <Route path="communication/messages" element={<MessageSearch />} />
           <Route path="communication/broadcast" element={<CommunicationBroadcast />} />
           <Route path="communication/support" element={<CommunicationSupport />} />
           <Route path="approvals" element={<Approvals />} />

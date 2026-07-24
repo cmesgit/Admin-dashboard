@@ -16,6 +16,10 @@ export const resolveReport = async (id, action, note = "", until = undefined) =>
 export const removeMessage = async (messageId, reason = "") =>
   (await api.post(`/chat/admin/messages/${messageId}/remove/`, { reason })).data;
 
+/* ── Message search/browse (standalone removal, no Report required) ── */
+export const searchAdminMessages = async (params) =>
+  (await api.get("/chat/admin/messages/", { params })).data;
+
 /* ── Suspensions ── */
 export const getSuspensions = async () => (await api.get("/chat/admin/suspensions/")).data;
 
@@ -51,3 +55,12 @@ export const replyToTicket = async (id, message) =>
 
 /* ── Lightweight comms analytics ── */
 export const getCommsLogs = async () => (await api.get("/chat/admin/logs/")).data;
+
+/* ── Conversation context (read-only, for reviewing a report) ── */
+export const getAdminConversationMessages = async (conversationId, limit = 50) =>
+  (await api.get(`/chat/admin/conversations/${conversationId}/messages/`, { params: { limit } })).data;
+
+/* ── Chat moderator oversight — chat's counterpart to admin.js's
+   getModerationOverview (forum) ── */
+export const getChatModerationOverview = async (range = "7d") =>
+  (await api.get("/chat/admin/moderation-overview/", { params: { range } })).data;

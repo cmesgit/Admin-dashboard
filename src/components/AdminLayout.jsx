@@ -98,6 +98,7 @@ const navGroups = [
     items: [
       { to: "/content", icon: Newspaper, label: "Content (CMS)" },
       { to: "/communication/reports", icon: Flag, label: "Chat Reports" },
+      { to: "/communication/messages", icon: Search, label: "Message Search" },
       { to: "/communication/support", icon: LifeBuoy, label: "Support Tickets", badgeKey: "support" },
       { to: "/communication/broadcast", icon: Send, label: "Broadcast" },
       { to: "/agreement-letter", icon: FileText, label: "Agreement Letter" },

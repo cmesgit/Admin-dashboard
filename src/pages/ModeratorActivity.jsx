@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getModerationOverview } from "../api/admin";
+import { getChatModerationOverview } from "../api/admin_communication";
 import "../css/NewScreens.css";
 
 const RANGES = [
@@ -10,18 +11,25 @@ const RANGES = [
   { key: "30d", label: "30 days" },
 ];
 
+const SCOPES = [
+  { key: "forum", label: "Forum", load: getModerationOverview },
+  { key: "chat", label: "Chat", load: getChatModerationOverview },
+];
+
 const ModeratorActivity = () => {
   const [data, setData] = useState({ kpis: [], moderators: [], breakdown: [], queues: [] });
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("7d");
+  const [scope, setScope] = useState("forum");
 
   useEffect(() => {
     setLoading(true);
-    getModerationOverview(range)
+    const load = SCOPES.find((s) => s.key === scope).load;
+    load(range)
       .then(setData)
       .catch(() => setData({ kpis: [], moderators: [], breakdown: [], queues: [] }))
       .finally(() => setLoading(false));
-  }, [range]);
+  }, [range, scope]);
 
   const maxBreak = Math.max(1, ...data.breakdown.map((b) => b.count));
 
@@ -30,6 +38,10 @@ const ModeratorActivity = () => {
       <div className="ns-head-row">
         <h1 className="dashboard-title" style={{ marginBottom: 0 }}>Moderator Activity</h1>
         <div className="ls-chips">
+          {SCOPES.map((s) => (
+            <button key={s.key} className={`ls-chip${scope === s.key ? " active" : ""}`} onClick={() => setScope(s.key)}>{s.label}</button>
+          ))}
+          <span style={{ width: 8 }} />
           {RANGES.map((r) => (
             <button key={r.key} className={`ls-chip${range === r.key ? " active" : ""}`} onClick={() => setRange(r.key)}>{r.label}</button>
           ))}
