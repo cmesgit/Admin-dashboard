@@ -236,6 +236,23 @@
   margin-bottom: 14px;
 }
 
+.cm-subheading {
+  margin: 4px 0 12px;
+  padding-top: 14px;
+  border-top: 1px solid #eef0f3;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.cm-chapter-edit {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  background: #fafbfc;
+}
+
 /* ============================================================================
    Batch management + teacher assignment + progress/roster
    (same palette: #4f6df5 primary, #f1f5ff/#3b4cca chips, grey text)

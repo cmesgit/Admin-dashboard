@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Star, BookOpen, FlaskConical, Calculator } from "lucide-react";
 import {
   getContentShowcase, createContentShowcase, updateContentShowcase, deleteContentShowcase,
+  getAcademicCourses,
 } from "../../api/admin";
 import ConfirmModal from "../../components/ConfirmModal";
 import TagChipInput from "../../components/TagChipInput";
@@ -40,12 +41,31 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     link_path: initial?.link_path || "/courses",
     order: initial?.order ?? 0,
     is_active: initial?.is_active ?? true,
+    course: initial?.course || "",
   });
   const [linkStateText, setLinkStateText] = useState(
     JSON.stringify(initial?.link_state && Object.keys(initial.link_state).length ? initial.link_state : {}, null, 2)
   );
   const [linkStateInvalid, setLinkStateInvalid] = useState(false);
   const [file, setFile] = useState(null);
+  const [courseOptions, setCourseOptions] = useState(
+    initial?.course && initial?.course_title ? [{ id: initial.course, title: initial.course_title }] : []
+  );
+
+  useEffect(() => {
+    getAcademicCourses().then((rows) => {
+      const list = Array.isArray(rows) ? rows : [];
+      setCourseOptions((prev) => {
+        const known = new Map(list.map((c) => [c.id, c]));
+        // keep the currently-linked course visible even if the admin list call
+        // is scoped/paginated differently than expected
+        prev.forEach((c) => { if (!known.has(c.id)) known.set(c.id, c); });
+        return Array.from(known.values());
+      });
+    });
+  }, []);
+
+  const linkedToCourse = !!form.course;
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
@@ -68,11 +88,14 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
       fact_line: form.fact_line.trim(),
       price_label: form.price_label.trim(),
       tutor_name: form.tutor_name.trim(),
-      is_explore_card: form.is_explore_card,
+      is_explore_card: linkedToCourse ? false : form.is_explore_card,
       categories: form.categories,
       gradient_css: form.gradient_css.trim(),
       image_url: form.image_url.trim(),
       icon: form.icon,
+      course: form.course || null,
+      // Ignored server-side when `course` is set (derived instead), but still
+      // sent so unlinking a card leaves them at whatever the admin last typed.
       link_path: form.link_path.trim() || "/courses",
       link_state,
       order: parseInt(form.order, 10) || 0,
@@ -137,8 +160,22 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
           />
         </label>
 
+        <label className="cm-field">
+          <span>Link to a real course (optional)</span>
+          <select value={form.course} onChange={set("course")}>
+            <option value="">— Not linked (use manual link below) —</option>
+            {courseOptions.map((c) => (
+              <option key={c.id} value={c.id}>{c.title}{c.status && c.status !== "PUBLISHED" ? ` (${c.status})` : ""}</option>
+            ))}
+          </select>
+        </label>
+        <p className="cm-hint">
+          When linked, this card opens straight into that course and the link path/state
+          below are derived automatically — you can leave them alone.
+        </p>
+
         <label className="cm-check">
-          <input type="checkbox" checked={form.is_explore_card} onChange={set("is_explore_card")} />
+          <input type="checkbox" checked={form.is_explore_card} disabled={linkedToCourse} onChange={set("is_explore_card")} />
           <span>Explore card (the catch-all "browse everything" tile)</span>
         </label>
 
@@ -170,16 +207,17 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
             </select>
           </label>
           <label className="cm-field">
-            <span>Link path</span>
-            <input value={form.link_path} onChange={set("link_path")} placeholder="/courses" />
+            <span>Link path{linkedToCourse ? " (derived — ignored while linked)" : ""}</span>
+            <input value={form.link_path} disabled={linkedToCourse} onChange={set("link_path")} placeholder="/courses" />
           </label>
         </div>
 
         <label className="cm-field">
-          <span>Link state (JSON object)</span>
+          <span>Link state (JSON object){linkedToCourse ? " (derived — ignored while linked)" : ""}</span>
           <textarea
             className={`cms-json-textarea${linkStateInvalid ? " invalid" : ""}`}
             rows={4}
+            disabled={linkedToCourse}
             value={linkStateText}
             onChange={(e) => { setLinkStateText(e.target.value); setLinkStateInvalid(false); }}
             placeholder='{"selectedBoardGroup":"central","selectedBoard":"cbse"}'
@@ -321,6 +359,7 @@ const Showcase = ({ onAction }) => {
                   </div>
                   <div className="cms-card-sub">{c.fact_line}</div>
                   {c.price_label && <div className="cms-card-sub"><strong>₹{c.price_label}</strong></div>}
+                  {c.course_title && <div className="cms-card-sub">Linked: {c.course_title}</div>}
                   {(c.categories || []).length > 0 && (
                     <div className="cms-card-chips">
                       {c.categories.map((cat) => <span className="cms-card-chip" key={cat}>{cat}</span>)}

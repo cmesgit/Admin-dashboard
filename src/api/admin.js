@@ -49,8 +49,16 @@ export const deleteBoard = async (id) =>
 
 export const getBoardCourses = async (boardId) =>
   safe(async () => (await api.get(`/courses/admin/boards/${boardId}/courses/`)).data, []);
-export const createCourse = async (data) =>
-  (await api.post("/courses/admin/courses/", data)).data;
+export const createCourse = async (data, isMultipart = false) =>
+  (await api.post("/courses/admin/courses/", data,
+    isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined)).data;
+export const getCourse = async (id) =>
+  (await api.get(`/courses/admin/courses/${id}/`)).data;
+// data may be a plain object (JSON) or a FormData (multipart, when a thumbnail
+// file is included) — same isMultipart convention as the content/* helpers.
+export const updateCourse = async (id, data, isMultipart = false) =>
+  (await api.patch(`/courses/admin/courses/${id}/`, data,
+    isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined)).data;
 export const deleteCourse = async (id) =>
   (await api.delete(`/courses/admin/courses/${id}/`)).data;
 
@@ -60,8 +68,20 @@ export const createSubject = async (courseId, formData) =>
   (await api.post(`/courses/admin/courses/${courseId}/subjects/`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   })).data;
+export const updateSubject = async (subjectId, formData) =>
+  (await api.patch(`/courses/admin/subjects/${subjectId}/`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  })).data;
 export const deleteSubject = async (subjectId) =>
   (await api.delete(`/courses/admin/subjects/${subjectId}/`)).data;
+
+/* ── Chapters (per-subject content authoring) ── */
+export const createChapter = async (subjectId, data) =>
+  (await api.post(`/courses/admin/subjects/${subjectId}/chapters/`, data)).data;
+export const updateChapter = async (chapterId, data) =>
+  (await api.patch(`/courses/admin/chapters/${chapterId}/`, data)).data;
+export const deleteChapter = async (chapterId) =>
+  (await api.delete(`/courses/admin/chapters/${chapterId}/`)).data;
 
 /* ── Academy: batches (courses app) ── */
 export const getCourseBatches = async (courseId) =>

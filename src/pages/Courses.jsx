@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   getBoards, createBoard, updateBoard, deleteBoard,
-  getBoardCourses, createCourse, deleteCourse,
-  getCourseSubjects, createSubject, deleteSubject,
+  getBoardCourses, createCourse, getCourse, updateCourse, deleteCourse,
+  getCourseSubjects, createSubject, updateSubject, deleteSubject,
+  createChapter, updateChapter, deleteChapter,
   getSkillCategories, getSkillExperts, getSkillApplications,
   // ── new: batches + teacher assignment + progress/roster ──
   getCourseBatches, createBatch, updateBatch, deleteBatch,
@@ -50,9 +51,11 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
     `${mode === "edit" ? "Edit" : "New"} ` +
     { board: "Board", course: "Course", subject: "Subject", batch: "Batch" }[type];
 
+  const isCourse = type === "course";
+
   return (
     <div className="confirm-overlay" onClick={busy ? undefined : onCancel}>
-      <div className="cm-form-card" onClick={(e) => e.stopPropagation()}>
+      <div className={`cm-form-card${isCourse ? " cm-form-card--wide" : ""}`} onClick={(e) => e.stopPropagation()}>
         <h3>{heading}</h3>
 
         {type === "board" && (
@@ -98,10 +101,53 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
                 <span>Access (days)</span>
                 <input type="number" min="1" value={form.subscription_duration_days ?? 30} onChange={set("subscription_duration_days")} />
               </label>
+              <label className="cm-field">
+                <span>Status</span>
+                <select value={form.status || "DRAFT"} onChange={set("status")}>
+                  <option value="DRAFT">Draft</option>
+                  <option value="PUBLISHED">Published</option>
+                  <option value="ARCHIVED">Archived</option>
+                </select>
+              </label>
             </div>
             <p className="cm-hint">
+              Only Published courses (with an open batch) appear in the public catalog.
               The platform is currently free — price applies only when a paid payment mode is switched on.
             </p>
+
+            <label className="cm-field">
+              <span>Thumbnail (16:9)</span>
+              <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+              {file ? (
+                <small className="cm-file-name">{file.name}</small>
+              ) : form.thumbnail ? (
+                <img src={form.thumbnail} alt="" className="cm-thumb" />
+              ) : null}
+            </label>
+
+            <h4 className="cm-subheading">Course details</h4>
+            <div className="cm-row">
+              <label className="cm-field">
+                <span>Level</span>
+                <input value={form.level || ""} onChange={set("level")} placeholder="e.g. Intermediate" />
+              </label>
+              <label className="cm-field">
+                <span>Duration (weeks)</span>
+                <input type="number" min="0" value={form.duration_weeks ?? ""} onChange={set("duration_weeks")} />
+              </label>
+              <label className="cm-field">
+                <span>Language</span>
+                <input value={form.language || ""} onChange={set("language")} placeholder="English" />
+              </label>
+            </div>
+            <label className="cm-field">
+              <span>Requirements</span>
+              <textarea rows={2} value={form.requirements || ""} onChange={set("requirements")} placeholder="Optional" />
+            </label>
+            <label className="cm-field">
+              <span>Syllabus</span>
+              <textarea rows={4} value={form.syllabus || ""} onChange={set("syllabus")} placeholder="Optional" />
+            </label>
           </>
         )}
 
@@ -116,9 +162,17 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
               <input type="number" min="1" value={form.order ?? ""} onChange={set("order")} placeholder="Auto (added to end)" />
             </label>
             <label className="cm-field">
+              <span>Textbook</span>
+              <input value={form.textbook || ""} onChange={set("textbook")} placeholder="e.g. NCERT Mathematics" />
+            </label>
+            <label className="cm-field">
               <span>Image</span>
               <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              {file && <small className="cm-file-name">{file.name}</small>}
+              {file ? (
+                <small className="cm-file-name">{file.name}</small>
+              ) : form.image ? (
+                <img src={form.image} alt="" className="cm-thumb" />
+              ) : null}
             </label>
           </>
         )}
@@ -155,6 +209,10 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
                 <input type="date" value={form.end_date || ""} onChange={set("end_date")} />
               </label>
             </div>
+            <label className="cm-field">
+              <span>Price override (₹)</span>
+              <input type="number" min="0" value={form.price_override ?? ""} onChange={set("price_override")} placeholder="Blank = use course price" />
+            </label>
             <label className="cm-check">
               <input type="checkbox" checked={form.is_active ?? true} onChange={set("is_active")} />
               <span>Active (open for new enrollments)</span>
@@ -347,6 +405,133 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
   );
 }
 
+/* ───────────────────── Chapter content modal ───────────────────── */
+function ChapterModal({ subject, onClose, onChanged }) {
+  const [chapters, setChapters] = useState(subject.chapters || []);
+  const [editingId, setEditingId] = useState(null); // chapter id being edited, or "new"
+  const [draft, setDraft] = useState({ title: "", content_html: "", trusted_html: false });
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const startNew = () => {
+    setDraft({ title: "", content_html: "", trusted_html: false });
+    setEditingId("new");
+    setErr("");
+  };
+  const startEdit = (ch) => {
+    setDraft({ title: ch.title, content_html: ch.content_html || "", trusted_html: !!ch.trusted_html });
+    setEditingId(ch.id);
+    setErr("");
+  };
+
+  const save = async () => {
+    setBusy(true); setErr("");
+    try {
+      if (editingId === "new") {
+        const created = await createChapter(subject.id, draft);
+        setChapters((cs) => [...cs, created]);
+      } else {
+        const updated = await updateChapter(editingId, draft);
+        setChapters((cs) => cs.map((c) => (c.id === editingId ? updated : c)));
+      }
+      setEditingId(null);
+      onChanged?.();
+    } catch (e) {
+      setErr(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (ch) => {
+    setBusy(true); setErr("");
+    try {
+      await deleteChapter(ch.id);
+      setChapters((cs) => cs.filter((c) => c.id !== ch.id));
+      onChanged?.();
+    } catch (e) {
+      setErr(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="confirm-overlay" onClick={onClose}>
+      <div className="cm-form-card cm-form-card--wide" onClick={(e) => e.stopPropagation()}>
+        <h3>Chapters · {subject.name}</h3>
+
+        {chapters.length === 0 && editingId !== "new" ? (
+          <p className="cm-empty-note">No chapters yet. Add the first one below.</p>
+        ) : (
+          <div className="cm-assign-list">
+            {chapters.map((ch) =>
+              editingId === ch.id ? (
+                <div className="cm-chapter-edit" key={ch.id}>
+                  <label className="cm-field">
+                    <span>Title</span>
+                    <input value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
+                  </label>
+                  <label className="cm-field">
+                    <span>Content</span>
+                    <textarea rows={5} value={draft.content_html}
+                      onChange={(e) => setDraft((d) => ({ ...d, content_html: e.target.value }))}
+                      placeholder="Chapter notes as HTML — sanitized on save." />
+                  </label>
+                  {err && <div className="cm-form-error">{err}</div>}
+                  <div className="confirm-actions">
+                    <button className="confirm-cancel" onClick={() => setEditingId(null)} disabled={busy}>Cancel</button>
+                    <button className="confirm-ok" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save"}</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="cm-assign-row" key={ch.id}>
+                  <div className="cm-assign-meta">
+                    <span className="cm-assign-name">{ch.order}. {ch.title}</span>
+                    <span className="cm-assign-sub">
+                      {ch.content_html ? "Has content" : "No content yet"}
+                    </span>
+                  </div>
+                  <div className="cm-assign-controls">
+                    <button className="cm-icon-btn" disabled={busy} onClick={() => startEdit(ch)}>Edit</button>
+                    <button className="cm-icon-btn cm-icon-btn--danger" disabled={busy} onClick={() => remove(ch)}>Delete</button>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+        )}
+
+        {editingId === "new" ? (
+          <div className="cm-chapter-edit">
+            <label className="cm-field">
+              <span>Title</span>
+              <input value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} autoFocus />
+            </label>
+            <label className="cm-field">
+              <span>Content</span>
+              <textarea rows={5} value={draft.content_html}
+                onChange={(e) => setDraft((d) => ({ ...d, content_html: e.target.value }))}
+                placeholder="Chapter notes as HTML — sanitized on save." />
+            </label>
+            {err && <div className="cm-form-error">{err}</div>}
+            <div className="confirm-actions">
+              <button className="confirm-cancel" onClick={() => setEditingId(null)} disabled={busy}>Cancel</button>
+              <button className="confirm-ok" onClick={save} disabled={busy}>{busy ? "Saving…" : "Add"}</button>
+            </div>
+          </div>
+        ) : (
+          <button className="cm-add-btn" onClick={startNew}>+ Add Chapter</button>
+        )}
+
+        <div className="confirm-actions">
+          <button className="confirm-ok" onClick={onClose}>Done</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ───────────────────── Batch progress modal (read-only) ───────────────────── */
 function ProgressBar({ percent }) {
   return (
@@ -497,6 +682,7 @@ const Courses = () => {
   const [modal, setModal] = useState(null);       // { type, mode, initial }
   const [confirm, setConfirm] = useState(null);    // { kind, item, message, error? }
   const [teacherModal, setTeacherModal] = useState(null);   // subject
+  const [chapterModal, setChapterModal] = useState(null);   // subject
   const [progressModal, setProgressModal] = useState(null); // batch
   const [rosterModal, setRosterModal] = useState(null);     // batch
   const [busy, setBusy] = useState(false);
@@ -568,6 +754,28 @@ const Courses = () => {
   const openCreate = (type, initial = {}) => { setFormError(""); setModal({ type, mode: "create", initial }); };
   const openEdit = (type, initial) => { setFormError(""); setModal({ type, mode: "edit", initial }); };
 
+  const openEditCourse = async (c) => {
+    setFormError("");
+    // The board-scoped course list doesn't carry `details`/thumbnail at full
+    // fidelity, so fetch the single-course admin shape before opening the form.
+    const full = await getCourse(c.id).catch(() => null);
+    const details = full?.details || {};
+    openEdit("course", {
+      id: c.id,
+      title: full?.title ?? c.title,
+      description: full?.description ?? c.description,
+      price_rupees: ((full?.price ?? c.price) || 0) / 100,
+      subscription_duration_days: full?.subscription_duration_days ?? c.subscription_duration_days ?? 30,
+      status: full?.status ?? c.status ?? "DRAFT",
+      thumbnail: full?.thumbnail ?? c.thumbnail ?? null,
+      level: details.level || "",
+      duration_weeks: details.duration_weeks ?? "",
+      language: details.language || "English",
+      requirements: details.requirements || "",
+      syllabus: details.syllabus || "",
+    });
+  };
+
   const handleSubmit = async (form, file) => {
     setBusy(true); setFormError("");
     try {
@@ -583,31 +791,55 @@ const Courses = () => {
         setModal(null);
         await loadBoards();
       } else if (modal.type === "course") {
-        const payload = {
+        const basePayload = {
           title: (form.title || "").trim(),
           description: form.description || "",
           price: Math.max(0, Math.round((parseFloat(form.price_rupees) || 0) * 100)),
           subscription_duration_days: Math.max(1, parseInt(form.subscription_duration_days, 10) || 30),
-          board_id: nav.board.id,
+          status: form.status || "DRAFT",
         };
-        await createCourse(payload);
+        const detailsPayload = {
+          level: form.level || "",
+          duration_weeks: form.duration_weeks === "" || form.duration_weeks == null ? 0 : parseInt(form.duration_weeks, 10) || 0,
+          syllabus: form.syllabus || "",
+          language: form.language || "English",
+          requirements: form.requirements || "",
+        };
+        if (file) {
+          const fd = new FormData();
+          Object.entries(basePayload).forEach(([k, v]) => fd.append(k, v));
+          fd.append("details", JSON.stringify(detailsPayload));
+          fd.append("thumbnail", file);
+          if (modal.mode !== "edit") fd.append("board_id", nav.board.id);
+          if (modal.mode === "edit") await updateCourse(modal.initial.id, fd, true);
+          else await createCourse(fd, true);
+        } else {
+          const payload = { ...basePayload, details: detailsPayload };
+          if (modal.mode === "edit") await updateCourse(modal.initial.id, payload);
+          else await createCourse({ ...payload, board_id: nav.board.id });
+        }
         setModal(null);
         await loadCourses(nav.board.id);
       } else if (modal.type === "subject") {
         const fd = new FormData();
         fd.append("name", (form.name || "").trim());
         if (form.order) fd.append("order", form.order);
+        fd.append("textbook", form.textbook || "");
         if (file) fd.append("image", file);
-        await createSubject(nav.course.id, fd);
+        if (modal.mode === "edit") await updateSubject(modal.initial.id, fd);
+        else await createSubject(nav.course.id, fd);
         setModal(null);
         await loadSubjects(nav.course.id);
       } else if (modal.type === "batch") {
         const toIntOrNull = (v) => (v === "" || v === null || v === undefined ? null : parseInt(v, 10));
+        const toPaiseOrNull = (v) =>
+          v === "" || v === null || v === undefined ? null : Math.max(0, Math.round((parseFloat(v) || 0) * 100));
         const payload = {
           name: (form.name || "").trim(),
           code: (form.code || "").trim(),
           year: toIntOrNull(form.year),
           capacity: toIntOrNull(form.capacity),
+          price_override: toPaiseOrNull(form.price_override),
           start_date: form.start_date || null,
           end_date: form.end_date || null,
           is_active: form.is_active ?? true,
@@ -719,13 +951,18 @@ const Courses = () => {
       ) : (
         <table className="courses-table">
           <thead>
-            <tr><th>Course</th><th>Fee</th><th>Access</th><th>Subjects</th><th>Enrolled</th><th aria-label="actions" /></tr>
+            <tr><th>Course</th><th>Status</th><th>Fee</th><th>Access</th><th>Subjects</th><th>Enrolled</th><th aria-label="actions" /></tr>
           </thead>
           <tbody>
             {courses.map((c) => (
               <tr key={c.id}>
                 <td className="courses-title">
                   <button className="cm-link" onClick={() => openCourse(c)}>{c.title}</button>
+                </td>
+                <td>
+                  <StatusBadge color={c.status === "PUBLISHED" ? "green" : c.status === "ARCHIVED" ? "gray" : "yellow"}>
+                    {c.status === "PUBLISHED" ? "Published" : c.status === "ARCHIVED" ? "Archived" : "Draft"}
+                  </StatusBadge>
                 </td>
                 <td>{rupees(c.price)}</td>
                 <td>{c.subscription_duration_days ? `${c.subscription_duration_days}d` : "—"}</td>
@@ -734,6 +971,7 @@ const Courses = () => {
                 <td className="cm-actions">
                   <button className="cm-icon-btn" onClick={() => openCourse(c)}>Subjects</button>
                   <button className="cm-icon-btn" onClick={() => openBatches(c)}>Batches</button>
+                  <button className="cm-icon-btn" onClick={() => openEditCourse(c)}>Edit</button>
                   <button className="cm-icon-btn cm-icon-btn--danger"
                     onClick={() => setConfirm({ kind: "course", item: c, message: `Delete course "${c.title}"? Its subjects and content links are removed too. This can't be undone.` })}>
                     Delete
@@ -798,7 +1036,13 @@ const Courses = () => {
                     </td>
                     <td>{s.image ? <img src={s.image} alt="" className="cm-thumb" /> : "—"}</td>
                     <td className="cm-actions">
+                      <button className="cm-icon-btn" onClick={() => setChapterModal(s)}>
+                        Chapters{s.chapters?.length ? ` (${s.chapters.length})` : ""}
+                      </button>
                       <button className="cm-icon-btn" onClick={() => setTeacherModal(s)}>Teachers</button>
+                      <button className="cm-icon-btn" onClick={() => openEdit("subject", {
+                        id: s.id, name: s.name, order: s.order, textbook: s.textbook, image: s.image,
+                      })}>Edit</button>
                       <button className="cm-icon-btn cm-icon-btn--danger"
                         onClick={() => setConfirm({ kind: "subject", item: s, message: `Delete subject "${s.name}"?` })}>
                         Delete
@@ -833,7 +1077,7 @@ const Courses = () => {
         ) : (
           <table className="courses-table">
             <thead>
-              <tr><th>Batch</th><th>Code</th><th>Year</th><th>Seats</th><th>Status</th><th aria-label="actions" /></tr>
+              <tr><th>Batch</th><th>Code</th><th>Year</th><th>Price</th><th>Seats</th><th>Status</th><th aria-label="actions" /></tr>
             </thead>
             <tbody>
               {batches.map((b) => (
@@ -841,6 +1085,10 @@ const Courses = () => {
                   <td className="courses-title">{b.name}</td>
                   <td><span className="cm-code">{b.code}</span></td>
                   <td>{b.year || "—"}</td>
+                  <td>
+                    {rupees(b.effective_price)}
+                    {b.price_override != null && <small className="cm-file-name"> (override)</small>}
+                  </td>
                   <td>
                     <span className={b.is_full ? "cm-seats cm-seats--full" : "cm-seats"}>
                       {b.seats_taken}
@@ -859,6 +1107,7 @@ const Courses = () => {
                       id: b.id, name: b.name, code: b.code, year: b.year ?? "",
                       capacity: b.capacity ?? "", start_date: b.start_date || "",
                       end_date: b.end_date || "", is_active: b.is_active,
+                      price_override: b.price_override != null ? b.price_override / 100 : "",
                     })}>Edit</button>
                     <button className="cm-icon-btn cm-icon-btn--danger"
                       onClick={() => setConfirm({ kind: "batch", item: b, message: `Delete batch "${b.name}" (${b.code})? Students in it will be unassigned (not removed), and this batch's progress marks are cleared.` })}>
@@ -1002,6 +1251,13 @@ const Courses = () => {
           subject={teacherModal}
           onClose={() => setTeacherModal(null)}
           onChanged={() => { const s = subjects.find((x) => x.id === teacherModal.id); if (s) loadSubjectTeachers(subjects); }}
+        />
+      )}
+
+      {chapterModal && (
+        <ChapterModal
+          subject={chapterModal}
+          onClose={() => { setChapterModal(null); loadSubjects(nav.course.id); }}
         />
       )}
 
