@@ -13,6 +13,18 @@ export const getUsers   = async (params) => (await api.get("/accounts/admin/user
 export const getUser    = async (id)     => (await api.get(`/accounts/admin/users/${id}/`)).data;
 export const updateUser = async (id, d)  => (await api.patch(`/accounts/admin/users/${id}/`, d)).data;
 
+/* ── Students (LearnerProfile rows) ──
+   NOT a filtered view of /users: one account can hold several learner
+   profiles, so this is a flat per-student directory. */
+export const getStudents = async (params) =>
+  (await api.get("/accounts/admin/students/", { params })).data;
+export const getStudent = async (id) =>
+  (await api.get(`/accounts/admin/students/${id}/`)).data;
+export const updateStudent = async (id, d) =>
+  (await api.patch(`/accounts/admin/students/${id}/`, d)).data;
+export const setStudentActive = async (id, isActive) =>
+  (await api.post(`/accounts/admin/students/${id}/active/`, { is_active: isActive })).data;
+
 /* ── Teacher approvals (track-aware: items carry { track, track_label }) ── */
 export const getApprovals  = async ()           => (await api.get("/accounts/admin/teacher-approvals/")).data;
 export const actOnApproval = async (id, action, reason = "") =>
@@ -208,6 +220,16 @@ export const getEnrollments = async (params) =>
        { results: [] });
 export const actOnEnrollment = async (id, action, note = "") =>
   (await api.post(`/enrollments/admin/enrollments/${id}/action/`, { action, note })).data;
+/* Move an enrollment to another batch of the SAME course (batch=null detaches
+   it to course-wide). Batch-scoped content follows this FK. */
+export const moveEnrollmentBatch = async (id, batch) =>
+  (await api.post(`/enrollments/admin/enrollments/${id}/action/`,
+    { action: "move_batch", batch })).data;
+/* Place many enrollments into one batch at once. Capacity is validated against
+   the whole selection server-side, so this either applies fully or 400s. */
+export const bulkAssignBatch = async (enrollmentIds, batch) =>
+  (await api.post("/enrollments/admin/enrollments/bulk-batch/",
+    { enrollment_ids: enrollmentIds, batch })).data;
 
 /* ── Agreement letters (admin editor + immutable version history) ── */
 export const getAgreement         = async (key)        => (await api.get(`/accounts/admin/agreements/${key}/`)).data;

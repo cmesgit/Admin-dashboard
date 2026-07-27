@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   getBoards, createBoard, updateBoard, deleteBoard,
   getBoardCourses, createCourse, getCourse, updateCourse, deleteCourse,
@@ -7,7 +8,7 @@ import {
   getSkillCategories, getSkillExperts, getSkillApplications,
   // ── new: batches + teacher assignment + progress/roster ──
   getCourseBatches, createBatch, updateBatch, deleteBatch,
-  getBatchProgress, getBatchRoster,
+  getBatchProgress, getBatchRoster, moveEnrollmentBatch,
   getAdminAcademyTeachers, getSubjectTeachers,
   assignSubjectTeacher, updateSubjectTeacher, removeSubjectTeacher,
 } from "../api/admin";
@@ -612,25 +613,55 @@ function BatchProgressModal({ batch, onClose }) {
   );
 }
 
-/* ───────────────────── Batch roster modal ───────────────────── */
-function BatchRosterModal({ batch, onClose }) {
+/* ───────────────────── Batch roster modal ─────────────────────
+   Membership manager, not just a list: an admin looking at "who is in A13"
+   almost always wants to move someone out of it, so each row can be
+   reassigned to a sibling batch of the same course (or detached to
+   course-wide) right here. */
+function BatchRosterModal({ batch, siblingBatches = [], onClose, onChanged }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+  const [err, setErr] = useState("");
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    let cancel = false;
-    (async () => {
-      setLoading(true);
-      const d = await getBatchRoster(batch.id, { status: "ACTIVE" });
-      if (!cancel) { setRows(d?.results || []); setLoading(false); }
-    })();
-    return () => { cancel = true; };
+  const load = useCallback(async () => {
+    setLoading(true);
+    const d = await getBatchRoster(batch.id, { status: "ACTIVE" });
+    setRows(d?.results || []);
+    setLoading(false);
   }, [batch.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const move = async (row, targetId) => {
+    if (!targetId) return; // "Keep here" — the placeholder option, not an action
+    setErr("");
+    setBusyId(row.id);
+    try {
+      // "__none__" is the sentinel for detach; "" is the no-op placeholder, so
+      // they can't share a value.
+      await moveEnrollmentBatch(row.id, targetId === "__none__" ? null : targetId);
+      await load();
+      onChanged?.();
+    } catch (e) {
+      const d = e?.response?.data;
+      setErr(
+        Array.isArray(d) ? String(d[0])
+          : d?.batch ? String(Array.isArray(d.batch) ? d.batch[0] : d.batch)
+          : d?.detail || "Could not move that student."
+      );
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   return (
     <div className="confirm-overlay" onClick={onClose}>
       <div className="cm-form-card cm-form-card--wide" onClick={(e) => e.stopPropagation()}>
         <h3>Roster · {batch.name} <span className="cm-code">{batch.code}</span></h3>
+
+        {err && <p className="cm-empty-note" style={{ color: "#b3261e" }}>{err}</p>}
 
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
@@ -639,14 +670,43 @@ function BatchRosterModal({ batch, onClose }) {
         ) : (
           <table className="courses-table">
             <thead>
-              <tr><th>Student</th><th>Email</th><th>Enrolled</th></tr>
+              <tr><th>Student</th><th>Email</th><th>Enrolled</th><th>Move to</th></tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td className="courses-title">{r.user_name || "—"}</td>
+                  <td className="courses-title">
+                    {r.learner_profile_id ? (
+                      <button
+                        type="button"
+                        className="cm-linkish"
+                        onClick={() => navigate(`/students/${r.learner_profile_id}`)}
+                      >
+                        {r.user_name || "—"}
+                      </button>
+                    ) : (r.user_name || "—")}
+                  </td>
                   <td>{r.user_email}</td>
                   <td>{formatDate(r.enrolled_at)}</td>
+                  <td>
+                    <select
+                      value=""
+                      disabled={busyId === r.id}
+                      onChange={(e) => move(r, e.target.value)}
+                    >
+                      <option value="">
+                        {busyId === r.id ? "Moving…" : "Keep here"}
+                      </option>
+                      <option value="__none__">Course-wide (no batch)</option>
+                      {siblingBatches
+                        .filter((b) => b.id !== batch.id)
+                        .map((b) => (
+                          <option key={b.id} value={b.id} disabled={b.is_full}>
+                            {b.name} ({b.code}){b.is_full ? " — full" : ""}
+                          </option>
+                        ))}
+                    </select>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1266,7 +1326,12 @@ const Courses = () => {
       )}
 
       {rosterModal && (
-        <BatchRosterModal batch={rosterModal} onClose={() => setRosterModal(null)} />
+        <BatchRosterModal
+          batch={rosterModal}
+          siblingBatches={batches}
+          onClose={() => setRosterModal(null)}
+          onChanged={() => nav.course && loadBatches(nav.course.id)}
+        />
       )}
 
       {confirm && (

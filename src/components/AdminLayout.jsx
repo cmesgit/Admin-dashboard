@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Settings,
   GraduationCap,
+  School,
   BookCheck,
   ListChecks,
   Megaphone,
@@ -61,6 +62,7 @@ const navGroups = [
     items: [
       { to: "/courses", icon: BookOpen, label: "Courses" },
       { to: "/teachers", icon: UserRound, label: "Teachers", isNew: true },
+      { to: "/students", icon: School, label: "Students", isNew: true },
       { to: "/teacher-activity", icon: Activity, label: "Teacher Activity", isNew: true },
       { to: "/live-streams", icon: Radio, label: "Live Streams", isNew: true },
       { to: "/recordings", icon: Video, label: "Recordings", isNew: true },

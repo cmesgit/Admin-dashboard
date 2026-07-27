@@ -387,3 +387,16 @@
 @media (prefers-reduced-motion: reduce) {
   .cm-progress__fill { transition: none; }
 }
+
+/* Roster rows link to the student page — the learner profile IS the student. */
+.cm-linkish {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #425f7f;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.cm-linkish:hover { text-decoration: underline; }

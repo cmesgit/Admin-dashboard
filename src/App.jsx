@@ -31,6 +31,8 @@ import LiveStreams from "./pages/LiveStreams";
 import LivestreamMonitor from "./pages/LivestreamMonitor";
 import Recordings from "./pages/Recordings";
 import Teachers from "./pages/Teachers";
+import Students from "./pages/Students";
+import StudentDetail from "./pages/StudentDetail";
 import TeacherActivity from "./pages/TeacherActivity";
 import ModeratorActivity from "./pages/ModeratorActivity";
 import Analytics from "./pages/Analytics";
@@ -80,6 +82,8 @@ const App = () => {
           <Route path="courses" element={<Courses />} />
           <Route path="quizzes" element={<AcademyQuizzes />} />
           <Route path="teachers" element={<Teachers />} />
+          <Route path="students" element={<Students />} />
+          <Route path="students/:id" element={<StudentDetail />} />
           <Route path="teacher-activity" element={<TeacherActivity />} />
           <Route path="moderator-activity" element={<ModeratorActivity />} />
           <Route path="analytics" element={<Analytics />} />
