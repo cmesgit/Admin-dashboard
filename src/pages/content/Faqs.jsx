@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getContentFaqs, createContentFaq, updateContentFaq, deleteContentFaq } from "../../api/admin";
 import ConfirmModal from "../../components/ConfirmModal";
+import HtmlToolbar from "../../components/HtmlToolbar";
 import { errText } from "../../utils/errText";
 
 const PAGE_CHOICES = [
@@ -22,6 +23,7 @@ function FaqFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     order: initial?.order ?? 0,
     is_active: initial?.is_active ?? true,
   });
+  const answerRef = useRef(null);
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
@@ -45,7 +47,8 @@ function FaqFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
 
         <label className="cm-field">
           <span>Answer (HTML)</span>
-          <textarea rows={8} value={form.answer_html} onChange={set("answer_html")} placeholder="<p>Plain HTML — this is rendered as-is on the site.</p>" />
+          <HtmlToolbar textareaRef={answerRef} value={form.answer_html} onChange={(v) => setForm((f) => ({ ...f, answer_html: v }))} />
+          <textarea ref={answerRef} rows={8} value={form.answer_html} onChange={set("answer_html")} placeholder="<p>Plain HTML — this is rendered as-is on the site.</p>" />
         </label>
         <p className="cm-hint">Plain HTML, not a rich text editor — matches how Django admin itself falls back to a plain textarea for this field.</p>
 

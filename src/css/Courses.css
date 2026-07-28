@@ -213,6 +213,20 @@
 }
 .cm-check input { width: 16px; height: 16px; }
 
+/* Category multi-select (course form) — a wrapping grid of checkboxes,
+   reusing .cm-check per-item but tighter since there can be many. */
+.cm-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.cm-check--inline { margin-bottom: 0; }
+
 .cm-hint {
   margin: -4px 0 14px;
   font-size: 0.78rem;

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getBoards, createBoard, updateBoard, deleteBoard,
@@ -11,13 +11,21 @@ import {
   getBatchProgress, getBatchRoster, moveEnrollmentBatch,
   getAdminAcademyTeachers, getSubjectTeachers,
   assignSubjectTeacher, updateSubjectTeacher, removeSubjectTeacher,
+  // ── new: course categories (multi-select on the course form) ──
+  getCourseCategories,
 } from "../api/admin";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
+import ImageUploadField from "../components/ImageUploadField";
+import FeaturedCardPreview from "./content/preview/FeaturedCardPreview";
+import NavMenuEntryPreview from "./content/preview/NavMenuEntryPreview";
+import PlacementBadge from "./content/preview/PlacementBadge";
+import { errText } from "../utils/errText";
+import { formatDate } from "../utils/formatDate";
+import { buildBody } from "../utils/buildBody";
 import "../css/Courses.css";
+import "../css/Content.css"; // for the collapsible SEO section (cms-details) + live preview panel
 
-const formatDate = (d) =>
-  d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 const rupees = (paise) =>
   paise === null || paise === undefined ? "—" : `₹${(paise / 100).toLocaleString("en-IN")}`;
 const roleLabel = (r) => (r === "ASSISTANT" ? "Assistant" : "Primary");
@@ -27,20 +35,23 @@ const TABS = [
   { key: "skill", label: "Skill Dev" },
 ];
 
-/* Turn an axios error into a human string (detail or collected field errors). */
-const errText = (e) => {
-  const d = e?.response?.data;
-  if (!d) return "Something went wrong. Please try again.";
-  if (typeof d === "string") return d;
-  if (d.detail) return d.detail;
-  try { return Object.values(d).flat().join(" ") || "Request failed."; }
-  catch { return "Request failed."; }
-};
-
 /* ───────────────────────── Create/Edit modal ───────────────────────── */
-function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
+function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board }) {
   const [form, setForm] = useState(initial || {});
   const [file, setFile] = useState(null);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+
+  useEffect(() => {
+    if (type !== "course") return;
+    getCourseCategories().then((rows) => setCategoryOptions(Array.isArray(rows) ? rows : []));
+  }, [type]);
+
+  // Instant local preview for a newly-picked-but-not-yet-uploaded thumbnail
+  // (ImageUploadField only shows the filename, not a rendered preview) —
+  // fed into the live preview panel below. The URL is revoked once it's no
+  // longer the current one, so we don't leak blob URLs across edits.
+  const filePreviewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => { if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl); }, [filePreviewUrl]);
 
   const set = (k) => (e) =>
     setForm((f) => ({
@@ -48,16 +59,47 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
       [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value,
     }));
 
+  const toggleCategory = (id) =>
+    setForm((f) => {
+      const cur = f.categories || [];
+      return {
+        ...f,
+        categories: cur.includes(id) ? cur.filter((c) => c !== id) : [...cur, id],
+      };
+    });
+
   const heading =
     `${mode === "edit" ? "Edit" : "New"} ` +
     { board: "Board", course: "Course", subject: "Subject", batch: "Batch" }[type];
 
   const isCourse = type === "course";
 
+  // ── Live preview: where this course will actually show up on the real
+  // site, and (if featured) a mini render of its homepage card. ──
+  const selectedCategoryObjs = (form.categories || [])
+    .map((id) => categoryOptions.find((c) => c.id === id))
+    .filter(Boolean);
+  const hasCompetitiveCategory = selectedCategoryObjs.some((c) => c.group === "competitive");
+  const placementItems = isCourse
+    ? [
+        { label: "Catalog", sublabel: "/courses" },
+        ...(form.is_featured ? [{ label: "Homepage", sublabel: "Featured Grid" }] : []),
+        ...(hasCompetitiveCategory ? [{ label: "Navbar", sublabel: "Competitive Exams column" }] : []),
+        ...(board ? [{ label: "Navbar", sublabel: `School Education → ${board.name}` }] : []),
+      ]
+    : [];
+  const showNavPreview = hasCompetitiveCategory || !!board;
+
   return (
     <div className="confirm-overlay" onClick={busy ? undefined : onCancel}>
-      <div className={`cm-form-card${isCourse ? " cm-form-card--wide" : ""}`} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`cm-form-card${isCourse ? " cm-form-card--wide cm-form-card--with-preview" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3>{heading}</h3>
+
+        <div className={isCourse ? "cm-form-split" : undefined}>
+        <div className={isCourse ? "cm-form-main" : undefined}>
 
         {type === "board" && (
           <>
@@ -99,8 +141,22 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
                 <input type="number" min="0" value={form.price_rupees ?? 0} onChange={set("price_rupees")} />
               </label>
               <label className="cm-field">
+                <span>MRP (₹, optional)</span>
+                <input type="number" min="0" value={form.mrp_rupees ?? ""} onChange={set("mrp_rupees")} placeholder="Struck-through list price" />
+              </label>
+              <label className="cm-field">
                 <span>Access (days)</span>
                 <input type="number" min="1" value={form.subscription_duration_days ?? 30} onChange={set("subscription_duration_days")} />
+              </label>
+            </div>
+            <div className="cm-row">
+              <label className="cm-field">
+                <span>Discount label</span>
+                <input value={form.discount_label || ""} onChange={set("discount_label")} placeholder="e.g. 20% off" />
+              </label>
+              <label className="cm-field">
+                <span>Badge</span>
+                <input value={form.badge || ""} onChange={set("badge")} placeholder="e.g. Bestseller" />
               </label>
               <label className="cm-field">
                 <span>Status</span>
@@ -108,7 +164,18 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
                   <option value="DRAFT">Draft</option>
                   <option value="PUBLISHED">Published</option>
                   <option value="ARCHIVED">Archived</option>
+                  <option value="COMING_SOON">Coming Soon</option>
                 </select>
+              </label>
+            </div>
+            <div className="cm-row">
+              <label className="cm-check" style={{ marginTop: 0 }}>
+                <input type="checkbox" checked={form.is_featured ?? false} onChange={set("is_featured")} />
+                <span>Featured</span>
+              </label>
+              <label className="cm-field">
+                <span>Display order</span>
+                <input type="number" value={form.display_order ?? 0} onChange={set("display_order")} />
               </label>
             </div>
             <p className="cm-hint">
@@ -118,12 +185,32 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
 
             <label className="cm-field">
               <span>Thumbnail (16:9)</span>
-              <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              {file ? (
-                <small className="cm-file-name">{file.name}</small>
-              ) : form.thumbnail ? (
-                <img src={form.thumbnail} alt="" className="cm-thumb" />
-              ) : null}
+              <ImageUploadField value={file} onChange={setFile} previewUrl={form.thumbnail} />
+            </label>
+
+            <label className="cm-field">
+              <span>Categories</span>
+              <div className="cm-checkbox-group">
+                {categoryOptions.length === 0 ? (
+                  <span className="cm-muted">No categories yet — add some from the Content → Categories tab.</span>
+                ) : (
+                  categoryOptions.map((cat) => (
+                    <label className="cm-check cm-check--inline" key={cat.id}>
+                      <input
+                        type="checkbox"
+                        checked={(form.categories || []).includes(cat.id)}
+                        onChange={() => toggleCategory(cat.id)}
+                      />
+                      <span>{cat.name}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+            </label>
+
+            <label className="cm-field">
+              <span>Promo video URL</span>
+              <input value={form.promo_video_url || ""} onChange={set("promo_video_url")} placeholder="https://…" />
             </label>
 
             <h4 className="cm-subheading">Course details</h4>
@@ -149,6 +236,26 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
               <span>Syllabus</span>
               <textarea rows={4} value={form.syllabus || ""} onChange={set("syllabus")} placeholder="Optional" />
             </label>
+            <label className="cm-field">
+              <span>Highlights (one per line — the "What you'll learn" list)</span>
+              <textarea rows={4} value={form.highlights || ""} onChange={set("highlights")} placeholder={"e.g.\nMaster core concepts\nSolve past-year papers"} />
+            </label>
+            <label className="cm-field">
+              <span>Includes (one per line — the "This course includes" list)</span>
+              <textarea rows={4} value={form.includes || ""} onChange={set("includes")} placeholder={"e.g.\n24/7 access\nDownloadable notes"} />
+            </label>
+
+            <details className="cms-details">
+              <summary>SEO</summary>
+              <label className="cm-field">
+                <span>SEO title</span>
+                <input value={form.seo_title || ""} onChange={set("seo_title")} />
+              </label>
+              <label className="cm-field">
+                <span>SEO description</span>
+                <textarea rows={2} value={form.seo_description || ""} onChange={set("seo_description")} />
+              </label>
+            </details>
           </>
         )}
 
@@ -168,12 +275,7 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
             </label>
             <label className="cm-field">
               <span>Image</span>
-              <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              {file ? (
-                <small className="cm-file-name">{file.name}</small>
-              ) : form.image ? (
-                <img src={form.image} alt="" className="cm-thumb" />
-              ) : null}
+              <ImageUploadField value={file} onChange={setFile} previewUrl={form.image} />
             </label>
           </>
         )}
@@ -224,6 +326,34 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel }) {
             </p>
           </>
         )}
+
+        </div>
+
+        {isCourse && (
+          <aside className="cms-preview-panel">
+            <span className="cms-preview-panel-label">Live preview</span>
+            <PlacementBadge items={placementItems} />
+            {form.is_featured && (
+              <FeaturedCardPreview
+                title={form.title}
+                priceLabel={form.price_rupees}
+                mrp={form.mrp_rupees || null}
+                discountLabel={form.discount_label}
+                thumbnailUrl={filePreviewUrl || form.thumbnail || null}
+                ribbon={form.badge}
+                isComingSoon={form.status === "COMING_SOON"}
+              />
+            )}
+            {showNavPreview && (
+              <NavMenuEntryPreview
+                label={form.title || "Untitled course"}
+                comingSoon={form.status === "COMING_SOON"}
+              />
+            )}
+          </aside>
+        )}
+
+        </div>
 
         {error && <div className="cm-form-error">{error}</div>}
 
@@ -828,11 +958,22 @@ const Courses = () => {
       subscription_duration_days: full?.subscription_duration_days ?? c.subscription_duration_days ?? 30,
       status: full?.status ?? c.status ?? "DRAFT",
       thumbnail: full?.thumbnail ?? c.thumbnail ?? null,
+      mrp_rupees: full?.mrp != null ? full.mrp / 100 : "",
+      discount_label: full?.discount_label || "",
+      badge: full?.badge || "",
+      is_featured: full?.is_featured ?? false,
+      display_order: full?.display_order ?? 0,
+      seo_title: full?.seo_title || "",
+      seo_description: full?.seo_description || "",
+      promo_video_url: full?.promo_video_url || "",
+      categories: (full?.categories || []).map((cat) => cat.id),
       level: details.level || "",
       duration_weeks: details.duration_weeks ?? "",
       language: details.language || "English",
       requirements: details.requirements || "",
       syllabus: details.syllabus || "",
+      highlights: details.highlights || "",
+      includes: details.includes || "",
     });
   };
 
@@ -855,39 +996,57 @@ const Courses = () => {
           title: (form.title || "").trim(),
           description: form.description || "",
           price: Math.max(0, Math.round((parseFloat(form.price_rupees) || 0) * 100)),
+          mrp: form.mrp_rupees === "" || form.mrp_rupees == null
+            ? null
+            : Math.max(0, Math.round((parseFloat(form.mrp_rupees) || 0) * 100)),
+          discount_label: form.discount_label || "",
+          badge: form.badge || "",
+          is_featured: form.is_featured ?? false,
+          display_order: form.display_order === "" || form.display_order == null ? 0 : parseInt(form.display_order, 10) || 0,
+          seo_title: form.seo_title || "",
+          seo_description: form.seo_description || "",
+          promo_video_url: form.promo_video_url || "",
           subscription_duration_days: Math.max(1, parseInt(form.subscription_duration_days, 10) || 30),
           status: form.status || "DRAFT",
         };
+        // `details` (nested CourseDetail row) and `categories` (M2M ids) are
+        // not writable CourseSerializer fields — the backend reads them off
+        // request.data directly (AdminCourseDetailView.patch), JSON-encoded
+        // under multipart. buildBody's generic array/object → JSON.stringify
+        // handling covers both automatically.
         const detailsPayload = {
           level: form.level || "",
           duration_weeks: form.duration_weeks === "" || form.duration_weeks == null ? 0 : parseInt(form.duration_weeks, 10) || 0,
           syllabus: form.syllabus || "",
           language: form.language || "English",
           requirements: form.requirements || "",
+          // Anything added here (and NOT here) is what actually gets saved —
+          // fields missing from this object are silently wiped on save.
+          highlights: form.highlights || "",
+          includes: form.includes || "",
         };
-        if (file) {
-          const fd = new FormData();
-          Object.entries(basePayload).forEach(([k, v]) => fd.append(k, v));
-          fd.append("details", JSON.stringify(detailsPayload));
-          fd.append("thumbnail", file);
-          if (modal.mode !== "edit") fd.append("board_id", nav.board.id);
-          if (modal.mode === "edit") await updateCourse(modal.initial.id, fd, true);
-          else await createCourse(fd, true);
-        } else {
-          const payload = { ...basePayload, details: detailsPayload };
-          if (modal.mode === "edit") await updateCourse(modal.initial.id, payload);
-          else await createCourse({ ...payload, board_id: nav.board.id });
-        }
+        const categoriesPayload = (form.categories || []).map((id) => Number(id));
+        const fields = {
+          ...basePayload,
+          details: detailsPayload,
+          categories: categoriesPayload,
+          ...(modal.mode !== "edit" ? { board_id: nav.board.id } : {}),
+        };
+        const { data, isMultipart } = buildBody(fields, file, "thumbnail");
+        if (modal.mode === "edit") await updateCourse(modal.initial.id, data, isMultipart);
+        else await createCourse(data, isMultipart);
         setModal(null);
         await loadCourses(nav.board.id);
       } else if (modal.type === "subject") {
-        const fd = new FormData();
-        fd.append("name", (form.name || "").trim());
-        if (form.order) fd.append("order", form.order);
-        fd.append("textbook", form.textbook || "");
-        if (file) fd.append("image", file);
-        if (modal.mode === "edit") await updateSubject(modal.initial.id, fd);
-        else await createSubject(nav.course.id, fd);
+        // Always multipart, even without a new file (matches the previous
+        // inline FormData build — createSubject/updateSubject expect
+        // multipart regardless).
+        const { data } = buildBody(
+          { name: (form.name || "").trim(), order: form.order || undefined, textbook: form.textbook || "" },
+          file, "image", true,
+        );
+        if (modal.mode === "edit") await updateSubject(modal.initial.id, data);
+        else await createSubject(nav.course.id, data);
         setModal(null);
         await loadSubjects(nav.course.id);
       } else if (modal.type === "batch") {
@@ -1303,6 +1462,7 @@ const Courses = () => {
           error={formError}
           onSubmit={handleSubmit}
           onCancel={() => setModal(null)}
+          board={nav.board}
         />
       )}
 

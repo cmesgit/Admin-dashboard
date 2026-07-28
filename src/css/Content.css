@@ -224,6 +224,31 @@
 .cms-readonly-grid span { font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.03em; }
 .cms-readonly-grid b { font-size: 0.85rem; color: #1f2937; font-weight: 600; }
 
+/* ── HTML formatting toolbar (blog body, FAQ answer) ── */
+.html-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.html-toolbar-btn {
+  padding: 4px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #374151;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.html-toolbar-btn:hover { background: #eef1ff; border-color: #4f6df5; color: #4f6df5; }
+
+/* ── Inline note for fields disabled because a course/board is linked ── */
+.cms-derived-note {
+  font-size: 0.76rem;
+  color: #8a8f98;
+  margin: -2px 0 10px;
+}
+
 /* ── Existing-image preview inside a form ── */
 .cms-image-preview {
   width: 64px;
@@ -238,3 +263,70 @@
 @media (prefers-reduced-motion: reduce) {
   .cms-card { transition: none; }
 }
+
+/* ============================================================
+   Live preview panel (Courses / Showcase / BlogPosts modals)
+   — the modal's own two-column split + the "where it will
+   appear" chips + the nav-link stand-in. None of this is copied
+   from shiksha-frontend; the copied card CSS lives in
+   src/pages/content/preview/preview.css, scoped under
+   .cms-preview instead.
+   ============================================================ */
+
+/* Wider modal card so a ~300px preview column fits next to the form. */
+.cm-form-card--with-preview { width: min(96%, 920px); }
+
+.cm-form-split { display: flex; gap: 24px; align-items: flex-start; }
+.cm-form-main { flex: 1 1 auto; min-width: 0; }
+
+.cms-preview-panel {
+  flex: 0 0 300px;
+  min-width: 0;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-left: 1px solid #eef0f3;
+  padding-left: 20px;
+}
+.cms-preview-panel-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9aa0aa;
+}
+
+@media (max-width: 860px) {
+  .cm-form-split { flex-direction: column; }
+  .cms-preview-panel {
+    flex: none;
+    position: static;
+    border-left: none;
+    border-top: 1px solid #eef0f3;
+    padding-left: 0;
+    padding-top: 16px;
+  }
+}
+
+/* ── Placement chips (PlacementBadge.jsx) ── */
+.cms-placement-stack { display: flex; flex-direction: column; gap: 8px; }
+.cms-placement-chip { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.cms-placement-sub { font-size: 0.78rem; color: #6b7280; }
+
+/* ── Nav-link stand-in (NavMenuEntryPreview.jsx) ── */
+.cms-navlink-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafbfc;
+  font-size: 0.85rem;
+  color: #1f2937;
+}
+.cms-navlink-dot { width: 6px; height: 6px; border-radius: 50%; background: #4f6df5; flex: none; }
+.cms-navlink-label { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cms-navlink-soon { flex: none; }

@@ -7,6 +7,7 @@ import {
 import ConfirmModal from "../../components/ConfirmModal";
 import TagChipInput from "../../components/TagChipInput";
 import { errText } from "../../utils/errText";
+import { formatDate } from "../../utils/formatDate";
 import { isoToLocalInput, localInputToIso } from "../../utils/datetimeLocal";
 
 const CATEGORIES = [
@@ -15,9 +16,6 @@ const CATEGORIES = [
 ];
 const CATEGORY_FILTERS = [["", "All categories"], ...CATEGORIES.map((c) => [c, c])];
 const STATUS_PAL = { draft: "pal-gray", scheduled: "pal-blue", published: "pal-green", archived: "pal-gray" };
-
-const formatDate = (d) =>
-  d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
 /* ───────────────────────── Create/Edit modal ───────────────────────── */
 function AffairFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {

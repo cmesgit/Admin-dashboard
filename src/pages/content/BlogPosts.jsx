@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Star, Send, Undo2 } from "lucide-react";
 import {
   getContentBlogs, createContentBlog, updateContentBlog, deleteContentBlog,
@@ -6,7 +6,13 @@ import {
 } from "../../api/admin";
 import ConfirmModal from "../../components/ConfirmModal";
 import TagChipInput from "../../components/TagChipInput";
+import ImageUploadField from "../../components/ImageUploadField";
+import HtmlToolbar from "../../components/HtmlToolbar";
+import BlogCardPreview from "./preview/BlogCardPreview";
+import PlacementBadge from "./preview/PlacementBadge";
 import { errText } from "../../utils/errText";
+import { formatDate } from "../../utils/formatDate";
+import { buildBody } from "../../utils/buildBody";
 import { isoToLocalInput, localInputToIso } from "../../utils/datetimeLocal";
 
 const CLASS_LEVELS = ["8", "9", "10", "11", "12", "general"];
@@ -15,9 +21,6 @@ const SUBJECTS = [
   "civics", "political-science", "english", "general",
 ];
 const STATUS_PAL = { draft: "pal-gray", scheduled: "pal-blue", published: "pal-green", archived: "pal-gray" };
-
-const formatDate = (d) =>
-  d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
 /* ───────────────────────── Create/Edit modal ───────────────────────── */
 function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
@@ -37,9 +40,30 @@ function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     publish_at: isoToLocalInput(initial?.publish_at),
   });
   const [file, setFile] = useState(null);
+  const bodyRef = useRef(null);
+
+  // Instant local preview for a newly-picked-but-not-yet-uploaded cover
+  // image (ImageUploadField only shows the filename, not a rendered preview).
+  const filePreviewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => { if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl); }, [filePreviewUrl]);
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
+
+  // ── Live preview: where this post will appear + a mini card render. ──
+  const previewCoverUrl = filePreviewUrl || initial?.cover || null;
+  const previewPublishedLabel = initial?.status === "published"
+    ? `Published${initial.updated_at ? ` · ${formatDate(initial.updated_at)}` : ""}`
+    : form.publish_at
+      ? `Scheduled for ${formatDate(localInputToIso(form.publish_at))}`
+      : "Not yet published";
+  const previewSlug = form.slug || initial?.slug || "";
+  const placementItems = [
+    { label: "/blogs", sublabel: "list" },
+    previewSlug
+      ? { label: `/blogs/${previewSlug}`, sublabel: "detail page" }
+      : { label: "/blogs/<slug>", sublabel: "(slug auto-generated on save)" },
+  ];
 
   const submit = () => {
     const payload = {
@@ -62,8 +86,11 @@ function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
 
   return (
     <div className="confirm-overlay" onClick={busy ? undefined : onCancel}>
-      <div className="cm-form-card cm-form-card--wide" onClick={(e) => e.stopPropagation()}>
+      <div className="cm-form-card cm-form-card--wide cm-form-card--with-preview" onClick={(e) => e.stopPropagation()}>
         <h3>{mode === "edit" ? "Edit Blog Post" : "New Blog Post"}</h3>
+
+        <div className="cm-form-split">
+        <div className="cm-form-main">
 
         {mode === "edit" && initial && (
           <div className="cms-readonly-grid">
@@ -110,18 +137,15 @@ function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
           <textarea rows={2} value={form.excerpt} onChange={set("excerpt")} placeholder="Short summary shown in listings" />
         </label>
 
-        {mode === "edit" && initial?.cover && (
-          <img src={initial.cover} alt="" className="cms-image-preview" />
-        )}
         <label className="cm-field">
           <span>Cover image</span>
-          <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-          {file && <small className="cm-file-name">{file.name}</small>}
+          <ImageUploadField value={file} onChange={setFile} previewUrl={initial?.cover} previewClassName="cms-image-preview" />
         </label>
 
         <label className="cm-field">
           <span>Body (HTML)</span>
-          <textarea rows={10} value={form.body_html} onChange={set("body_html")} placeholder="<p>Post body as plain HTML…</p>" />
+          <HtmlToolbar textareaRef={bodyRef} value={form.body_html} onChange={(v) => setForm((f) => ({ ...f, body_html: v }))} />
+          <textarea ref={bodyRef} rows={10} value={form.body_html} onChange={set("body_html")} placeholder="<p>Post body as plain HTML…</p>" />
         </label>
         <p className="cm-hint">Plain HTML, not a rich text editor — same fallback-to-textarea approach as the FAQ answer field.</p>
 
@@ -159,6 +183,22 @@ function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
           </label>
         </details>
 
+        </div>
+
+        <aside className="cms-preview-panel">
+          <span className="cms-preview-panel-label">Live preview</span>
+          <PlacementBadge items={placementItems} />
+          <BlogCardPreview
+            title={form.title}
+            excerpt={form.excerpt}
+            coverUrl={previewCoverUrl}
+            tags={form.tags}
+            publishedLabel={previewPublishedLabel}
+          />
+        </aside>
+
+        </div>
+
         {error && <div className="cm-form-error">{error}</div>}
 
         <div className="confirm-actions">
@@ -171,18 +211,6 @@ function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     </div>
   );
 }
-
-const buildBody = (payload, file, fileField) => {
-  if (!file) return { data: payload, isMultipart: false };
-  const fd = new FormData();
-  Object.entries(payload).forEach(([k, v]) => {
-    if (v === null || v === undefined) return;
-    if (Array.isArray(v) || typeof v === "object") fd.append(k, JSON.stringify(v));
-    else fd.append(k, v);
-  });
-  fd.append(fileField, file);
-  return { data: fd, isMultipart: true };
-};
 
 const BlogPosts = ({ onAction }) => {
   const [rows, setRows] = useState([]);

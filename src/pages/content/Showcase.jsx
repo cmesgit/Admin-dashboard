@@ -1,12 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Star, BookOpen, FlaskConical, Calculator } from "lucide-react";
 import {
   getContentShowcase, createContentShowcase, updateContentShowcase, deleteContentShowcase,
-  getAcademicCourses,
+  getAcademicCourses, getBoards,
 } from "../../api/admin";
 import ConfirmModal from "../../components/ConfirmModal";
 import TagChipInput from "../../components/TagChipInput";
+import ImageUploadField from "../../components/ImageUploadField";
+import FeaturedCardPreview from "./preview/FeaturedCardPreview";
+import PlacementBadge from "./preview/PlacementBadge";
 import { errText } from "../../utils/errText";
+import { buildBody } from "../../utils/buildBody";
 
 const ICON_CHOICES = [["book", "Book"], ["flask", "Flask"], ["calc", "Calculator"]];
 const ICON_CMP = { book: BookOpen, flask: FlaskConical, calc: Calculator };
@@ -42,6 +46,7 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     order: initial?.order ?? 0,
     is_active: initial?.is_active ?? true,
     course: initial?.course || "",
+    board: initial?.board || "",
   });
   const [linkStateText, setLinkStateText] = useState(
     JSON.stringify(initial?.link_state && Object.keys(initial.link_state).length ? initial.link_state : {}, null, 2)
@@ -51,6 +56,14 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
   const [courseOptions, setCourseOptions] = useState(
     initial?.course && initial?.course_title ? [{ id: initial.course, title: initial.course_title }] : []
   );
+  const [boardOptions, setBoardOptions] = useState(
+    initial?.board && initial?.board_name ? [{ id: initial.board, name: initial.board_name }] : []
+  );
+
+  // Instant local preview for a newly-picked-but-not-yet-uploaded image
+  // (ImageUploadField only shows the filename, not a rendered preview).
+  const filePreviewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => { if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl); }, [filePreviewUrl]);
 
   useEffect(() => {
     getAcademicCourses().then((rows) => {
@@ -63,12 +76,40 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
         return Array.from(known.values());
       });
     });
+    getBoards().then((rows) => {
+      const list = Array.isArray(rows) ? rows : [];
+      setBoardOptions((prev) => {
+        const known = new Map(list.map((b) => [b.id, b]));
+        prev.forEach((b) => { if (!known.has(b.id)) known.set(b.id, b); });
+        return Array.from(known.values());
+      });
+    });
   }, []);
 
   const linkedToCourse = !!form.course;
+  // Wider than linkedToCourse: title/price_label/image are derived once
+  // EITHER a course or a board is linked, not just a course.
+  const derivedFromLink = !!form.course || !!form.board;
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
+
+  // ── Live preview: prefer real data already fetched for the course/board
+  // dropdowns over the placeholder text, when this card is linked. ──
+  const selectedCourseObj = form.course
+    ? courseOptions.find((c) => String(c.id) === String(form.course))
+    : null;
+  const selectedBoardObj = form.board
+    ? boardOptions.find((b) => String(b.id) === String(form.board))
+    : null;
+  const previewTitle = selectedCourseObj?.title || selectedBoardObj?.name || form.title;
+  // Only a linked course carries a real price client-side (Board has none) —
+  // fall back to the manual price_label, same as toShowcaseCard() does.
+  const previewPriceLabel = selectedCourseObj
+    ? String(Math.round((selectedCourseObj.price || 0) / 100))
+    : form.price_label;
+  const previewIsComingSoon = !previewPriceLabel && !!form.tutor_name;
+  const previewThumbnailUrl = filePreviewUrl || initial?.image || form.image_url || null;
 
   const submit = () => {
     let link_state;
@@ -94,6 +135,7 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
       image_url: form.image_url.trim(),
       icon: form.icon,
       course: form.course || null,
+      board: form.board || null,
       // Ignored server-side when `course` is set (derived instead), but still
       // sent so unlinking a card leaves them at whatever the admin last typed.
       link_path: form.link_path.trim() || "/courses",
@@ -106,19 +148,23 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
 
   return (
     <div className="confirm-overlay" onClick={busy ? undefined : onCancel}>
-      <div className="cm-form-card cm-form-card--wide" onClick={(e) => e.stopPropagation()}>
+      <div className="cm-form-card cm-form-card--wide cm-form-card--with-preview" onClick={(e) => e.stopPropagation()}>
         <h3>{mode === "edit" ? "Edit Showcase Card" : "New Showcase Card"}</h3>
+
+        <div className="cm-form-split">
+        <div className="cm-form-main">
 
         <div className="cm-row">
           <label className="cm-field">
-            <span>Title</span>
-            <input value={form.title} onChange={set("title")} placeholder="e.g. CBSE Class 10" autoFocus />
+            <span>Title{derivedFromLink ? " (derived — read-only while linked)" : ""}</span>
+            <input value={form.title} disabled={derivedFromLink} onChange={set("title")} placeholder="e.g. CBSE Class 10" autoFocus />
           </label>
           <label className="cm-field">
             <span>Level label</span>
             <input value={form.level_label} onChange={set("level_label")} placeholder="e.g. Foundation" />
           </label>
         </div>
+        {derivedFromLink && <p className="cms-derived-note">Derived from linked course/board.</p>}
 
         <div className="cm-row">
           <label className="cm-field">
@@ -142,8 +188,8 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
 
         <div className="cm-row">
           <label className="cm-field">
-            <span>Price label (optional)</span>
-            <input value={form.price_label} onChange={set("price_label")} placeholder="e.g. 1,500" />
+            <span>Price label{derivedFromLink ? " (derived — read-only while linked)" : " (optional)"}</span>
+            <input value={form.price_label} disabled={derivedFromLink} onChange={set("price_label")} placeholder="e.g. 1,500" />
           </label>
           <label className="cm-field">
             <span>Tutor name (optional)</span>
@@ -160,17 +206,28 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
           />
         </label>
 
-        <label className="cm-field">
-          <span>Link to a real course (optional)</span>
-          <select value={form.course} onChange={set("course")}>
-            <option value="">— Not linked (use manual link below) —</option>
-            {courseOptions.map((c) => (
-              <option key={c.id} value={c.id}>{c.title}{c.status && c.status !== "PUBLISHED" ? ` (${c.status})` : ""}</option>
-            ))}
-          </select>
-        </label>
+        <div className="cm-row">
+          <label className="cm-field">
+            <span>Link to a real course (optional)</span>
+            <select value={form.course} onChange={set("course")}>
+              <option value="">— Not linked (use manual link below) —</option>
+              {courseOptions.map((c) => (
+                <option key={c.id} value={c.id}>{c.title}{c.status && c.status !== "PUBLISHED" ? ` (${c.status})` : ""}</option>
+              ))}
+            </select>
+          </label>
+          <label className="cm-field">
+            <span>Link to a board (optional)</span>
+            <select value={form.board} onChange={set("board")}>
+              <option value="">— Not linked —</option>
+              {boardOptions.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
         <p className="cm-hint">
-          When linked, this card opens straight into that course and the link path/state
+          When linked to a course, this card opens straight into that course and the link path/state
           below are derived automatically — you can leave them alone.
         </p>
 
@@ -184,20 +241,23 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
           <input value={form.gradient_css} onChange={set("gradient_css")} placeholder="rgba(79,109,245,0.15), rgba(109,140,255,0.05)" />
         </label>
 
-        {mode === "edit" && initial?.image && (
-          <img src={initial.image} alt="" className="cms-image-preview" />
-        )}
         <div className="cm-row">
           <label className="cm-field">
-            <span>Image (optional upload)</span>
-            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-            {file && <small className="cm-file-name">{file.name}</small>}
+            <span>Image{derivedFromLink ? " (derived — read-only while linked)" : " (optional upload)"}</span>
+            <ImageUploadField
+              value={file}
+              onChange={setFile}
+              previewUrl={initial?.image}
+              previewClassName="cms-image-preview"
+              disabled={derivedFromLink}
+            />
           </label>
           <label className="cm-field">
-            <span>Image URL (fallback if no upload)</span>
-            <input value={form.image_url} onChange={set("image_url")} placeholder="https://…" />
+            <span>Image URL{derivedFromLink ? " (derived — read-only while linked)" : " (fallback if no upload)"}</span>
+            <input value={form.image_url} disabled={derivedFromLink} onChange={set("image_url")} placeholder="https://…" />
           </label>
         </div>
+        {derivedFromLink && <p className="cms-derived-note">Derived from linked course/board.</p>}
 
         <div className="cm-row">
           <label className="cm-field">
@@ -237,6 +297,30 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
           </label>
         </div>
 
+        </div>
+
+        <aside className="cms-preview-panel">
+          <span className="cms-preview-panel-label">Live preview</span>
+          <PlacementBadge items={[{ label: "Homepage", sublabel: "Featured Grid" }]} />
+          <FeaturedCardPreview
+            title={previewTitle}
+            priceLabel={previewIsComingSoon ? null : previewPriceLabel}
+            thumbnailUrl={previewThumbnailUrl}
+            ribbon={form.ribbon}
+            stars={form.stars}
+            reviewCount={form.review_count}
+            tutorName={form.tutor_name}
+            isComingSoon={previewIsComingSoon}
+          />
+          {form.board && !form.course && (
+            <p className="cms-derived-note">
+              Price shown is a placeholder — the real card derives its price server-side from the linked board's courses.
+            </p>
+          )}
+        </aside>
+
+        </div>
+
         {error && <div className="cm-form-error">{error}</div>}
 
         <div className="confirm-actions">
@@ -249,19 +333,6 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     </div>
   );
 }
-
-/* Build either a FormData (when a new image was picked) or a plain object. */
-const buildBody = (payload, file) => {
-  if (!file) return { data: payload, isMultipart: false };
-  const fd = new FormData();
-  Object.entries(payload).forEach(([k, v]) => {
-    if (v === null || v === undefined) return;
-    if (Array.isArray(v) || (typeof v === "object")) fd.append(k, JSON.stringify(v));
-    else fd.append(k, v);
-  });
-  fd.append("image", file);
-  return { data: fd, isMultipart: true };
-};
 
 const Showcase = ({ onAction }) => {
   const [rows, setRows] = useState([]);

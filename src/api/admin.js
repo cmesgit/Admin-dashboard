@@ -59,6 +59,18 @@ export const updateBoard = async (id, data) =>
 export const deleteBoard = async (id) =>
   (await api.delete(`/courses/admin/boards/${id}/`)).data;
 
+/* ── Academic course management: Course Categories (boards/class8-12/competitive
+   group filters). Under courses/admin/..., not content/admin/... like the
+   other Content tabs — CourseCategory lives in the courses app. ── */
+export const getCourseCategories = async () =>
+  safe(async () => (await api.get("/courses/admin/categories/")).data, []);
+export const createCourseCategory = async (data) =>
+  (await api.post("/courses/admin/categories/", data)).data;
+export const updateCourseCategory = async (id, data) =>
+  (await api.patch(`/courses/admin/categories/${id}/`, data)).data;
+export const deleteCourseCategory = async (id) =>
+  (await api.delete(`/courses/admin/categories/${id}/`)).data;
+
 export const getBoardCourses = async (boardId) =>
   safe(async () => (await api.get(`/courses/admin/boards/${boardId}/courses/`)).data, []);
 export const createCourse = async (data, isMultipart = false) =>

@@ -1,11 +1,13 @@
 import { useCallback, useRef, useState } from "react";
-import { FileText, Newspaper, HelpCircle, Megaphone, LayoutGrid, Tag } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { FileText, Newspaper, HelpCircle, Megaphone, LayoutGrid, Tag, Layers } from "lucide-react";
 import BlogPosts from "./BlogPosts";
 import CurrentAffairs from "./CurrentAffairs";
 import Faqs from "./Faqs";
 import Announcements from "./Announcements";
 import Showcase from "./Showcase";
 import Tags from "./Tags";
+import Categories from "./Categories";
 import Toast from "../../components/Toast";
 import "../../css/Moderator.css";
 import "../../css/Courses.css";
@@ -18,13 +20,27 @@ const TABS = [
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "showcase", label: "Showcase Courses", icon: LayoutGrid },
   { id: "tags", label: "Tags", icon: Tag },
+  { id: "categories", label: "Categories", icon: Layers },
 ];
+const TAB_IDS = TABS.map((t) => t.id);
+const DEFAULT_TAB = "blogs";
 
 // Same "sidebar entry -> internal tab bar -> tab components" shape as
 // ModeratorPanel.jsx, with one shared toast fed by an `onAction` callback
-// passed down to every tab.
+// passed down to every tab. The active tab is synced to `?tab=` so a tab is
+// shareable/bookmarkable and survives a reload — falls back to the default
+// when the param is missing or unrecognized.
 const ContentPanel = () => {
-  const [tab, setTab] = useState("blogs");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get("tab");
+  const tab = TAB_IDS.includes(rawTab) ? rawTab : DEFAULT_TAB;
+  const setTab = (id) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", id);
+      return next;
+    });
+  };
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
@@ -60,6 +76,7 @@ const ContentPanel = () => {
       {tab === "announcements" && <Announcements onAction={onAction} />}
       {tab === "showcase" && <Showcase onAction={onAction} />}
       {tab === "tags" && <Tags onAction={onAction} />}
+      {tab === "categories" && <Categories onAction={onAction} />}
 
       <Toast message={toast} />
     </div>
