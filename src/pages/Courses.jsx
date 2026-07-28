@@ -30,6 +30,37 @@ const rupees = (paise) =>
   paise === null || paise === undefined ? "—" : `₹${(paise / 100).toLocaleString("en-IN")}`;
 const roleLabel = (r) => (r === "ASSISTANT" ? "Assistant" : "Primary");
 
+// Completeness/placement helpers for the course-list "content complete" /
+// "shows up on" columns. `completeness`/`isIncomplete` accept EITHER shape a
+// course can arrive in: the board-scoped list row (nested `details.syllabus`/
+// `details.highlights`) or the edit form's flat state (`form.syllabus`/
+// `form.highlights`) — `??` falls through to whichever is present, so the
+// same function powers both the table row and the publish-guard check below.
+const REQUIRED_COURSE_FIELDS = {
+  Thumbnail: (c) => !!c.thumbnail,
+  Description: (c) => !!c.description,
+  Syllabus: (c) => !!(c.details?.syllabus ?? c.syllabus),
+  Highlights: (c) => !!(c.details?.highlights ?? c.highlights),
+  "SEO title": (c) => !!c.seo_title,
+};
+
+function completeness(course) {
+  const keys = Object.keys(REQUIRED_COURSE_FIELDS);
+  const missing = keys.filter((k) => !REQUIRED_COURSE_FIELDS[k](course));
+  return { pct: Math.round(((keys.length - missing.length) / keys.length) * 100), missing };
+}
+
+const isIncomplete = (course) => completeness(course).pct < 100;
+
+function placementsFor(course, board) {
+  if (course.status !== "PUBLISHED") return ["Not published anywhere"];
+  const items = ["Catalog"];
+  if (course.is_featured) items.push("Homepage");
+  if ((course.categories || []).some((cat) => cat.group === "competitive")) items.push("Navbar");
+  if (board) items.push(`Navbar (${board.name})`);
+  return items;
+}
+
 const TABS = [
   { key: "academy", label: "Academy" },
   { key: "skill", label: "Skill Dev" },
@@ -40,6 +71,9 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
   const [form, setForm] = useState(initial || {});
   const [file, setFile] = useState(null);
   const [categoryOptions, setCategoryOptions] = useState([]);
+  // Holds "PUBLISHED" while the confirm-to-override dialog is open for an
+  // incomplete course; the status field itself isn't updated until confirmed.
+  const [publishConfirm, setPublishConfirm] = useState(null);
 
   useEffect(() => {
     if (type !== "course") return;
@@ -160,7 +194,17 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
               </label>
               <label className="cm-field">
                 <span>Status</span>
-                <select value={form.status || "DRAFT"} onChange={set("status")}>
+                <select
+                  value={form.status || "DRAFT"}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (next === "PUBLISHED" && isIncomplete(form)) {
+                      setPublishConfirm(next);
+                      return;
+                    }
+                    setForm((f) => ({ ...f, status: next }));
+                  }}
+                >
                   <option value="DRAFT">Draft</option>
                   <option value="PUBLISHED">Published</option>
                   <option value="ARCHIVED">Archived</option>
@@ -364,6 +408,18 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
           </button>
         </div>
       </div>
+
+      {publishConfirm && (
+        <ConfirmModal
+          title="Publish incomplete course?"
+          message={`This course is missing: ${completeness(form).missing.join(", ")}. Publish it anyway?`}
+          onConfirm={() => {
+            setForm((f) => ({ ...f, status: publishConfirm }));
+            setPublishConfirm(null);
+          }}
+          onCancel={() => setPublishConfirm(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1170,34 +1226,68 @@ const Courses = () => {
       ) : (
         <table className="courses-table">
           <thead>
-            <tr><th>Course</th><th>Status</th><th>Fee</th><th>Access</th><th>Subjects</th><th>Enrolled</th><th aria-label="actions" /></tr>
+            <tr>
+              <th>Course</th><th>Status</th><th>Content complete</th><th>Shows up on</th>
+              <th>Fee</th><th>Access</th><th>Subjects</th><th>Enrolled</th><th aria-label="actions" />
+            </tr>
           </thead>
           <tbody>
-            {courses.map((c) => (
-              <tr key={c.id}>
-                <td className="courses-title">
-                  <button className="cm-link" onClick={() => openCourse(c)}>{c.title}</button>
-                </td>
-                <td>
-                  <StatusBadge color={c.status === "PUBLISHED" ? "green" : c.status === "ARCHIVED" ? "gray" : "yellow"}>
-                    {c.status === "PUBLISHED" ? "Published" : c.status === "ARCHIVED" ? "Archived" : "Draft"}
-                  </StatusBadge>
-                </td>
-                <td>{rupees(c.price)}</td>
-                <td>{c.subscription_duration_days ? `${c.subscription_duration_days}d` : "—"}</td>
-                <td>{c.subject_count ?? 0}</td>
-                <td>{c.enrollment_count ?? 0}</td>
-                <td className="cm-actions">
-                  <button className="cm-icon-btn" onClick={() => openCourse(c)}>Subjects</button>
-                  <button className="cm-icon-btn" onClick={() => openBatches(c)}>Batches</button>
-                  <button className="cm-icon-btn" onClick={() => openEditCourse(c)}>Edit</button>
-                  <button className="cm-icon-btn cm-icon-btn--danger"
-                    onClick={() => setConfirm({ kind: "course", item: c, message: `Delete course "${c.title}"? Its subjects and content links are removed too. This can't be undone.` })}>
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {courses.map((c) => {
+              const { pct, missing } = completeness(c);
+              const incomplete = pct < 100;
+              const publishedIncomplete = c.status === "PUBLISHED" && incomplete;
+              return (
+                <tr key={c.id}>
+                  <td className="courses-title">
+                    <button className="cm-link" onClick={() => openCourse(c)}>{c.title}</button>
+                  </td>
+                  <td>
+                    <StatusBadge
+                      color={
+                        c.status === "PUBLISHED" ? "green"
+                        : c.status === "ARCHIVED" ? "gray"
+                        : c.status === "COMING_SOON" ? "orange"
+                        : "yellow"
+                      }
+                    >
+                      {c.status === "PUBLISHED" ? "Published"
+                        : c.status === "ARCHIVED" ? "Archived"
+                        : c.status === "COMING_SOON" ? "Coming Soon"
+                        : "Draft"}
+                    </StatusBadge>
+                    {publishedIncomplete && (
+                      <div className="cm-muted" style={{ marginTop: 4 }}>⚠ published incomplete</div>
+                    )}
+                  </td>
+                  <td>
+                    <ProgressBar percent={pct} />
+                    {missing.length > 0 && (
+                      <div className="cm-muted" style={{ marginTop: 4 }}>Missing: {missing.join(", ")}</div>
+                    )}
+                  </td>
+                  <td>
+                    {placementsFor(c, nav.board).map((label) => (
+                      <span key={label} className="courses-chip" style={{ marginRight: 4, marginBottom: 4, display: "inline-block" }}>
+                        {label}
+                      </span>
+                    ))}
+                  </td>
+                  <td>{rupees(c.price)}</td>
+                  <td>{c.subscription_duration_days ? `${c.subscription_duration_days}d` : "—"}</td>
+                  <td>{c.subject_count ?? 0}</td>
+                  <td>{c.enrollment_count ?? 0}</td>
+                  <td className="cm-actions">
+                    <button className="cm-icon-btn" onClick={() => openCourse(c)}>Subjects</button>
+                    <button className="cm-icon-btn" onClick={() => openBatches(c)}>Batches</button>
+                    <button className="cm-icon-btn" onClick={() => openEditCourse(c)}>Edit</button>
+                    <button className="cm-icon-btn cm-icon-btn--danger"
+                      onClick={() => setConfirm({ kind: "course", item: c, message: `Delete course "${c.title}"? Its subjects and content links are removed too. This can't be undone.` })}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
