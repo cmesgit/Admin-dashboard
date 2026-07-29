@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import {
   LayoutDashboard,
@@ -33,6 +33,7 @@ import {
   Gavel,
   Search,
   Plus,
+  ImageIcon,
 } from "lucide-react";
 import { getEnrollmentRequests } from "../api/admin";
 import { getAdminSupportTickets } from "../api/admin_communication";
@@ -66,6 +67,7 @@ const navGroups = [
       { to: "/teacher-activity", icon: Activity, label: "Teacher Activity", isNew: true },
       { to: "/live-streams", icon: Radio, label: "Live Streams", isNew: true },
       { to: "/recordings", icon: Video, label: "Recordings", isNew: true },
+      { to: "/group-session-attendance", icon: Users, label: "Group Session Attendance", isNew: true },
       { to: "/enrollment-requests", icon: FileCheck, label: "Enrollments", badgeKey: "enroll" },
       { to: "/enrollments", icon: ClipboardList, label: "Enrollment Mgmt" },
       { to: "/quizzes", icon: ListChecks, label: "Academy Quizzes" },
@@ -78,6 +80,7 @@ const navGroups = [
       { to: "/skill-experts", icon: Users2, label: "Skill Experts" },
       { to: "/skill-sessions", icon: CalendarClock, label: "Sessions" },
       { to: "/skill-courses", icon: BookCheck, label: "Skill Courses" },
+      { to: "/skill-cms", icon: ImageIcon, label: "Skill CMS" },
     ],
   },
   {
@@ -113,6 +116,7 @@ const len = (r) => (Array.isArray(r) ? r.length : r?.results?.length ?? r?.count
 const AdminLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [badges, setBadges] = useState({ enroll: 0, support: 0 });
 
@@ -208,7 +212,7 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        <main className="admin-content">
+        <main className="admin-content page-fade" key={location.pathname}>
           <Outlet />
         </main>
       </div>

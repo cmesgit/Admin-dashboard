@@ -9,6 +9,7 @@ import UserDetail from "./pages/UserDetail";
 import Courses from "./pages/Courses";
 import RolesPage from "./pages/roles/RolesPage";
 import ContentPanel from "./pages/content/ContentPanel";
+import SkillCMSPanel from "./pages/skillcms/SkillCMSPanel";
 import AcademyQuizzes from "./pages/AcademyQuizzes";
 import CommunicationReports from "./pages/CommunicationReports";
 import CommunicationBroadcast from "./pages/CommunicationBroadcast";
@@ -24,6 +25,7 @@ import AdSubscriptions from "./pages/AdSubscriptions";
 import AgreementLetter from "./pages/AgreementLetter";
 import SkillExperts from "./pages/SkillExperts";
 import SkillSessionsAdmin from "./pages/SkillSessionsAdmin";
+import GroupSessionAttendance from "./pages/GroupSessionAttendance";
 import EnrollmentManagement from "./pages/EnrollmentManagement";
 import CounselorApprovals from "./pages/CounselorApprovals";
 import CounselingSessions from "./pages/CounselingSessions";
@@ -107,7 +109,9 @@ const App = () => {
           <Route path="counseling-sessions" element={<CounselingSessions />} />
           <Route path="skill-experts" element={<SkillExperts />} />
           <Route path="skill-sessions" element={<SkillSessionsAdmin />} />
+          <Route path="group-session-attendance" element={<GroupSessionAttendance />} />
           <Route path="skill-courses" element={<SkillCourses />} />
+          <Route path="skill-cms" element={<SkillCMSPanel />} />
           <Route path="ad-subscriptions" element={<AdSubscriptions />} />
           <Route path="agreement-letter" element={<AgreementLetter />} />
         </Route>

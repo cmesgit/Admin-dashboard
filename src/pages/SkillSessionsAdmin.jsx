@@ -34,6 +34,22 @@ const fmt = (iso) => {
   } catch { return iso; }
 };
 
+const fmtMins = (secs) => {
+  const m = Math.round((secs || 0) / 60);
+  return m > 0 ? `${m}m` : "<1m";
+};
+
+// Real LiveKit-webhook attendance, distinct from `duration_mins` above (which
+// is only the SCHEDULED length) — "—" when no one's actually joined yet.
+const AttendanceCell = ({ attendance }) => {
+  if (!attendance || attendance.length === 0) return <span style={{ color: "#9ca3af" }}>—</span>;
+  return (
+    <span title={attendance.map((a) => `${a.name}: ${fmtMins(a.total_seconds)}`).join(", ")}>
+      {attendance.map((a) => `${a.name}: ${fmtMins(a.total_seconds)}`).join(", ")}
+    </span>
+  );
+};
+
 const SkillSessionsAdmin = () => {
   const [data, setData]       = useState({ sessions: [], counts: {} });
   const [loading, setLoading] = useState(true);
@@ -84,7 +100,7 @@ const SkillSessionsAdmin = () => {
             <thead>
               <tr>
                 <th>Learner</th><th>Expert</th><th>Status</th>
-                <th>Scheduled</th><th>Started</th><th>Duration</th><th>Booked</th>
+                <th>Scheduled</th><th>Started</th><th>Duration</th><th>Actual attendance</th><th>Booked</th>
               </tr>
             </thead>
             <tbody>
@@ -105,6 +121,7 @@ const SkillSessionsAdmin = () => {
                   <td>{fmt(s.scheduled_for)}</td>
                   <td>{s.started_at ? fmt(s.started_at) : "—"}</td>
                   <td>{s.duration_mins} min</td>
+                  <td><AttendanceCell attendance={s.attendance} /></td>
                   <td>{fmt(s.created_at)}</td>
                 </tr>
               ))}

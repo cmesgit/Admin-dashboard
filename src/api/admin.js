@@ -210,6 +210,38 @@ export const approveAdSubscription = async (id) =>
 export const rejectAdSubscription  = async (id, reason="") =>
   (await api.post(`/skill/admin/ad-subscriptions/${id}/reject/`, { reason })).data;
 
+/* ── Skill-dev CMS: categories (image/order/active) ── */
+export const getAdminSkillCategories = async () =>
+  safe(async () => (await api.get("/skill/admin/categories/")).data, []);
+export const createSkillCategory = async (data, isMultipart = false) =>
+  (await api.post("/skill/admin/categories/", data, isMultipart ? multipartConfig : undefined)).data;
+export const updateSkillCategory = async (id, data, isMultipart = false) =>
+  (await api.patch(`/skill/admin/categories/${id}/`, data, isMultipart ? multipartConfig : undefined)).data;
+export const deleteSkillCategory = async (id) =>
+  (await api.delete(`/skill/admin/categories/${id}/`)).data;
+
+/* ── Skill-dev CMS: marketing copy (browse hero / teach banner / hub) ── */
+export const getSkillMarketingBlocks = async () =>
+  safe(async () => (await api.get("/skill/admin/marketing/")).data, []);
+export const updateSkillMarketingBlock = async (key, data, isMultipart = false) =>
+  (await api.patch(`/skill/admin/marketing/${key}/`, data, isMultipart ? multipartConfig : undefined)).data;
+
+/* ── Skill-dev CMS: media moderation (expert photo / course cover override) ── */
+export const updateExpertPhoto = async (id, file) => {
+  const fd = new FormData();
+  fd.append("photo", file);
+  return (await api.patch(`/skill/admin/experts/${id}/`, fd, multipartConfig)).data;
+};
+export const updateSkillCourseCover = async (id, file) => {
+  const fd = new FormData();
+  fd.append("cover_image", file);
+  return (await api.patch(`/skill/admin/courses/${id}/media/`, fd, multipartConfig)).data;
+};
+
+/* ── Group session attendance (real LiveKit-webhook join/leave/duration) ── */
+export const getGroupSessionAttendance = async () =>
+  safe(async () => (await api.get("/sessions/admin/group-sessions/")).data, { sessions: [] });
+
 /* ── Skill-dev: platform-wide session monitor (read-only) ── */
 export const getSkillSessions = async (params) =>
   safe(async () => (await api.get("/skill/admin/sessions/", { params })).data,
