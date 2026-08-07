@@ -308,7 +308,7 @@ const HomeCms = () => {
               fd.append("secondary_cta_text", form.secondary_cta_text || "");
               fd.append("secondary_cta_link", form.secondary_cta_link || "");
               fd.append("image_url", form.image_url || "");
-              fd.append("order", form.order ?? 0);
+              fd.append("order", parseInt(form.order, 10) || 0);
               fd.append("is_active", form.is_active ?? true);
               fd.append("image", file);
               return fd;
