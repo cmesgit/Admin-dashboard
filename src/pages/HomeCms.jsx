@@ -267,17 +267,20 @@ const HomeCms = () => {
 
   const loadHeroes = useCallback(async () => {
     setLoading(true);
-    setHeroes(await getHeroBanners());
+    const h = await getHeroBanners();
+    setHeroes(Array.isArray(h) ? h : []);
     setLoading(false);
   }, []);
   const loadCategories = useCallback(async () => {
     setLoading(true);
-    setCategories(await getHomeCategoriesAdmin());
+    const c = await getHomeCategoriesAdmin();
+    setCategories(Array.isArray(c) ? c : []);
     setLoading(false);
   }, []);
   const loadCtas = useCallback(async () => {
     setLoading(true);
-    setCtas(await getHomeCtas());
+    const c = await getHomeCtas();
+    setCtas(Array.isArray(c) ? c : []);
     setLoading(false);
   }, []);
 
@@ -374,7 +377,7 @@ const HomeCms = () => {
   };
 
   const handleDelete = async () => {
-    if (!confirm) return;
+    if (!confirm || busy) return;
     const { kind, item } = confirm;
     setBusy(true);
     try {
