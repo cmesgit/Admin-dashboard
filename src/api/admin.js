@@ -344,6 +344,36 @@ export const updateContentShowcase = async (id, data, isMultipart = false) =>
 export const deleteContentShowcase = async (id) =>
   (await api.delete(`/content/admin/showcase/${id}/`)).data;
 
+/* ── Content: Homepage Content Blocks (Hero/WhyShiksha/etc. heading+copy+image) ── */
+export const getHomeContentBlocks    = async (params) =>
+  safe(async () => (await api.get("/content/admin/home-content/", { params })).data, []);
+export const createHomeContentBlock  = async (data, isMultipart = false) =>
+  (await api.post("/content/admin/home-content/", data, isMultipart ? multipartConfig : undefined)).data;
+export const updateHomeContentBlock  = async (id, data, isMultipart = false) =>
+  (await api.patch(`/content/admin/home-content/${id}/`, data, isMultipart ? multipartConfig : undefined)).data;
+export const deleteHomeContentBlock  = async (id) =>
+  (await api.delete(`/content/admin/home-content/${id}/`)).data;
+
+/* ── Content: Homepage List Items (repeatable cards/chips within a section) ── */
+export const getHomeListItems    = async (params) =>
+  safe(async () => (await api.get("/content/admin/home-list-items/", { params })).data, []);
+export const createHomeListItem  = async (data) =>
+  (await api.post("/content/admin/home-list-items/", data)).data;
+export const updateHomeListItem  = async (id, data) =>
+  (await api.patch(`/content/admin/home-list-items/${id}/`, data)).data;
+export const deleteHomeListItem  = async (id) =>
+  (await api.delete(`/content/admin/home-list-items/${id}/`)).data;
+
+/* ── Content: Homepage Floaters (decorative badges, fixed slot per section) ── */
+export const getHomeFloaters    = async (params) =>
+  safe(async () => (await api.get("/content/admin/home-floaters/", { params })).data, []);
+export const createHomeFloater  = async (data) =>
+  (await api.post("/content/admin/home-floaters/", data)).data;
+export const updateHomeFloater  = async (id, data) =>
+  (await api.patch(`/content/admin/home-floaters/${id}/`, data)).data;
+export const deleteHomeFloater  = async (id) =>
+  (await api.delete(`/content/admin/home-floaters/${id}/`)).data;
+
 /* ── Content: Blog Posts ── */
 export const getContentBlogs      = async (params) =>
   safe(async () => (await api.get("/content/admin/blogs/", { params })).data, []);

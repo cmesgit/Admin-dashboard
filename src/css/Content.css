@@ -17,6 +17,16 @@
   margin: -18px 0 20px;
 }
 
+.content-subsection-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 24px 0 10px;
+}
+.content-subsection-title:first-of-type {
+  margin-top: 4px;
+}
+
 /* ── Card grid (Blog Posts, Showcase Courses) ── */
 .cms-card-grid {
   display: grid;

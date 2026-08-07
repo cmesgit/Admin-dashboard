@@ -1,11 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { FileText, Newspaper, HelpCircle, Megaphone, LayoutGrid, Tag, Layers } from "lucide-react";
+import { FileText, Newspaper, HelpCircle, Megaphone, LayoutGrid, Tag, Layers, Home } from "lucide-react";
 import BlogPosts from "./BlogPosts";
 import CurrentAffairs from "./CurrentAffairs";
 import Faqs from "./Faqs";
 import Announcements from "./Announcements";
 import Showcase from "./Showcase";
+import HomeContent from "./HomeContent";
 import Tags from "./Tags";
 import Categories from "./Categories";
 import Toast from "../../components/Toast";
@@ -19,6 +20,7 @@ const TABS = [
   { id: "faqs", label: "FAQs", icon: HelpCircle },
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "showcase", label: "Showcase Courses", icon: LayoutGrid },
+  { id: "home", label: "Homepage Content", icon: Home },
   { id: "tags", label: "Tags", icon: Tag },
   { id: "categories", label: "Categories", icon: Layers },
 ];
@@ -75,6 +77,7 @@ const ContentPanel = () => {
       {tab === "faqs" && <Faqs onAction={onAction} />}
       {tab === "announcements" && <Announcements onAction={onAction} />}
       {tab === "showcase" && <Showcase onAction={onAction} />}
+      {tab === "home" && <HomeContent onAction={onAction} />}
       {tab === "tags" && <Tags onAction={onAction} />}
       {tab === "categories" && <Categories onAction={onAction} />}
 
