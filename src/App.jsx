@@ -10,6 +10,7 @@ import Courses from "./pages/Courses";
 import RolesPage from "./pages/roles/RolesPage";
 import ContentPanel from "./pages/content/ContentPanel";
 import SkillCMSPanel from "./pages/skillcms/SkillCMSPanel";
+import ScholarshipPanel from "./pages/scholarship/ScholarshipPanel";
 import AcademyQuizzes from "./pages/AcademyQuizzes";
 import CommunicationReports from "./pages/CommunicationReports";
 import CommunicationBroadcast from "./pages/CommunicationBroadcast";
@@ -112,6 +113,7 @@ const App = () => {
           <Route path="group-session-attendance" element={<GroupSessionAttendance />} />
           <Route path="skill-courses" element={<SkillCourses />} />
           <Route path="skill-cms" element={<SkillCMSPanel />} />
+          <Route path="scholarship" element={<ScholarshipPanel />} />
           <Route path="ad-subscriptions" element={<AdSubscriptions />} />
           <Route path="agreement-letter" element={<AgreementLetter />} />
         </Route>

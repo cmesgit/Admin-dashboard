@@ -34,9 +34,11 @@ import {
   Search,
   Plus,
   ImageIcon,
+  Award,
 } from "lucide-react";
 import { getEnrollmentRequests } from "../api/admin";
 import { getAdminSupportTickets } from "../api/admin_communication";
+import { getScholarshipStats } from "../api/admin_scholarship";
 import NewCourseWizard from "./NewCourseWizard";
 import "../css/AdminLayout.css";
 
@@ -84,6 +86,10 @@ const navGroups = [
     ],
   },
   {
+    header: "Instant Scholarship",
+    items: [{ to: "/scholarship", icon: Award, label: "Instant Scholarship", badgeKey: "scholarship" }],
+  },
+  {
     header: "Counselling",
     items: [
       { to: "/counselor-approvals", icon: GraduationCap, label: "Counsellor Approvals" },
@@ -118,20 +124,25 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [badges, setBadges] = useState({ enroll: 0, support: 0 });
+  const [badges, setBadges] = useState({ enroll: 0, support: 0, scholarship: 0 });
 
-  // Live nav count pills: pending enrollment requests + open support tickets.
-  // Guarded so a missing/optional endpoint never blanks the sidebar.
+  // Live nav count pills: pending enrollment requests + open support tickets
+  // + scholarship items needing attention (flagged sessions + pending
+  // verifications). Guarded so a missing/optional endpoint never blanks
+  // the sidebar.
   useEffect(() => {
     let alive = true;
     Promise.allSettled([
       getEnrollmentRequests(),
       getAdminSupportTickets("open"),
-    ]).then(([enr, sup]) => {
+      getScholarshipStats(),
+    ]).then(([enr, sup, sch]) => {
       if (!alive) return;
+      const schVal = sch.status === "fulfilled" ? sch.value : null;
       setBadges({
         enroll: enr.status === "fulfilled" ? len(enr.value) : 0,
         support: sup.status === "fulfilled" ? len(sup.value) : 0,
+        scholarship: schVal ? (schVal.flagged_for_review_open || 0) + (schVal.pending_verifications || 0) : 0,
       });
     });
     return () => {
