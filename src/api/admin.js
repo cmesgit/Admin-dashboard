@@ -169,3 +169,37 @@ export const saveAgreement        = async (key, d)     => (await api.post(`/acco
 export const getAgreementVersions = async (key)        => safe(async () => (await api.get(`/accounts/admin/agreements/${key}/versions/`)).data, []);
 export const getAgreementVersion  = async (versionId)  => (await api.get(`/accounts/admin/agreements/versions/${versionId}/`)).data;
 export const restoreAgreement     = async (versionId)  => (await api.post(`/accounts/admin/agreements/versions/${versionId}/restore/`, {})).data;
+
+/* ── Home page CMS: hero banner / browse categories / closing CTA ──
+   All three are plain ModelViewSets (content/admin_views.py) paginated by
+   AdminPagination — list responses are unwrapped to a bare array here so
+   callers don't need to know about .results. */
+const multipartIfFile = (data) =>
+  data instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined;
+
+export const getHeroBanners   = async () =>
+  safe(async () => (await api.get("/content/admin/hero/")).data.results, []);
+export const createHeroBanner = async (data) =>
+  (await api.post("/content/admin/hero/", data, multipartIfFile(data))).data;
+export const updateHeroBanner = async (id, data) =>
+  (await api.patch(`/content/admin/hero/${id}/`, data, multipartIfFile(data))).data;
+export const deleteHeroBanner = async (id) =>
+  (await api.delete(`/content/admin/hero/${id}/`)).data;
+
+export const getHomeCategoriesAdmin = async () =>
+  safe(async () => (await api.get("/content/admin/categories/")).data.results, []);
+export const createHomeCategory = async (data) =>
+  (await api.post("/content/admin/categories/", data)).data;
+export const updateHomeCategory = async (id, data) =>
+  (await api.patch(`/content/admin/categories/${id}/`, data)).data;
+export const deleteHomeCategory = async (id) =>
+  (await api.delete(`/content/admin/categories/${id}/`)).data;
+
+export const getHomeCtas   = async () =>
+  safe(async () => (await api.get("/content/admin/cta/")).data.results, []);
+export const createHomeCta = async (data) =>
+  (await api.post("/content/admin/cta/", data)).data;
+export const updateHomeCta = async (id, data) =>
+  (await api.patch(`/content/admin/cta/${id}/`, data)).data;
+export const deleteHomeCta = async (id) =>
+  (await api.delete(`/content/admin/cta/${id}/`)).data;

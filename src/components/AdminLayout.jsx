@@ -14,6 +14,7 @@ import {
   BookCheck,
   Megaphone,
   FileText,
+  Home,
   Users2,
   CalendarClock,
   CalendarCheck2,
@@ -40,6 +41,7 @@ const navItems = [
   { to: "/skill-courses", icon: BookCheck, label: "Skill Courses" },
   { to: "/ad-subscriptions", icon: Megaphone, label: "Ad Subscriptions" },
   { to: "/agreement-letter", icon: FileText, label: "Agreement Letter" },
+  { to: "/home-cms", icon: Home, label: "Home Page CMS" },
 ];
 
 const AdminLayout = () => {

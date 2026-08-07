@@ -16,6 +16,7 @@ import SkillApprovals from "./pages/SkillApprovals";
 import SkillCourses from "./pages/SkillCourses";
 import AdSubscriptions from "./pages/AdSubscriptions";
 import AgreementLetter from "./pages/AgreementLetter";
+import HomeCms from "./pages/HomeCms";
 import SkillExperts from "./pages/SkillExperts";
 import SkillSessionsAdmin from "./pages/SkillSessionsAdmin";
 import EnrollmentManagement from "./pages/EnrollmentManagement";
@@ -79,6 +80,7 @@ const App = () => {
           <Route path="skill-courses" element={<SkillCourses />} />
           <Route path="ad-subscriptions" element={<AdSubscriptions />} />
           <Route path="agreement-letter" element={<AgreementLetter />} />
+          <Route path="home-cms" element={<HomeCms />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
