@@ -79,6 +79,7 @@ const navGroups = [
   {
     header: "Skill Dev",
     items: [
+      { to: "/skill-approvals", icon: UserCheck, label: "Skill Approvals" },
       { to: "/skill-experts", icon: Users2, label: "Skill Experts" },
       { to: "/skill-sessions", icon: CalendarClock, label: "Sessions" },
       { to: "/skill-courses", icon: BookCheck, label: "Skill Courses" },
