@@ -5,16 +5,21 @@
 //
 // FREE-LAUNCH BEHAVIOUR
 // ─────────────────────
-// The platform is free right now. `manual_upi` and `razorpay` are placeholders
-// for a later payments launch, so:
-//   • a persistent banner states the platform is in free launch mode,
+// The platform is free right now, on a real 6-month countdown
+// (trial_started_at + trial_duration_days, both editable below) rather than
+// just a manual switch — see GlobalSettings.trial_active/effective_mode.
+// `manual_upi` and `razorpay` are placeholders for a later payments launch, so:
+//   • the banner reflects whichever of three states is actually true: trial
+//     active, trial expired but still free (no live payment mode configured —
+//     the backend fails open to free rather than break checkout), or trial
+//     expired and genuinely charging,
 //   • the paid modes render disabled with a "coming soon" tag,
 //   • the free-trial switch cannot be turned off while a paid mode is selected
 //     (the backend serializer enforces the same rule, so this is belt+braces).
 // Credentials can still be pre-filled by temporarily selecting a paid mode?
 // No — the mode select is locked to the modes that are live. When a paid mode
 // ships, add it to LIVE_MODES here and flip PAID_MODES_LIVE in
-// global_settings/serializers.py.
+// global_settings/models.py.
 
 import { useEffect, useState } from "react";
 import { getSettings, updateSettings } from "../api/admin";
@@ -30,6 +35,7 @@ const PaymentSettings = () => {
   const [s, setS] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [restarting, setRestarting] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [secretInput, setSecretInput] = useState(""); // blank = leave unchanged
@@ -46,15 +52,31 @@ const PaymentSettings = () => {
 
   const paidModeSelected = s && !LIVE_MODES.includes(s.payment_mode);
 
+  const restartTrial = async () => {
+    setRestarting(true); setMsg(""); setErr("");
+    try {
+      const updated = await updateSettings({ trial_started_at: new Date().toISOString() });
+      setS(updated);
+      setMsg(`Trial restarted — ${updated.trial_duration_days} days from today.`);
+    } catch {
+      setErr("Failed to restart trial.");
+    } finally {
+      setRestarting(false);
+    }
+  };
+
   const save = async () => {
     setSaving(true); setMsg(""); setErr("");
     const payload = {
       payment_mode: s.payment_mode,
       free_trial_enabled: s.free_trial_enabled,
+      trial_duration_days: s.trial_duration_days,
       upi_id: s.upi_id || "",
       upi_payee_name: s.upi_payee_name || "",
       razorpay_key_id: s.razorpay_key_id || "",
       platform_email: s.platform_email || "",
+      skill_intro_session_paise: s.skill_intro_session_paise,
+      skill_bundle_discount_pct: s.skill_bundle_discount_pct,
     };
     // Only send the secret if the admin typed a new one.
     if (secretInput.trim()) payload.razorpay_key_secret = secretInput.trim();
@@ -79,16 +101,37 @@ const PaymentSettings = () => {
     <div className="dashboard-wrapper">
       <h1 className="dashboard-title">Payment Settings</h1>
 
-      {/* Free-launch banner */}
-      <div style={{
-        background: "#ecf8ee", border: "1px solid #bfe6c8", color: "#1f7a37",
-        borderRadius: 10, padding: "12px 16px", marginBottom: 20,
-        fontSize: 13.5, fontWeight: 600, display: "flex", gap: 8, alignItems: "center",
-      }}>
-        <span aria-hidden style={{ fontSize: 16 }}>●</span>
-        Platform is in free launch mode — nothing is charged anywhere.
-        Paid modes below are placeholders and will unlock when payments launch.
-      </div>
+      {/* Free-launch / trial-status banner */}
+      {s.trial_active ? (
+        <div style={{
+          background: "#ecf8ee", border: "1px solid #bfe6c8", color: "#1f7a37",
+          borderRadius: 10, padding: "12px 16px", marginBottom: 20,
+          fontSize: 13.5, fontWeight: 600, display: "flex", gap: 8, alignItems: "center",
+        }}>
+          <span aria-hidden style={{ fontSize: 16 }}>●</span>
+          Platform is in free launch mode — {s.trial_days_remaining} day{s.trial_days_remaining === 1 ? "" : "s"} left
+          in the trial. Nothing is charged anywhere until it ends.
+        </div>
+      ) : s.effective_mode === "free" ? (
+        <div style={{
+          background: "#fff8f0", border: "1px solid #f3d9bd", color: "#92400e",
+          borderRadius: 10, padding: "12px 16px", marginBottom: 20,
+          fontSize: 13.5, fontWeight: 600, display: "flex", gap: 8, alignItems: "center",
+        }}>
+          <span aria-hidden style={{ fontSize: 16 }}>●</span>
+          Trial window has ended, but still serving free — the selected payment mode
+          isn't live yet. Restart the trial below, or implement + flip the mode live.
+        </div>
+      ) : (
+        <div style={{
+          background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c",
+          borderRadius: 10, padding: "12px 16px", marginBottom: 20,
+          fontSize: 13.5, fontWeight: 600, display: "flex", gap: 8, alignItems: "center",
+        }}>
+          <span aria-hidden style={{ fontSize: 16 }}>●</span>
+          Trial has ended — the platform is now charging via {s.effective_mode.replace("_", " ")}.
+        </div>
+      )}
 
       {/* Live status */}
       <div className="dashboard-cards" style={{ marginBottom: 24 }}>
@@ -102,6 +145,36 @@ const PaymentSettings = () => {
           <p className="stat-value">{s.free_trial_enabled ? "ON" : "OFF"}</p>
           <p className="stat-label">Free-trial master switch</p>
         </div>
+        <div className="dashboard-card">
+          <p className="stat-value">{s.trial_active ? s.trial_days_remaining : 0}</p>
+          <p className="stat-label">Trial days remaining</p>
+        </div>
+      </div>
+
+      {/* Trial countdown */}
+      <div className="dashboard-card" style={{ padding: 24, maxWidth: 620, marginBottom: 20 }}>
+        <h3 style={{ marginTop: 0 }}>Free trial window</h3>
+        <p style={{ fontSize: 13, color: "#6b7c83" }}>
+          Started {new Date(s.trial_started_at).toLocaleDateString()} · ends{" "}
+          {new Date(s.trial_ends_at).toLocaleDateString()}
+        </p>
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+          <div>
+            <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>Duration (days)</label>
+            <input
+              type="number" min="1" className="sm-input" style={{ width: 140, padding: 8 }}
+              value={s.trial_duration_days}
+              onChange={(e) => field("trial_duration_days", Number(e.target.value))}
+            />
+          </div>
+          <button onClick={restartTrial} disabled={restarting}
+            style={{ padding: "9px 16px", fontWeight: 600, cursor: "pointer" }}>
+            {restarting ? "Restarting..." : "Restart trial from today"}
+          </button>
+        </div>
+        <p style={{ fontSize: 12, color: "#9ca3af", marginTop: 10, marginBottom: 0 }}>
+          Duration changes save with the button below. Restarting takes effect immediately.
+        </p>
       </div>
 
       <div className="dashboard-card" style={{ padding: 24, maxWidth: 620 }}>
@@ -177,6 +250,32 @@ const PaymentSettings = () => {
           <input className="sm-input" style={{ width: "100%", padding: 8 }}
             value={s.platform_email || ""}
             onChange={(e) => field("platform_email", e.target.value)} />
+        </div>
+
+        {/* Skill Dev pricing ladder — informational display values while the
+            trial is active; used once it ends. Previously uneditable anywhere
+            (existed on the model but not this form, nor the serializer). */}
+        <div style={{ margin: "12px 0 18px", paddingTop: 12, borderTop: "1px solid #eef1f2" }}>
+          <h3 style={{ margin: "0 0 4px", fontSize: 14 }}>Skill Dev pricing (post-trial)</h3>
+          <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 12px" }}>
+            Only takes effect once the free trial ends.
+          </p>
+          <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
+            Intro session price (₹)
+          </label>
+          <input
+            type="number" min="0" className="sm-input" style={{ width: "100%", padding: 8, marginBottom: 10 }}
+            value={s.skill_intro_session_paise != null ? s.skill_intro_session_paise / 100 : ""}
+            onChange={(e) => field("skill_intro_session_paise", Math.round(Number(e.target.value) * 100))}
+          />
+          <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
+            Bundle discount (%)
+          </label>
+          <input
+            type="number" min="0" max="100" className="sm-input" style={{ width: "100%", padding: 8 }}
+            value={s.skill_bundle_discount_pct ?? ""}
+            onChange={(e) => field("skill_bundle_discount_pct", Number(e.target.value))}
+          />
         </div>
 
         {msg && <div style={{ color: "#16a34a", marginBottom: 10 }}>{msg}</div>}
