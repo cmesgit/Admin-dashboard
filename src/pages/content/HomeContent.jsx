@@ -21,6 +21,9 @@ const HOME_SECTIONS = [
   ["resources", "Resources & Support"],
   ["collaborate", "Collaborate"],
   ["cta", "Closing CTA"],
+  // Not a homepage section — the /courses page's own hero, reusing this
+  // same screen/model since it's the identical heading/copy/CTA/image shape.
+  ["courses_hero", "Courses Hero"],
 ];
 
 // Closed per-section slot list — mirrors backend
