@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Star, BookOpen, FlaskConical, Calculator } from "lucide-react";
+import {
+  Star, BookOpen, FlaskConical, Calculator, Compass, Activity, Target,
+  Landmark, Shield, Medal, School,
+} from "lucide-react";
 import {
   getContentShowcase, createContentShowcase, updateContentShowcase, deleteContentShowcase,
   getAcademicCourses, getBoards,
@@ -12,8 +15,19 @@ import PlacementBadge from "./preview/PlacementBadge";
 import { errText } from "../../utils/errText";
 import { buildBody } from "../../utils/buildBody";
 
-const ICON_CHOICES = [["book", "Book"], ["flask", "Flask"], ["calc", "Calculator"]];
-const ICON_CMP = { book: BookOpen, flask: FlaskConical, calc: Calculator };
+// Keys must match shiksha-frontend's FeaturedCourses.jsx CAT_ICON_PATHS —
+// the public site renders its own SVGs, keyed the same way, for these values.
+const ICON_CHOICES = [
+  ["book", "Book"], ["flask", "Flask"], ["calc", "Calculator"],
+  ["compass", "Compass"], ["pulse", "Pulse"], ["target", "Target"],
+  ["bank", "Bank"], ["shield", "Shield"], ["medal", "Medal"],
+  ["institution", "Institution"],
+];
+const ICON_CMP = {
+  book: BookOpen, flask: FlaskConical, calc: Calculator, compass: Compass,
+  pulse: Activity, target: Target, bank: Landmark, shield: Shield,
+  medal: Medal, institution: School,
+};
 
 function Stars({ n }) {
   const count = Math.max(0, Math.min(5, n || 0));

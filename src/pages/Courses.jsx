@@ -156,6 +156,10 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
               <input type="checkbox" checked={form.is_active ?? true} onChange={set("is_active")} />
               <span>Active (visible on the public site)</span>
             </label>
+            <label className="cm-field">
+              <span>Logo (shown on board cards / filters)</span>
+              <ImageUploadField value={file} onChange={setFile} previewUrl={form.logo} />
+            </label>
           </>
         )}
 
@@ -1043,8 +1047,9 @@ const Courses = () => {
           description: form.description || "",
           is_active: form.is_active ?? true,
         };
-        if (modal.mode === "edit") await updateBoard(modal.initial.id, payload);
-        else await createBoard(payload);
+        const { data, isMultipart } = buildBody(payload, file, "logo");
+        if (modal.mode === "edit") await updateBoard(modal.initial.id, data, isMultipart);
+        else await createBoard(data, isMultipart);
         setModal(null);
         await loadBoards();
       } else if (modal.type === "course") {
@@ -1194,7 +1199,7 @@ const Courses = () => {
                   <button className="cm-icon-btn" onClick={() => openBoard(b)}>Open</button>
                   <button className="cm-icon-btn" onClick={() => openEdit("board", {
                     id: b.id, name: b.name, board_type: b.board_type,
-                    description: b.description, is_active: b.is_active,
+                    description: b.description, is_active: b.is_active, logo: b.logo,
                   })}>Edit</button>
                   <button className="cm-icon-btn cm-icon-btn--danger"
                     onClick={() => setConfirm({ kind: "board", item: b, message: `Delete board "${b.name}"? A board with courses can't be deleted — remove its courses first.` })}>

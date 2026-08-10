@@ -62,10 +62,14 @@ export const getCourses = getAcademicCourses;
 /* ── Academic course management: Boards → Courses → Subjects ── */
 export const getBoards   = async () =>
   safe(async () => (await api.get("/courses/admin/boards/")).data, []);
-export const createBoard = async (data) =>
-  (await api.post("/courses/admin/boards/", data)).data;
-export const updateBoard = async (id, data) =>
-  (await api.patch(`/courses/admin/boards/${id}/`, data)).data;
+// data may be a plain object (JSON) or a FormData (multipart, when a logo
+// file is included) — same isMultipart convention as createCourse/updateCourse.
+export const createBoard = async (data, isMultipart = false) =>
+  (await api.post("/courses/admin/boards/", data,
+    isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined)).data;
+export const updateBoard = async (id, data, isMultipart = false) =>
+  (await api.patch(`/courses/admin/boards/${id}/`, data,
+    isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined)).data;
 export const deleteBoard = async (id) =>
   (await api.delete(`/courses/admin/boards/${id}/`)).data;
 
