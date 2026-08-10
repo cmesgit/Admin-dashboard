@@ -1,3 +1,20 @@
+/* Design tokens — the brand colors below (#4f6df5 / #1e293b) were, until
+   now, repeated as literal hex in 13 files with no shared source of truth.
+   New code should reference these instead of retyping the hex; existing
+   call sites are unmigrated (out of scope for this pass — see
+   SESSION_HANDOFF.md in the workspace root). */
+:root {
+  --admin-primary: #4f6df5;
+  --admin-primary-dark: #3b52d1;
+  --admin-ink: #1e293b;
+  --admin-ink-2: #1f2937;
+  --admin-body: #6b7280;
+  --admin-border: #e2e6ee;
+  --admin-page-bg: #f4f5f8;
+  --admin-font-display: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+  --admin-font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
 *,
 *::before,
 *::after {
@@ -7,10 +24,10 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 16px;
-  color: #222;
-  background: #f5f5f7;
+  font-family: var(--admin-font-body);
+  font-size: 14px;
+  color: var(--admin-ink-2);
+  background: var(--admin-page-bg);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -23,8 +40,44 @@ button {
   font-family: inherit;
 }
 
+/* Custom scrollbars — 10px, rounded thumb (matches LMS Admin Console shell) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d3d7e0;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* Live indicator pulse + toast entrance (shared shell animations) */
+@keyframes livepulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes toastin {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

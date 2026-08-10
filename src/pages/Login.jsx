@@ -32,8 +32,11 @@ const Login = () => {
     setSubmitting(true);
 
     try {
-      await login(email, password);
-      navigate("/", { replace: true });
+      const data = await login(email, password);
+      const roles = Array.isArray(data.roles) ? data.roles.map((r) => String(r).toUpperCase()) : [];
+      // A moderator-only account (no ADMIN role) has nothing to see at "/" —
+      // Overview's stats are admin-only — so send them straight to their panel.
+      navigate(roles.includes("ADMIN") ? "/" : "/moderator", { replace: true });
     } catch (err) {
       const message =
         err?.message instanceof Error

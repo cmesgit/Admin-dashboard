@@ -6,8 +6,8 @@
 .courses-count {
   padding: 14px 20px;
   font-size: 0.85rem;
-  color: #666;
-  border-bottom: 1px solid #f0f0f0;
+  color: #6b7280;
+  border-bottom: 1px solid #e8ebf1;
 }
 
 .courses-table {
@@ -20,18 +20,18 @@
   padding: 12px 20px;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #666;
+  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #e8ebf1;
   background: #fafafa;
 }
 
 .courses-table td {
   padding: 14px 20px;
   font-size: 0.9rem;
-  color: #333;
-  border-bottom: 1px solid #f5f5f5;
+  color: #1f2937;
+  border-bottom: 1px solid #e8ebf1;
 }
 
 .courses-title {
@@ -134,7 +134,7 @@
   background: #fff;
   color: #374151;
   padding: 5px 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -213,6 +213,20 @@
 }
 .cm-check input { width: 16px; height: 16px; }
 
+/* Category multi-select (course form) — a wrapping grid of checkboxes,
+   reusing .cm-check per-item but tighter since there can be many. */
+.cm-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.cm-check--inline { margin-bottom: 0; }
+
 .cm-hint {
   margin: -4px 0 14px;
   font-size: 0.78rem;
@@ -234,6 +248,23 @@
   border-radius: 8px;
   font-size: 0.84rem;
   margin-bottom: 14px;
+}
+
+.cm-subheading {
+  margin: 4px 0 12px;
+  padding-top: 14px;
+  border-top: 1px solid #eef0f3;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.cm-chapter-edit {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  background: #fafbfc;
 }
 
 /* ============================================================================
@@ -370,3 +401,16 @@
 @media (prefers-reduced-motion: reduce) {
   .cm-progress__fill { transition: none; }
 }
+
+/* Roster rows link to the student page — the learner profile IS the student. */
+.cm-linkish {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #425f7f;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+.cm-linkish:hover { text-decoration: underline; }

@@ -1,0 +1,342 @@
+/* ============================================================
+   Content (CMS) — new section, sibling of the Moderator Panel.
+   Reuses src/css/Moderator.css (mod-tabs, mod-badge, mod-chip,
+   mod-btn, mod-toast, mod-toolbar, mod-search/select) and
+   src/css/Courses.css (cm-form-card, cm-field, cm-add-btn,
+   cm-icon-btn, courses-table, ...) for anything that already
+   fits, and adds only what those two don't cover: card-grid
+   layouts for the two image-bearing resources (Blog Posts,
+   Showcase Courses), the tag-chip input, and a couple of
+   form-only bits (JSON textarea, collapsible SEO section,
+   read-only field grid).
+   ============================================================ */
+
+.content-subtitle {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin: -18px 0 20px;
+}
+
+.content-subsection-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 24px 0 10px;
+}
+.content-subsection-title:first-of-type {
+  margin-top: 4px;
+}
+
+/* ── Card grid (Blog Posts, Showcase Courses) ── */
+.cms-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.cms-card {
+  background: #fff;
+  border: 1px solid #e8ebf1;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s ease;
+}
+.cms-card:hover {
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+}
+
+.cms-card-thumb {
+  position: relative;
+  height: 132px;
+  background: #eef1ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.cms-card-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.cms-card-thumb-icon { color: #8a97e0; opacity: 0.8; }
+
+.cms-card-ribbon {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+.cms-card-status {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.cms-card-body {
+  padding: 14px 16px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.cms-card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.35;
+}
+.cms-card-sub { font-size: 0.78rem; color: #8a8f98; }
+.cms-card-meta {
+  font-size: 0.78rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cms-card-stars { display: inline-flex; align-items: center; gap: 1px; color: #f59e0b; }
+.cms-card-stars .empty { color: #e5e7eb; }
+
+.cms-card-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.cms-card-chip {
+  background: #f1f5ff;
+  color: #3b4cca;
+  border: 1px solid #dbe3ff;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.cms-card-footer {
+  margin-top: auto;
+  padding: 10px 16px 14px;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  border-top: 1px solid #f5f5f5;
+}
+.cms-card-footer .mod-btn { flex: none; }
+
+.cms-empty-grid {
+  grid-column: 1 / -1;
+}
+
+/* ── Toolbar row (search + filter chips + add button) ── */
+.cms-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.cms-toolbar-spacer { flex: 1; }
+
+/* ── Tag chip input (Blog tags, Current Affairs tags, Showcase categories) ── */
+.tag-chip-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: #fff;
+  cursor: text;
+}
+.tag-chip-input:focus-within {
+  border-color: #4f6df5;
+  box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.15);
+}
+.tag-chip-input input {
+  border: none;
+  outline: none;
+  flex: 1;
+  min-width: 90px;
+  font-size: 0.88rem;
+  padding: 2px;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eef1ff;
+  color: #3b4cca;
+  border: 1px solid #dbe3ff;
+  padding: 3px 4px 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tag-chip-remove {
+  border: none;
+  background: #dbe3ff;
+  color: #3b4cca;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+.tag-chip-remove:hover { background: #c7d2fe; }
+
+/* ── JSON textarea (Showcase link_state) ── */
+.cms-json-textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  min-height: 90px;
+}
+.cms-json-textarea.invalid {
+  border-color: #f0c9c9 !important;
+  background: #fffafa;
+}
+
+/* ── Collapsible SEO section ── */
+.cms-details {
+  border: 1px dashed #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.cms-details summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #4b5563;
+  list-style: none;
+}
+.cms-details summary::-webkit-details-marker { display: none; }
+.cms-details[open] summary { margin-bottom: 12px; }
+
+/* ── Read-only field grid (author, counts, timestamps) ── */
+.cms-readonly-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  background: #f8f9fb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.cms-readonly-grid div { display: flex; flex-direction: column; gap: 2px; }
+.cms-readonly-grid span { font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.03em; }
+.cms-readonly-grid b { font-size: 0.85rem; color: #1f2937; font-weight: 600; }
+
+/* ── HTML formatting toolbar (blog body, FAQ answer) ── */
+.html-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.html-toolbar-btn {
+  padding: 4px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #374151;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.html-toolbar-btn:hover { background: #eef1ff; border-color: #4f6df5; color: #4f6df5; }
+
+/* ── Inline note for fields disabled because a course/board is linked ── */
+.cms-derived-note {
+  font-size: 0.76rem;
+  color: #8a8f98;
+  margin: -2px 0 10px;
+}
+
+/* ── Existing-image preview inside a form ── */
+.cms-image-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+  display: block;
+  margin-bottom: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cms-card { transition: none; }
+}
+
+/* ============================================================
+   Live preview panel (Courses / Showcase / BlogPosts modals)
+   — the modal's own two-column split + the "where it will
+   appear" chips + the nav-link stand-in. None of this is copied
+   from shiksha-frontend; the copied card CSS lives in
+   src/pages/content/preview/preview.css, scoped under
+   .cms-preview instead.
+   ============================================================ */
+
+/* Wider modal card so a ~300px preview column fits next to the form. */
+.cm-form-card--with-preview { width: min(96%, 920px); }
+
+.cm-form-split { display: flex; gap: 24px; align-items: flex-start; }
+.cm-form-main { flex: 1 1 auto; min-width: 0; }
+
+.cms-preview-panel {
+  flex: 0 0 300px;
+  min-width: 0;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-left: 1px solid #eef0f3;
+  padding-left: 20px;
+}
+.cms-preview-panel-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9aa0aa;
+}
+
+@media (max-width: 860px) {
+  .cm-form-split { flex-direction: column; }
+  .cms-preview-panel {
+    flex: none;
+    position: static;
+    border-left: none;
+    border-top: 1px solid #eef0f3;
+    padding-left: 0;
+    padding-top: 16px;
+  }
+}
+
+/* ── Placement chips (PlacementBadge.jsx) ── */
+.cms-placement-stack { display: flex; flex-direction: column; gap: 8px; }
+.cms-placement-chip { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.cms-placement-sub { font-size: 0.78rem; color: #6b7280; }
+
+/* ── Nav-link stand-in (NavMenuEntryPreview.jsx) ── */
+.cms-navlink-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafbfc;
+  font-size: 0.85rem;
+  color: #1f2937;
+}
+.cms-navlink-dot { width: 6px; height: 6px; border-radius: 50%; background: #4f6df5; flex: none; }
+.cms-navlink-label { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cms-navlink-soon { flex: none; }

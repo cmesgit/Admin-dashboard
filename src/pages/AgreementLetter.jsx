@@ -12,6 +12,7 @@
 // bound to the version they actually signed.
 
 import { useEffect, useRef, useState } from "react";
+import DOMPurify from "dompurify";
 import {
   getAgreement, saveAgreement, getAgreementVersions,
   getAgreementVersion, restoreAgreement,
@@ -158,7 +159,7 @@ const AgreementLetter = () => {
               {showPreview ? (
                 <div className="agreement-preview"
                   style={{ border: "1px solid #d7dbe0", borderRadius: 8, padding: "16px 18px", marginTop: 4, minHeight: 300, background: "#fff", lineHeight: 1.6 }}
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(body) }} />
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(body)) }} />
               ) : (
                 <>
                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6, marginBottom: 6 }}>
@@ -242,7 +243,7 @@ const AgreementLetter = () => {
             </div>
             <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>{fmt(preview.created_at)}{preview.created_by ? ` · ${preview.created_by}` : ""}{preview.is_current ? " · current" : ""}</div>
             <div className="agreement-preview" style={{ marginTop: 16, lineHeight: 1.6, color: "#1f2937" }}
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(preview.body) }} />
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(preview.body)) }} />
             <div style={{ textAlign: "right", marginTop: 16 }}>
               <button onClick={() => setPreview(null)} style={{ padding: "8px 16px", cursor: "pointer" }}>Close</button>
             </div>

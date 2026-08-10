@@ -7,7 +7,15 @@ import Overview from "./pages/Overview";
 import Users from "./pages/Users";
 import UserDetail from "./pages/UserDetail";
 import Courses from "./pages/Courses";
-import Forum from "./pages/Forum";
+import RolesPage from "./pages/roles/RolesPage";
+import ContentPanel from "./pages/content/ContentPanel";
+import SkillCMSPanel from "./pages/skillcms/SkillCMSPanel";
+import ScholarshipPanel from "./pages/scholarship/ScholarshipPanel";
+import AcademyQuizzes from "./pages/AcademyQuizzes";
+import CommunicationReports from "./pages/CommunicationReports";
+import CommunicationBroadcast from "./pages/CommunicationBroadcast";
+import CommunicationSupport from "./pages/CommunicationSupport";
+import MessageSearch from "./pages/MessageSearch";
 import Approvals from "./pages/Approvals";
 import Payments from "./pages/Payments";
 import EnrollmentRequests from "./pages/EnrollmentRequests";
@@ -18,9 +26,19 @@ import AdSubscriptions from "./pages/AdSubscriptions";
 import AgreementLetter from "./pages/AgreementLetter";
 import SkillExperts from "./pages/SkillExperts";
 import SkillSessionsAdmin from "./pages/SkillSessionsAdmin";
+import GroupSessionAttendance from "./pages/GroupSessionAttendance";
 import EnrollmentManagement from "./pages/EnrollmentManagement";
 import CounselorApprovals from "./pages/CounselorApprovals";
 import CounselingSessions from "./pages/CounselingSessions";
+import LiveStreams from "./pages/LiveStreams";
+import LivestreamMonitor from "./pages/LivestreamMonitor";
+import Recordings from "./pages/Recordings";
+import Teachers from "./pages/Teachers";
+import Students from "./pages/Students";
+import StudentDetail from "./pages/StudentDetail";
+import TeacherActivity from "./pages/TeacherActivity";
+import ModeratorActivity from "./pages/ModeratorActivity";
+import Analytics from "./pages/Analytics";
 
 const AppLoader = ({ children }) => {
   const { loading } = useAuth();
@@ -65,7 +83,23 @@ const App = () => {
           <Route path="users" element={<Users />} />
           <Route path="users/:id" element={<UserDetail />} />
           <Route path="courses" element={<Courses />} />
-          <Route path="forum" element={<Forum />} />
+          <Route path="quizzes" element={<AcademyQuizzes />} />
+          <Route path="teachers" element={<Teachers />} />
+          <Route path="students" element={<Students />} />
+          <Route path="students/:id" element={<StudentDetail />} />
+          <Route path="teacher-activity" element={<TeacherActivity />} />
+          <Route path="moderator-activity" element={<ModeratorActivity />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="live-streams" element={<LiveStreams />} />
+          <Route path="live-streams/monitor" element={<LivestreamMonitor />} />
+          <Route path="live-streams/monitor/:id" element={<LivestreamMonitor />} />
+          <Route path="recordings" element={<Recordings />} />
+          <Route path="roles" element={<RolesPage />} />
+          <Route path="content" element={<ContentPanel />} />
+          <Route path="communication/reports" element={<CommunicationReports />} />
+          <Route path="communication/messages" element={<MessageSearch />} />
+          <Route path="communication/broadcast" element={<CommunicationBroadcast />} />
+          <Route path="communication/support" element={<CommunicationSupport />} />
           <Route path="approvals" element={<Approvals />} />
           <Route path="enrollment-requests" element={<EnrollmentRequests />} />
           <Route path="enrollments" element={<EnrollmentManagement />} />
@@ -76,7 +110,10 @@ const App = () => {
           <Route path="counseling-sessions" element={<CounselingSessions />} />
           <Route path="skill-experts" element={<SkillExperts />} />
           <Route path="skill-sessions" element={<SkillSessionsAdmin />} />
+          <Route path="group-session-attendance" element={<GroupSessionAttendance />} />
           <Route path="skill-courses" element={<SkillCourses />} />
+          <Route path="skill-cms" element={<SkillCMSPanel />} />
+          <Route path="scholarship" element={<ScholarshipPanel />} />
           <Route path="ad-subscriptions" element={<AdSubscriptions />} />
           <Route path="agreement-letter" element={<AgreementLetter />} />
         </Route>

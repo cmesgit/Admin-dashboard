@@ -1,64 +1,97 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   LMS Admin Console shell — left-nav + top-bar dashboard.
+   Root is a full-viewport flex row; only <main> scrolls.
+   ───────────────────────────────────────────────────────────────────────── */
 .admin-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  font-size: 14px;
 }
 
-/* Sidebar */
+/* ── Sidebar ── */
 .admin-sidebar {
-  width: 240px;
+  width: 238px;
+  flex-shrink: 0;
   background: #1e293b;
   color: #fff;
   display: flex;
   flex-direction: column;
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  z-index: 50;
 }
 
 .sidebar-brand {
-  padding: 24px 20px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.sidebar-brand h2 {
-  font-size: 1.25rem;
+.sidebar-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #4f6df5;
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar-brand-text h2 {
+  font-size: 16px;
   font-weight: 700;
   margin: 0;
   color: #fff;
+  line-height: 1.2;
 }
 
-.sidebar-brand span {
-  font-size: 0.8rem;
+.sidebar-brand-text span {
+  font-size: 11px;
   color: #94a3b8;
-  margin-top: 2px;
-  display: block;
 }
 
-/* Navigation */
+/* ── Navigation ── */
 .sidebar-nav {
   flex: 1;
-  padding: 16px 12px;
+  overflow-y: auto;
+  padding: 10px 10px 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+}
+
+.sidebar-group-header {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  padding: 12px 12px 5px;
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: 10px;
+  padding: 7px 12px;
   border-radius: 8px;
-  font-size: 0.92rem;
+  font-size: 13px;
   font-weight: 500;
   color: #cbd5e1;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.07);
   color: #fff;
 }
 
@@ -67,9 +100,39 @@
   color: #fff;
 }
 
-/* Footer */
+.sidebar-link .sidebar-link-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Orange count pill (enrollment requests, support tickets) */
+.sidebar-badge {
+  background: #e8590c;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
+
+/* "NEW" tag on freshly added destinations */
+.sidebar-new-tag {
+  background: rgba(79, 109, 245, 0.25);
+  color: #a5b4fc;
+  font-size: 9.5px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+/* ── Footer ── */
 .sidebar-footer {
-  padding: 16px 14px;
+  padding: 12px 12px 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -78,7 +141,7 @@
 }
 
 .sidebar-user span {
-  font-size: 0.82rem;
+  font-size: 12px;
   color: #94a3b8;
   word-break: break-all;
 }
@@ -91,12 +154,12 @@
   padding: 8px 12px;
   background: rgba(239, 68, 68, 0.12);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #fca5a5;
-  font-size: 0.88rem;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .sidebar-logout:hover {
@@ -104,24 +167,101 @@
   color: #fee2e2;
 }
 
-/* Content */
-.admin-content {
+/* ── Main column ── */
+.admin-main {
   flex: 1;
-  margin-left: 240px;
-  padding: 32px 24px;
-  background: #f5f5f7;
-  min-height: 100vh;
-  overflow-y: auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .admin-sidebar {
-    width: 200px;
-  }
+/* Top header bar */
+.admin-header {
+  background: #fff;
+  border-bottom: 1px solid #e8ebf1;
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
 
-  .admin-content {
-    margin-left: 200px;
-    padding: 20px 16px;
-  }
+.admin-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 420px;
+  background: #f4f5f8;
+  border: 1px solid #e8ebf1;
+  border-radius: 9px;
+  padding: 7px 12px;
+  color: #9aa1af;
+}
+
+.admin-search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  flex: 1;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.admin-header-spacer {
+  flex: 1;
+}
+
+.admin-new-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #4f6df5;
+  color: #fff;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.admin-new-btn:hover {
+  background: #4361e0;
+}
+
+.admin-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: #4f6df5;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Content area — the only scrolling region */
+.admin-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px 60px;
+}
+
+/* Lightweight page-load fade — pure CSS, no library. Keyed by route pathname
+   (see AdminLayout.jsx) so React remounts this wrapper on navigation and the
+   animation replays. */
+.page-fade {
+  animation: page-fade-in 180ms ease both;
+}
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-fade { animation: none; }
 }

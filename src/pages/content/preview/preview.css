@@ -1,0 +1,93 @@
+/*
+ * Manually COPIED (not shared, not synced) from the real marketing site
+ * repo, shiksha-frontend, purely so admin-side previews look like the
+ * real cards:
+ *   - .hm-fc-*    <- shiksha-frontend/src/components/home/HomeGreen.jsx (FeaturedCourses)
+ *                    + shiksha-frontend/src/css/HomeGreen.css
+ *   - .blog-list-* <- shiksha-frontend/src/components/Blogs.jsx
+ *                    + shiksha-frontend/src/css/Blogs.css
+ *   - the --coral/--ink/... custom properties <- shiksha-frontend/src/css/HomeGreen.css (:root block)
+ *
+ * This is a one-time copy, NOT a live link. If the real site's cards get
+ * restyled, nothing here updates automatically — someone has to notice
+ * and re-copy the relevant rules by hand.
+ *
+ * Everything is scoped under `.cms-preview` so it can never leak into the
+ * rest of the Admin-dashboard UI. Selector bodies below are verbatim
+ * copies; the only changes are the ".cms-preview " prefix on every
+ * selector and the two panel-sizing overrides explicitly called out
+ * near the bottom of each section (the real cards live in a wide grid;
+ * this preview lives in a ~300px modal side-panel).
+ */
+
+.cms-preview {
+  /* copied from HomeGreen.css's :root block — only the variables the
+     rules below actually reference */
+  --coral: #0F9D6B;
+  --coral-dark: #0B5B3E;
+  --coral-soft: #E7F6EE;
+  --ink: #0B2E20;
+  --ink-2: #2B4237;
+  --body: #5E7469;
+  --line: #EDF3EE;
+  --gold: #FFB21D;
+  --red: #E14D2A;
+  --display: 'Poppins', system-ui, sans-serif;
+  --font: 'Poppins', system-ui, -apple-system, sans-serif;
+}
+
+/* ── shiksha-frontend/src/css/HomeGreen.css — .hm-fc-* (Featured Courses card) ── */
+.cms-preview .hm-fc-card{background:#fff;border-radius:24px;overflow:hidden;border:1.5px solid var(--line);transition:transform .25s,box-shadow .25s;display:flex;flex-direction:column}
+.cms-preview .hm-fc-card:hover{transform:translateY(-7px);box-shadow:0 26px 50px rgba(11,46,32,.13)}
+.cms-preview .hm-fc-thumb{position:relative;height:170px;padding:16px;background-size:cover !important;background-position:center !important}
+.cms-preview .hm-fc-thumb-ic{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:20px;background:rgba(255,255,255,.16);display:grid;place-items:center;backdrop-filter:blur(2px)}
+.cms-preview .hm-fc-thumb-ic svg{width:30px;height:30px}
+.cms-preview .hm-fc-ribbon{position:absolute;top:14px;left:14px;background:var(--gold);color:var(--ink);font-family:var(--font);font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 11px;border-radius:999px}
+.cms-preview .hm-fc-heart{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;background:rgba(255,255,255,.2);display:grid;place-items:center;transition:background .2s;color:#fff}
+.cms-preview .hm-fc-heart svg{width:16px;height:16px}
+.cms-preview .hm-fc-heart.hm-on{background:#fff;color:var(--red)}
+.cms-preview .hm-fc-heart.hm-on svg{fill:currentColor}
+.cms-preview .hm-fc-lvl{position:absolute;bottom:-13px;left:18px;background:#fff;border:1.5px solid var(--line);color:var(--coral-dark);font-family:var(--font);font-size:10.5px;font-weight:700;padding:5px 13px;border-radius:999px;box-shadow:0 6px 14px rgba(11,46,32,.08)}
+.cms-preview .hm-fc-body{padding:26px 20px 20px;display:flex;flex-direction:column;flex:1}
+.cms-preview .hm-fc-rate{display:flex;align-items:center;gap:7px}
+.cms-preview .hm-fc-rate svg{width:13px;height:13px}
+.cms-preview .hm-fc-rate span{font-size:11.5px;color:var(--body)}
+.cms-preview .hm-fc-body h3{font-family:var(--display);font-size:16.3px;font-weight:700;margin:8px 0 10px;line-height:1.35}
+.cms-preview .hm-fc-fact{display:flex;align-items:center;gap:7px;font-size:11.8px;color:var(--body)}
+.cms-preview .hm-fc-fact svg{width:14px;height:14px;color:#8AA396}
+.cms-preview .hm-fc-fact i{font-style:normal;color:#D4E2D8}
+.cms-preview .hm-fc-foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px;border-top:1.5px dashed var(--line);padding-top:14px}
+.cms-preview .hm-fc-tutor{display:flex;align-items:center;gap:9px;font-family:var(--font);font-size:12.2px;font-weight:600;color:var(--ink-2)}
+.cms-preview .hm-fc-av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-family:var(--display);font-weight:700;font-size:11.5px;border:2.5px solid #fff;flex-shrink:0}
+.cms-preview .hm-fc-price{font-family:var(--display);font-size:16.8px;font-weight:800;color:var(--coral)}
+.cms-preview .hm-fc-price small{font-style:normal;font-size:10.5px;color:var(--body);font-weight:600}
+.cms-preview .hm-fc-price.hm-soon{font-family:var(--font);font-size:11.5px;font-weight:700;color:#B45309;background:#FFF3DC;padding:6px 12px;border-radius:999px}
+.cms-preview .hm-fc-enroll{font-family:var(--font);font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:999px;border:none;background:var(--coral);color:#fff;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:background .2s,transform .2s}
+.cms-preview .hm-fc-enroll svg{width:13px;height:13px}
+.cms-preview .hm-fc-enroll:hover{background:var(--coral-dark);transform:translateY(-1px)}
+
+/* panel-sizing override (NOT in the source file) — the real card sits in a
+   ~360px-wide grid column; this preview column is ~280px, so the thumbnail
+   is shortened a bit to avoid a squat, over-tall card in the modal. */
+.cms-preview .hm-fc-thumb { height: 138px; }
+
+/* ── shiksha-frontend/src/css/Blogs.css — .blog-list-* (blog list card) ── */
+.cms-preview .blog-list-card{display:flex;flex-direction:column;text-decoration:none;background:#ffffff;border:1px solid #e6f1ed;border-radius:22px;overflow:hidden;box-shadow:0 10px 24px rgba(17,49,42,0.06);transition:transform 0.25s ease,box-shadow 0.25s ease}
+.cms-preview .blog-list-card:hover{transform:translateY(-6px);box-shadow:0 16px 34px rgba(17,49,42,0.12)}
+.cms-preview .blog-list-image-wrap{position:relative;height:280px;overflow:hidden}
+.cms-preview .blog-list-image{width:100%;height:100%;object-fit:cover;display:block}
+.cms-preview .blog-list-category{position:absolute;top:16px;left:16px;padding:8px 12px;border-radius:999px;background:rgba(12,61,51,0.82);color:#fff;font-size:12px;font-weight:700}
+.cms-preview .blog-list-content{padding:22px}
+.cms-preview .blog-list-content h2{margin:0 0 10px;color:#18352d;font-size:22px;line-height:1.35}
+.cms-preview .blog-list-content p{margin:0 0 16px;color:#60726b;line-height:1.7;font-size:14px}
+.cms-preview .blog-list-tags{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.cms-preview .blog-list-tags span,
+.cms-preview .blog-list-read{font-size:13px;font-weight:600}
+.cms-preview .blog-list-tags span{padding:7px 10px;border-radius:999px;background:#f1f7f5;color:#4a675f}
+.cms-preview .blog-list-read{color:#1b9c85}
+
+/* panel-sizing overrides (NOT in the source file) — 280px of cover image
+   and a 22px-sized h2 are sized for a 3-up desktop grid; both are shrunk
+   here so the card fits a narrow modal side-panel without dominating it. */
+.cms-preview .blog-list-image-wrap { height: 148px; }
+.cms-preview .blog-list-content h2 { font-size: 17px; }

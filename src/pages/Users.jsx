@@ -75,6 +75,7 @@ const Users = () => {
           <option value="">All Roles</option>
           <option value="STUDENT">Student</option>
           <option value="TEACHER">Teacher</option>
+          <option value="MODERATOR">Moderator</option>
           <option value="ADMIN">Admin</option>
         </select>
 
