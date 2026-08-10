@@ -1,3 +1,20 @@
+/* Design tokens — the brand colors below (#4f6df5 / #1e293b) were, until
+   now, repeated as literal hex in 13 files with no shared source of truth.
+   New code should reference these instead of retyping the hex; existing
+   call sites are unmigrated (out of scope for this pass — see
+   SESSION_HANDOFF.md in the workspace root). */
+:root {
+  --admin-primary: #4f6df5;
+  --admin-primary-dark: #3b52d1;
+  --admin-ink: #1e293b;
+  --admin-ink-2: #1f2937;
+  --admin-body: #6b7280;
+  --admin-border: #e2e6ee;
+  --admin-page-bg: #f4f5f8;
+  --admin-font-display: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+  --admin-font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
 *,
 *::before,
 *::after {
@@ -7,10 +24,10 @@
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: var(--admin-font-body);
   font-size: 14px;
-  color: #1f2937;
-  background: #f4f5f8;
+  color: var(--admin-ink-2);
+  background: var(--admin-page-bg);
   -webkit-font-smoothing: antialiased;
 }
 
