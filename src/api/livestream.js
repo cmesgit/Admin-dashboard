@@ -1,10 +1,15 @@
 import api from "./apiClient";
 
-/* Never let a missing/optional endpoint crash a page (mirrors api/admin.js). */
+/* Never let a missing/optional endpoint crash a page (mirrors api/admin.js).
+   A 404 is silently expected; anything else is a real outage worth logging
+   so it doesn't look identical to "no data" in the UI. */
 const safe = async (fn, fallback) => {
   try {
     return await fn();
-  } catch {
+  } catch (err) {
+    if (err?.response?.status !== 404) {
+      console.error("[livestream api] request failed, falling back to empty state:", err);
+    }
     return fallback;
   }
 };

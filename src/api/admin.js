@@ -1,8 +1,18 @@
 import api from "./apiClient";
 
-/* ── small helper: never let a missing/optional endpoint crash a page ── */
+/* ── small helper: never let a missing/optional endpoint crash a page ──
+   Still returns the fallback on ANY failure (call sites render it as an
+   empty state either way), but a 404 ("this endpoint/resource genuinely
+   doesn't exist yet") is silently expected, while anything else (500,
+   network failure, timeout) is a real outage — log those so they don't
+   look identical to "no data" in the UI. */
 const safe = async (fn, fallback) => {
-  try { return await fn(); } catch { return fallback; }
+  try { return await fn(); } catch (err) {
+    if (err?.response?.status !== 404) {
+      console.error("[admin api] request failed, falling back to empty state:", err);
+    }
+    return fallback;
+  }
 };
 
 /* ── Dashboard ── */
