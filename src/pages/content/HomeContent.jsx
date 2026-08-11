@@ -3,6 +3,7 @@ import {
   getHomeContentBlocks, createHomeContentBlock, updateHomeContentBlock,
   getHomeListItems, createHomeListItem, updateHomeListItem, deleteHomeListItem,
   getHomeFloaters, createHomeFloater, updateHomeFloater,
+  getHomeSectionOrder, updateHomeSectionOrder, reorderHomeSections,
 } from "../../api/admin";
 import ConfirmModal from "../../components/ConfirmModal";
 import ImageUploadField from "../../components/ImageUploadField";
@@ -10,13 +11,21 @@ import TagChipInput from "../../components/TagChipInput";
 import { errText } from "../../utils/errText";
 import { buildBody } from "../../utils/buildBody";
 
-// Every homepage section this screen can edit, in the order they render on
-// the public site. Mirrors backend content.models.HomeSection exactly.
+// Every homepage section this screen can edit. Mirrors backend
+// content.models.HomeSection exactly. This list is content-block editing
+// only — actual page DISPLAY ORDER is separate and admin-configurable, see
+// SectionOrderPanel below; don't assume this array's order reflects the
+// live site (it doesn't move when an editor reorders sections).
 const HOME_SECTIONS = [
   ["hero", "Hero"],
   ["why_shiksha", "Why Shiksha"],
   ["teachers_students", "Teachers & Students"],
   ["browse_categories", "Browse Categories"],
+  // featured_courses/faq have no HomeContentBlock content of their own
+  // (ShowcaseCourse-backed / FAQItem-backed respectively) — kept out of
+  // this chip list since there'd be nothing to edit here, but they DO
+  // appear in SectionOrderPanel since they're still real, reorderable/
+  // hideable homepage sections.
   ["why_choose", "Why Choose ShikshaCom"],
   ["resources", "Resources & Support"],
   ["collaborate", "Collaborate"],
@@ -25,6 +34,16 @@ const HOME_SECTIONS = [
   // same screen/model since it's the identical heading/copy/CTA/image shape.
   ["courses_hero", "Courses Hero"],
 ];
+
+// Human labels for SectionOrderPanel, covering the 2 sections above that
+// have no content-block chip (featured_courses/faq) plus everything else.
+const SECTION_ORDER_LABELS = {
+  hero: "Hero", why_shiksha: "Why Shiksha",
+  teachers_students: "Teachers & Students", browse_categories: "Browse Categories",
+  featured_courses: "Featured Courses", why_choose: "Why Choose ShikshaCom",
+  resources: "Resources & Support", collaborate: "Collaborate",
+  faq: "FAQ", cta: "Closing CTA",
+};
 
 // Closed per-section slot list — mirrors backend
 // content.models.HomeFloater.SLOT_CHOICES_BY_SECTION exactly. A slot maps
@@ -618,6 +637,95 @@ function FloatersPanel({ section, notify }) {
   );
 }
 
+/* ═══════════════════════ Section order (page-wide, not per-section) ═══════════════════════ */
+
+function SectionOrderPanel({ notify }) {
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = () => {
+    setLoading(true);
+    getHomeSectionOrder().then((data) => {
+      setRows(data || []);
+      setLoading(false);
+    });
+  };
+
+  useEffect(load, []);
+
+  const move = async (index, dir) => {
+    const target = index + dir;
+    if (target < 0 || target >= rows.length) return;
+    const next = [...rows];
+    [next[index], next[target]] = [next[target], next[index]];
+    setRows(next);
+    setBusy(true);
+    setError("");
+    try {
+      await reorderHomeSections(next.map((r) => r.section));
+      notify && notify("Homepage section order updated — live now, no deploy needed.");
+    } catch (e) {
+      setError(errText(e));
+      load(); // reload the real order if the save failed, so the list never lies
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleVisible = async (row) => {
+    setBusy(true);
+    setError("");
+    try {
+      const updated = await updateHomeSectionOrder(row.id, { is_visible: !row.is_visible });
+      setRows((prev) => prev.map((r) => (r.id === row.id ? updated : r)));
+      notify && notify(updated.is_visible ? "Section shown on the homepage." : "Section hidden from the homepage.");
+    } catch (e) {
+      setError(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (loading) return <p className="cm-hint">Loading section order…</p>;
+
+  return (
+    <div>
+      <p className="cm-hint">
+        This is the order sections appear on the public homepage, top to
+        bottom. Use the arrows to move a section; uncheck "Visible" to hide
+        it from the live site without deleting its content. Changes apply
+        immediately.
+      </p>
+      {error && <div className="cm-form-error">{error}</div>}
+      <ol className="section-order-list">
+        {rows.map((row, i) => (
+          <li key={row.section} className={`section-order-row${row.is_visible ? "" : " is-hidden"}`}>
+            <span className="section-order-index">{i + 1}</span>
+            <span className="section-order-label">
+              {SECTION_ORDER_LABELS[row.section] || row.section}
+            </span>
+            <label className="section-order-visible">
+              <input
+                type="checkbox"
+                checked={row.is_visible}
+                disabled={busy}
+                onChange={() => toggleVisible(row)}
+              />
+              Visible
+            </label>
+            <div className="section-order-moves">
+              <button type="button" disabled={busy || i === 0} onClick={() => move(i, -1)} aria-label={`Move ${SECTION_ORDER_LABELS[row.section] || row.section} up`}>↑</button>
+              <button type="button" disabled={busy || i === rows.length - 1} onClick={() => move(i, 1)} aria-label={`Move ${SECTION_ORDER_LABELS[row.section] || row.section} down`}>↓</button>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 /* ═══════════════════════ Screen shell ═══════════════════════ */
 
 const HomeContent = ({ onAction }) => {
@@ -626,6 +734,10 @@ const HomeContent = ({ onAction }) => {
 
   return (
     <div>
+      <h3 className="content-subsection-title">Homepage section order</h3>
+      <SectionOrderPanel notify={notify} />
+
+      <h3 className="content-subsection-title">Choose a section to edit its heading &amp; copy</h3>
       <div className="mod-chip-row">
         {HOME_SECTIONS.map(([v, l]) => (
           <button key={v} className={`mod-chip${section === v ? " active" : ""}`} onClick={() => setSection(v)}>
@@ -634,7 +746,6 @@ const HomeContent = ({ onAction }) => {
         ))}
       </div>
 
-      <h3 className="content-subsection-title">Heading &amp; copy</h3>
       <ContentBlockPanel key={`block-${section}`} section={section} notify={notify} />
 
       <h3 className="content-subsection-title">List items</h3>

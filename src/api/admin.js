@@ -388,6 +388,14 @@ export const updateHomeFloater  = async (id, data) =>
 export const deleteHomeFloater  = async (id) =>
   (await api.delete(`/content/admin/home-floaters/${id}/`)).data;
 
+/* ── Content: Homepage Section Order (sequence + show/hide, no create/delete — fixed row set) ── */
+export const getHomeSectionOrder     = async () =>
+  safe(async () => (await api.get("/content/admin/home-section-order/")).data, []);
+export const updateHomeSectionOrder  = async (id, data) =>
+  (await api.patch(`/content/admin/home-section-order/${id}/`, data)).data;
+export const reorderHomeSections     = async (sections) =>
+  (await api.post("/content/admin/home-section-order/reorder/", { sections })).data;
+
 /* ── Content: Blog Posts ── */
 export const getContentBlogs      = async (params) =>
   safe(async () => (await api.get("/content/admin/blogs/", { params })).data, []);
