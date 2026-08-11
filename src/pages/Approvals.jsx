@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { getApprovals, actOnApproval, getUsers } from "../api/admin";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
-import SkillApprovals from "./SkillApprovals";
 import "../css/Approvals.css";
 
 const formatDate = (d) =>
@@ -10,7 +9,6 @@ const formatDate = (d) =>
 
 const TABS = [
   { key: "faculty", label: "Faculty" },
-  { key: "teacher", label: "Teacher" },
   { key: "student", label: "Student" },
 ];
 
@@ -254,16 +252,13 @@ const Approvals = () => {
       </div>
 
       <div className="dashboard-card approvals-table-card">
-        {tab !== "teacher" && (
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={tab === "student" ? "Search by name or email…" : "Search by name or email…"}
-            style={{ width: "100%", maxWidth: 360, padding: "8px 12px", border: "1px solid #d7dbe0", borderRadius: 8, marginBottom: 14 }}
-          />
-        )}
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name or email…"
+          style={{ width: "100%", maxWidth: 360, padding: "8px 12px", border: "1px solid #d7dbe0", borderRadius: 8, marginBottom: 14 }}
+        />
         {tab === "faculty" && <FacultyTab search={search} />}
-        {tab === "teacher" && <SkillApprovals embedded />}
         {tab === "student" && <StudentTab search={search} />}
       </div>
     </div>

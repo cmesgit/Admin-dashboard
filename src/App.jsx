@@ -105,7 +105,6 @@ const App = () => {
           <Route path="enrollments" element={<EnrollmentManagement />} />
           <Route path="payments" element={<Payments />} />
           <Route path="payment-settings" element={<PaymentSettings />} />
-          <Route path="skill-approvals" element={<SkillApprovals />} />
           <Route path="counselor-approvals" element={<CounselorApprovals />} />
           <Route path="counseling-sessions" element={<CounselingSessions />} />
           <Route path="skill-experts" element={<SkillExperts />} />
