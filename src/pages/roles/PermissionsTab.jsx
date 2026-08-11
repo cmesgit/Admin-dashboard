@@ -28,14 +28,14 @@ const PermissionsTab = () => {
           <h3>{group.category}</h3>
           <table className="mod-user-table">
             <thead>
-              <tr><th>Permission</th><th>Codename</th><th>Description</th></tr>
+              <tr><th>Permission</th><th>What it does</th><th>Reference ID</th></tr>
             </thead>
             <tbody>
               {group.permissions.map((p) => (
                 <tr key={p.codename}>
                   <td>{p.name}</td>
-                  <td><code className="rbac-perm-code">{p.codename}</code></td>
                   <td>{p.description || "—"}</td>
+                  <td><code className="rbac-perm-code">{p.codename}</code></td>
                 </tr>
               ))}
             </tbody>

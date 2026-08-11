@@ -121,28 +121,52 @@ export default function SettingsTab({ onAction }) {
       </div>
 
       <h3 style={{ margin: "24px 0 12px" }}>Anti-cheat</h3>
+      <p style={{ fontSize: 12.5, color: "#6b7280", marginTop: -6, marginBottom: 14, maxWidth: 640 }}>
+        None of this blocks a student mid-exam — it only collects signals and flags sessions for a
+        human to review afterward (see the Sessions tab). If you're unsure, the defaults shown as
+        placeholders below are the ones this platform ships with and are a safe starting point.
+      </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
         <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <input type="checkbox" checked={s.enable_device_fingerprint} onChange={bool("enable_device_fingerprint")} />
           Device fingerprint capture
         </label>
+        <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 4px 26px" }}>
+          Records a browser/device signature with each exam session, so admins can spot the same
+          device being used for multiple attempts. On by default.
+        </p>
         <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <input type="checkbox" checked={s.enable_tab_switch_tracking} onChange={bool("enable_tab_switch_tracking")} />
           Tab-switch tracking
         </label>
+        <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 4px 26px" }}>
+          Counts how often a student leaves the exam tab. Turning this off also disables the
+          tab-switch threshold below — no tab-switches will ever be flagged. On by default.
+        </p>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
         <div>
           <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>Tab-switch flag threshold</label>
-          <input type="number" min={1} value={s.tab_switch_flag_threshold} onChange={num("tab_switch_flag_threshold")} style={{ width: "100%", padding: 8 }} />
+          <input type="number" min={1} placeholder="5" value={s.tab_switch_flag_threshold} onChange={num("tab_switch_flag_threshold")} style={{ width: "100%", padding: 8 }} />
+          <p style={{ fontSize: 11.5, color: "#9ca3af", margin: "5px 0 0" }}>
+            Switching tabs this many times in one exam flags the session for review. Default: 5.
+          </p>
         </div>
         <div>
           <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>Answer-burst threshold (sec)</label>
-          <input type="number" min={1} value={s.answer_burst_seconds_threshold} onChange={num("answer_burst_seconds_threshold")} style={{ width: "100%", padding: 8 }} />
+          <input type="number" min={1} placeholder="3" value={s.answer_burst_seconds_threshold} onChange={num("answer_burst_seconds_threshold")} style={{ width: "100%", padding: 8 }} />
+          <p style={{ fontSize: 11.5, color: "#9ca3af", margin: "5px 0 0" }}>
+            Answering faster than this, repeatedly, is logged as a suspicious burst. Default: 3 sec.
+            Lower = stricter.
+          </p>
         </div>
         <div>
           <label style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>Answer-burst count threshold</label>
-          <input type="number" min={1} value={s.answer_burst_count_threshold} onChange={num("answer_burst_count_threshold")} style={{ width: "100%", padding: 8 }} />
+          <input type="number" min={1} placeholder="10" value={s.answer_burst_count_threshold} onChange={num("answer_burst_count_threshold")} style={{ width: "100%", padding: 8 }} />
+          <p style={{ fontSize: 11.5, color: "#9ca3af", margin: "5px 0 0" }}>
+            How many fast-burst answers in one session before it's auto-flagged. Default: 10.
+            Lower = stricter.
+          </p>
         </div>
       </div>
       <label style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 6 }}>

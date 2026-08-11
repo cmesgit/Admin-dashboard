@@ -156,7 +156,7 @@ const EnrollmentRequests = () => {
           {config.is_free
             ? "Free mode: new enrollments are granted instantly. This list shows any manual requests still on file."
             : config.provider === "manual_upi"
-              ? "Manual UPI: check the UTR and amount against the receipt before approving."
+              ? "Manual UPI: check the UTR (the bank's unique reference number for the transfer, printed on the payment receipt) and amount against the receipt before approving."
               : `Payment mode: ${config.label}.`}
         </div>
       )}
@@ -186,7 +186,7 @@ const EnrollmentRequests = () => {
                 <th>Student</th>
                 <th>Course</th>
                 <th>Amount</th>
-                <th>UTR</th>
+                <th title="UTR — the bank's unique reference number for the transfer, printed on the payment receipt">UTR</th>
                 <th>Paid On</th>
                 <th>Receipt</th>
                 <th>Status</th>

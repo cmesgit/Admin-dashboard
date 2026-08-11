@@ -23,6 +23,8 @@
 
 import { useEffect, useState } from "react";
 import { getSettings, updateSettings } from "../api/admin";
+import ConfirmModal from "../components/ConfirmModal";
+import { errText } from "../utils/errText";
 
 const MODES = [
   { value: "free",       label: "Free (no payment)",           live: true  },
@@ -36,6 +38,7 @@ const PaymentSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [confirmRestart, setConfirmRestart] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [secretInput, setSecretInput] = useState(""); // blank = leave unchanged
@@ -53,6 +56,7 @@ const PaymentSettings = () => {
   const paidModeSelected = s && !LIVE_MODES.includes(s.payment_mode);
 
   const restartTrial = async () => {
+    setConfirmRestart(false);
     setRestarting(true); setMsg(""); setErr("");
     try {
       const updated = await updateSettings({ trial_started_at: new Date().toISOString() });
@@ -87,8 +91,7 @@ const PaymentSettings = () => {
       setSecretInput("");
       setMsg("Saved. Effective mode: " + updated.effective_mode + ".");
     } catch (e) {
-      const data = e?.response?.data;
-      setErr(typeof data === "object" ? Object.values(data).flat().join(" ") : "Save failed.");
+      setErr(errText(e));
     } finally {
       setSaving(false);
     }
@@ -167,7 +170,7 @@ const PaymentSettings = () => {
               onChange={(e) => field("trial_duration_days", Number(e.target.value))}
             />
           </div>
-          <button onClick={restartTrial} disabled={restarting}
+          <button onClick={() => setConfirmRestart(true)} disabled={restarting}
             style={{ padding: "9px 16px", fontWeight: 600, cursor: "pointer" }}>
             {restarting ? "Restarting..." : "Restart trial from today"}
           </button>
@@ -176,6 +179,19 @@ const PaymentSettings = () => {
           Duration changes save with the button below. Restarting takes effect immediately.
         </p>
       </div>
+
+      {confirmRestart && (
+        <ConfirmModal
+          title="Restart the free trial from today?"
+          message={
+            s.trial_active
+              ? `This resets the countdown to ${s.trial_duration_days} full days from right now, discarding the ${s.trial_days_remaining} day${s.trial_days_remaining === 1 ? "" : "s"} already remaining. Takes effect immediately — no undo.`
+              : `This makes everything free again for ${s.trial_duration_days} more days, even though the trial had already ended${s.effective_mode !== "free" ? ` and the platform was charging via ${s.effective_mode.replace("_", " ")}` : ""}. Takes effect immediately — no undo.`
+          }
+          onConfirm={restartTrial}
+          onCancel={() => setConfirmRestart(false)}
+        />
+      )}
 
       <div className="dashboard-card" style={{ padding: 24, maxWidth: 620 }}>
         {/* Free-trial master switch — locked ON while a paid mode is selected */}

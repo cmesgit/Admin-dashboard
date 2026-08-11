@@ -327,8 +327,8 @@ function MonitorSingle({ id }) {
                         </span>
                       )}
                       {a.reconciled && (
-                        <span className="lm-attend-reconciled" title="Session was closed by server-side reconciliation, not a normal leave">
-                          reconciled
+                        <span className="lm-attend-reconciled" title="This attendance record was closed automatically by the system — likely a dropped connection or a closed tab, not the student clicking Leave.">
+                          auto-closed
                         </span>
                       )}
                     </span>

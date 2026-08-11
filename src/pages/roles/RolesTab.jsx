@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Trash2, Settings2, Lock } from "lucide-react";
+import { Plus, Trash2, Settings2, Lock, Pencil } from "lucide-react";
 import {
-  getRoles, createRole, deleteRole,
+  getRoles, createRole, updateRole, deleteRole,
   getPermissions, getRolePermissions, setRolePermissions,
 } from "../../api/rbac";
 import ConfirmModal from "../../components/ConfirmModal";
@@ -17,6 +17,8 @@ const RolesTab = ({ notify }) => {
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [editDescId, setEditDescId] = useState(null);   // role.id being description-edited
+  const [descInput, setDescInput] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -81,6 +83,21 @@ const RolesTab = ({ notify }) => {
     }
   };
 
+  const startEditDesc = (role) => {
+    setEditDescId(role.id);
+    setDescInput(role.description || "");
+  };
+
+  const saveDesc = async (role) => {
+    try {
+      await updateRole(role.id, { description: descInput.trim() });
+      setEditDescId(null);
+      load();
+    } catch {
+      notify("Failed to save description.");
+    }
+  };
+
   const doDelete = async () => {
     try {
       await deleteRole(confirmDelete.id);
@@ -116,7 +133,27 @@ const RolesTab = ({ notify }) => {
                 )}
               </span>
             </div>
-            {role.description && <p className="rbac-role-desc">{role.description}</p>}
+            {editDescId === role.id ? (
+              <div className="rbac-role-desc-edit">
+                <textarea
+                  className="rbac-input"
+                  rows={2}
+                  autoFocus
+                  placeholder="What can someone with this role do? (shown to admins assigning it)"
+                  value={descInput}
+                  onChange={(e) => setDescInput(e.target.value)}
+                />
+                <div className="rbac-role-desc-edit-actions">
+                  <button className="mod-btn ghost small" onClick={() => setEditDescId(null)}>Cancel</button>
+                  <button className="mod-btn success small" onClick={() => saveDesc(role)}>Save</button>
+                </div>
+              </div>
+            ) : (
+              <p className="rbac-role-desc rbac-role-desc-editable" onClick={() => startEditDesc(role)}>
+                {role.description || "Add a description of what this role can do…"}
+                <Pencil size={11} />
+              </p>
+            )}
             <div className="rbac-role-stats">
               <span>{role.permission_count} permissions</span>
               <span>·</span>
@@ -150,13 +187,16 @@ const RolesTab = ({ notify }) => {
                 <div key={group.category} className="rbac-matrix-group">
                   <h4>{group.category}</h4>
                   {group.permissions.map((p) => (
-                    <label key={p.codename} className="rbac-perm-row">
+                    <label key={p.codename} className="rbac-perm-row" title={p.description || ""}>
                       <input
                         type="checkbox"
                         checked={editSet.has(p.codename)}
                         onChange={() => togglePerm(p.codename)}
                       />
-                      <span className="rbac-perm-name">{p.name}</span>
+                      <span className="rbac-perm-info">
+                        <span className="rbac-perm-name">{p.name}</span>
+                        {p.description && <span className="rbac-perm-desc">{p.description}</span>}
+                      </span>
                       <code className="rbac-perm-code">{p.codename}</code>
                     </label>
                   ))}

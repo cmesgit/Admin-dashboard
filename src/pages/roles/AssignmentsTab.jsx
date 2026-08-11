@@ -69,6 +69,8 @@ const AssignmentsTab = ({ notify }) => {
   };
 
   const fmt = (d) => (d ? new Date(d).toLocaleDateString() : "—");
+  const roleDesc = (name) => roles.find((r) => r.name === name)?.description;
+  const selectedRoleDesc = roleDesc(pickRole);
 
   return (
     <div>
@@ -90,6 +92,7 @@ const AssignmentsTab = ({ notify }) => {
             ))}
           </select>
         </div>
+        {selectedRoleDesc && <p className="rbac-role-desc">{selectedRoleDesc}</p>}
 
         {searching && <div className="mod-empty">Searching…</div>}
         {!searching && search.trim() && results.length === 0 && (
@@ -123,6 +126,7 @@ const AssignmentsTab = ({ notify }) => {
       {directory.map((group) => (
         <div key={group.role} className="rbac-dir-group">
           <h3>{group.role} <span className="rbac-count">({group.users.length})</span></h3>
+          {roleDesc(group.role) && <p className="rbac-role-desc">{roleDesc(group.role)}</p>}
           {group.users.length === 0 ? (
             <div className="mod-empty">No users hold this role.</div>
           ) : (

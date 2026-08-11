@@ -40,6 +40,7 @@ function QuizDetailModal({ quizId, onClose, onReviewed }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirmApprove, setConfirmApprove] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,7 +147,7 @@ function QuizDetailModal({ quizId, onClose, onReviewed }) {
 
             {quiz.review_status === "pending" && !rejecting && (
               <div style={{ display: "flex", gap: 10, marginTop: 22 }}>
-                <button className="approve-btn" onClick={approve} disabled={busy}>
+                <button className="approve-btn" onClick={() => setConfirmApprove(true)} disabled={busy}>
                   {busy ? "Approving…" : "Approve & Publish"}
                 </button>
                 <button className="reject-btn" onClick={() => setRejecting(true)} disabled={busy}>
@@ -154,6 +155,15 @@ function QuizDetailModal({ quizId, onClose, onReviewed }) {
                 </button>
                 <button onClick={onClose} style={{ marginLeft: "auto", padding: "8px 16px", cursor: "pointer" }}>Close</button>
               </div>
+            )}
+
+            {confirmApprove && (
+              <ConfirmModal
+                title="Approve & publish this quiz?"
+                message={`"${quiz.title}" will become visible to students immediately.`}
+                onConfirm={() => { setConfirmApprove(false); approve(); }}
+                onCancel={() => setConfirmApprove(false)}
+              />
             )}
 
             {quiz.review_status === "pending" && rejecting && (
