@@ -153,6 +153,15 @@ export const updateSubjectTeacher = async (assignmentId, display_role) =>
 export const removeSubjectTeacher = async (assignmentId) =>
   (await api.delete(`/courses/admin/subject-teachers/${assignmentId}/`)).data;
 
+/* ── Academy: whole-course staffing grid (replaces the per-subject N+1 above
+   for the Subjects table's Teachers column) + bulk-assign one teacher across
+   many subjects at once. ── */
+export const getCourseStaffing = async (courseId) =>
+  safe(async () => (await api.get(`/courses/admin/courses/${courseId}/staffing/`)).data,
+    { course: null, subjects: [], unstaffed_count: 0 });
+export const bulkAssignTeacher = async (courseId, payload) =>
+  (await api.post(`/courses/admin/courses/${courseId}/staffing/bulk-assign/`, payload)).data;
+
 /* ── Teachers directory + detail (rich admin screen) ── */
 export const getTeacherDirectory = async (params) =>
   safe(async () => (await api.get("/courses/admin/teacher-directory/", { params })).data, { data: [] });

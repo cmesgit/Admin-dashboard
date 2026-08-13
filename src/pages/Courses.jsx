@@ -11,6 +11,7 @@ import {
   getBatchProgress, getBatchRoster, moveEnrollmentBatch,
   getAdminAcademyTeachers, getSubjectTeachers,
   assignSubjectTeacher, updateSubjectTeacher, removeSubjectTeacher,
+  getCourseStaffing, bulkAssignTeacher,
   // ── new: course categories (multi-select on the course form) ──
   getCourseCategories,
 } from "../api/admin";
@@ -613,6 +614,172 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
   );
 }
 
+/* ───────────────────── Bulk teacher assignment modal ─────────────────────
+   One teacher → many subjects of the same course in a single request.
+   Reuses the exact same server-side-search teacher picker (+ TrackChips)
+   as TeacherAssignModal above, just swapping "pick a subject" for
+   "pick many subjects". */
+function BulkAssignModal({ course, subjects, teachersBySubject, onClose, onAssigned }) {
+  const [pool, setPool] = useState([]);
+  const [poolCount, setPoolCount] = useState(0);
+  const [poolHasMore, setPoolHasMore] = useState(false);
+  const [q, setQ] = useState("");
+  const [teacherId, setTeacherId] = useState(null);
+  const [role, setRole] = useState("PRIMARY");
+  const [selected, setSelected] = useState(() => new Set());
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [result, setResult] = useState(null);
+
+  // Server-side search — debounced, same convention as TeacherAssignModal.
+  useEffect(() => {
+    let cancel = false;
+    const t = setTimeout(() => {
+      getAdminAcademyTeachers(q).then((res) => {
+        if (cancel) return;
+        setPool(res.data || []);
+        setPoolCount(res.count || 0);
+        setPoolHasMore(!!res.has_more);
+      });
+    }, q ? 300 : 0);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [q]);
+
+  const toggleSubject = (id) =>
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  const selectAll = () => setSelected(new Set(subjects.map((s) => s.id)));
+  const selectNone = () => setSelected(new Set());
+
+  const submit = async () => {
+    if (!teacherId || selected.size === 0) return;
+    setBusy(true); setErr("");
+    try {
+      const res = await bulkAssignTeacher(course.id, {
+        teacher_id: teacherId,
+        subject_ids: Array.from(selected),
+        display_role: role,
+      });
+      setResult(res);
+      onAssigned?.();
+    } catch (e) {
+      setErr(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="confirm-overlay" onClick={onClose}>
+      <div className="cm-form-card cm-form-card--wide" onClick={(e) => e.stopPropagation()}>
+        <h3>Bulk assign teacher · {course.title}</h3>
+
+        {result ? (
+          <>
+            <p className="cm-empty-note">
+              Assigned to {result.assigned} subject{result.assigned !== 1 ? "s" : ""}.
+              {result.skipped_already_assigned?.length > 0 &&
+                ` ${result.skipped_already_assigned.length} skipped (already assigned).`}
+              {result.skipped_not_in_course?.length > 0 &&
+                ` ${result.skipped_not_in_course.length} skipped (not in this course).`}
+            </p>
+            <div className="confirm-actions">
+              <button className="confirm-ok" onClick={onClose}>Done</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="cm-assign-add-head">
+              <span className="cm-assign-add-title">Teacher</span>
+              <div className="cm-role-toggle">
+                <button
+                  className={`cm-role-opt${role === "PRIMARY" ? " active" : ""}`}
+                  onClick={() => setRole("PRIMARY")}
+                >
+                  Primary
+                </button>
+                <button
+                  className={`cm-role-opt${role === "ASSISTANT" ? " active" : ""}`}
+                  onClick={() => setRole("ASSISTANT")}
+                >
+                  Assistant
+                </button>
+              </div>
+            </div>
+            <input
+              className="cm-search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search approved teachers by name or email"
+            />
+            {poolHasMore && (
+              <p className="cm-hint">
+                Showing {pool.length} of {poolCount} — refine your search.
+              </p>
+            )}
+            <div className="cm-pool-list">
+              {pool.length === 0 ? (
+                <div className="cm-pool-empty">No approved teachers found.</div>
+              ) : (
+                pool.map((t) => (
+                  <div className="cm-pool-row" key={t.user_id}>
+                    <div className="cm-assign-meta">
+                      <span className="cm-assign-name">{t.name}</span>
+                      <span className="cm-assign-sub">{t.qualification || t.email}</span>
+                      <TrackChips tracks={t.tracks} />
+                    </div>
+                    <button
+                      className="cm-icon-btn"
+                      style={teacherId === t.user_id ? { borderColor: "#4f6df5", color: "#4f6df5" } : undefined}
+                      onClick={() => setTeacherId(t.user_id)}
+                    >
+                      {teacherId === t.user_id ? "Selected" : "Select"}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="cm-assign-add-head" style={{ marginTop: 16 }}>
+              <span className="cm-assign-add-title">Subjects ({selected.size} selected)</span>
+              <div className="cm-assign-controls">
+                <button className="cm-icon-btn" onClick={selectAll}>Select all</button>
+                <button className="cm-icon-btn" onClick={selectNone}>Select none</button>
+              </div>
+            </div>
+            <div className="cm-checkbox-group">
+              {subjects.map((s) => {
+                const hasTeachers = (teachersBySubject[s.id] || []).length > 0;
+                return (
+                  <label className="cm-check cm-check--inline" key={s.id}>
+                    <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSubject(s.id)} />
+                    <span>
+                      {s.name}
+                      {!hasTeachers && <em className="cm-chip-role"> unstaffed</em>}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+
+            {err && <div className="cm-form-error">{err}</div>}
+
+            <div className="confirm-actions">
+              <button className="confirm-cancel" onClick={onClose} disabled={busy}>Cancel</button>
+              <button className="confirm-ok" onClick={submit} disabled={busy || !teacherId || selected.size === 0}>
+                {busy ? "Assigning…" : `Assign to ${selected.size} subject${selected.size !== 1 ? "s" : ""}`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ───────────────────── Chapter content modal ───────────────────── */
 function ChapterModal({ subject, onClose, onChanged }) {
   const [chapters, setChapters] = useState(subject.chapters || []);
@@ -939,6 +1106,7 @@ const Courses = () => {
   const [subjects, setSubjects] = useState([]);
   const [batches, setBatches] = useState([]);
   const [teachersBySubject, setTeachersBySubject] = useState({});
+  const [unstaffedCount, setUnstaffedCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Skill Dev (read-only overview, unchanged)
@@ -949,6 +1117,7 @@ const Courses = () => {
   const [modal, setModal] = useState(null);       // { type, mode, initial }
   const [confirm, setConfirm] = useState(null);    // { kind, item, message, error? }
   const [teacherModal, setTeacherModal] = useState(null);   // subject
+  const [bulkAssignModal, setBulkAssignModal] = useState(false);
   const [chapterModal, setChapterModal] = useState(null);   // subject
   const [progressModal, setProgressModal] = useState(null); // batch
   const [rosterModal, setRosterModal] = useState(null);     // batch
@@ -967,18 +1136,19 @@ const Courses = () => {
     setCourses(Array.isArray(c) ? c : []);
     setLoading(false);
   }, []);
-  const loadSubjectTeachers = useCallback(async (subjectList) => {
-    const entries = await Promise.allSettled(
-      subjectList.map(async (s) => [s.id, await getSubjectTeachers(s.id)])
-    );
+  // Single whole-course staffing-grid call — replaces the previous N+1
+  // (one getSubjectTeachers request per subject) that also re-ran on every
+  // assignment change. Populates the SAME { [subjectId]: teachers[] } shape
+  // the Subjects table's Teachers-column chips already consume, so that
+  // rendering path is untouched.
+  const loadStaffing = useCallback(async (courseId) => {
+    const data = await getCourseStaffing(courseId);
     const map = {};
-    entries.forEach((r) => {
-      if (r.status === "fulfilled") {
-        const [id, list] = r.value;
-        map[id] = Array.isArray(list) ? list : [];
-      }
+    (data?.subjects || []).forEach((s) => {
+      map[s.id] = Array.isArray(s.teachers) ? s.teachers : [];
     });
     setTeachersBySubject(map);
+    setUnstaffedCount(data?.unstaffed_count ?? 0);
   }, []);
   const loadSubjects = useCallback(async (courseId) => {
     setLoading(true);
@@ -986,8 +1156,8 @@ const Courses = () => {
     const list = Array.isArray(s) ? s : [];
     setSubjects(list);
     setLoading(false);
-    loadSubjectTeachers(list);
-  }, [loadSubjectTeachers]);
+    loadStaffing(courseId);
+  }, [loadStaffing]);
   const loadBatches = useCallback(async (courseId) => {
     setLoading(true);
     const b = await getCourseBatches(courseId);
@@ -1323,10 +1493,24 @@ const Courses = () => {
         <div className="cm-card-head">
           <div className="courses-count">
             {subjects.length} subject{subjects.length !== 1 ? "s" : ""} in {nav.course?.title}
+            {unstaffedCount > 0 && (
+              <span className="cm-muted" style={{ marginLeft: 8 }}>
+                · {unstaffedCount} subject{unstaffedCount !== 1 ? "s" : ""} have no teacher
+              </span>
+            )}
           </div>
-          <button className="cm-add-btn" onClick={() => openCreate("subject", {})}>
-            + Add Subject
-          </button>
+          <div className="cm-actions">
+            <button
+              className="cm-icon-btn"
+              disabled={subjects.length === 0}
+              onClick={() => setBulkAssignModal(true)}
+            >
+              Bulk assign teacher
+            </button>
+            <button className="cm-add-btn" onClick={() => openCreate("subject", {})}>
+              + Add Subject
+            </button>
+          </div>
         </div>
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
@@ -1582,7 +1766,17 @@ const Courses = () => {
         <TeacherAssignModal
           subject={teacherModal}
           onClose={() => setTeacherModal(null)}
-          onChanged={() => { const s = subjects.find((x) => x.id === teacherModal.id); if (s) loadSubjectTeachers(subjects); }}
+          onChanged={() => nav.course && loadStaffing(nav.course.id)}
+        />
+      )}
+
+      {bulkAssignModal && nav.course && (
+        <BulkAssignModal
+          course={nav.course}
+          subjects={subjects}
+          teachersBySubject={teachersBySubject}
+          onClose={() => setBulkAssignModal(false)}
+          onAssigned={() => loadStaffing(nav.course.id)}
         />
       )}
 
