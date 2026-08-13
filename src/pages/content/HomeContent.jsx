@@ -8,6 +8,7 @@ import {
 import ConfirmModal from "../../components/ConfirmModal";
 import ImageUploadField from "../../components/ImageUploadField";
 import TagChipInput from "../../components/TagChipInput";
+import RichTextEditor from "../../components/RichTextEditor";
 import { errText } from "../../utils/errText";
 import { buildBody } from "../../utils/buildBody";
 
@@ -147,7 +148,12 @@ function ContentBlockForm({ section, row, busy, error, onSubmit }) {
 
       <label className="cm-field">
         <span>Body</span>
-        <textarea rows={3} value={form.body} onChange={set("body")} placeholder="Longer paragraph, if this section has one" />
+        <RichTextEditor
+          mode="restricted"
+          value={form.body}
+          onChange={(html) => setForm((f) => ({ ...f, body: html }))}
+          placeholder="Longer paragraph, if this section has one"
+        />
       </label>
 
       <div className="cm-row">
@@ -292,7 +298,11 @@ function ListItemFormModal({ section, showVariant, initial, busy, error, onSubmi
         </label>
         <label className="cm-field">
           <span>Body</span>
-          <textarea rows={3} value={form.body} onChange={set("body")} />
+          <RichTextEditor
+            mode="restricted"
+            value={form.body}
+            onChange={(html) => setForm((f) => ({ ...f, body: html }))}
+          />
         </label>
 
         {section === "browse_categories" && (

@@ -420,6 +420,15 @@ export const publishContentBlog   = async (id) =>
 export const unpublishContentBlog = async (id) =>
   (await api.post(`/content/admin/blogs/${id}/unpublish/`, {})).data;
 
+/* ── Content: rich-text editor image uploads (blog/homepage body content —
+   distinct from the single `cover`/`image` fields above; a body can embed
+   several) ── */
+export const uploadContentEditorImage = async (file) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  return (await api.post("/content/admin/editor-images/", fd, multipartConfig)).data;
+};
+
 /* ── Content: Current Affairs (same CRUD + publish/unpublish shape as Blog
    Posts; the backend contract given to us didn't spell out the URL segment
    for this resource, so — matching "blogs" being short plural of the model

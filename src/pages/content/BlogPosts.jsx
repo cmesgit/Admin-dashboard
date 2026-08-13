@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Star, Send, Undo2 } from "lucide-react";
+import { FileText, Star, Send, Undo2, Code2, Pencil } from "lucide-react";
 import {
   getContentBlogs, createContentBlog, updateContentBlog, deleteContentBlog,
   publishContentBlog, unpublishContentBlog,
@@ -8,7 +8,9 @@ import ConfirmModal from "../../components/ConfirmModal";
 import TagChipInput from "../../components/TagChipInput";
 import ImageUploadField from "../../components/ImageUploadField";
 import HtmlToolbar from "../../components/HtmlToolbar";
+import RichTextEditor from "../../components/RichTextEditor";
 import BlogCardPreview from "./preview/BlogCardPreview";
+import BlogBodyPreview from "./preview/BlogBodyPreview";
 import PlacementBadge from "./preview/PlacementBadge";
 import { errText } from "../../utils/errText";
 import { formatDate } from "../../utils/formatDate";
@@ -40,6 +42,7 @@ function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     publish_at: isoToLocalInput(initial?.publish_at),
   });
   const [file, setFile] = useState(null);
+  const [rawMode, setRawMode] = useState(false); // escape hatch: hand-edit HTML source directly
   const bodyRef = useRef(null);
 
   // Instant local preview for a newly-picked-but-not-yet-uploaded cover
@@ -143,11 +146,32 @@ function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
         </label>
 
         <label className="cm-field">
-          <span>Body (HTML)</span>
-          <HtmlToolbar textareaRef={bodyRef} value={form.body_html} onChange={(v) => setForm((f) => ({ ...f, body_html: v }))} />
-          <textarea ref={bodyRef} rows={10} value={form.body_html} onChange={set("body_html")} placeholder="<p>Post body as plain HTML…</p>" />
+          <div className="cm-field-label-row">
+            <span>Body</span>
+            <button
+              type="button"
+              className="cm-inline-toggle"
+              onClick={() => setRawMode((v) => !v)}
+              title={rawMode ? "Back to rich text editor" : "Edit raw HTML source"}
+            >
+              {rawMode ? <Pencil size={13} /> : <Code2 size={13} />}
+              {rawMode ? "Rich text" : "HTML source"}
+            </button>
+          </div>
+          {rawMode ? (
+            <>
+              <HtmlToolbar textareaRef={bodyRef} value={form.body_html} onChange={(v) => setForm((f) => ({ ...f, body_html: v }))} />
+              <textarea ref={bodyRef} rows={10} value={form.body_html} onChange={set("body_html")} placeholder="<p>Post body as plain HTML…</p>" />
+            </>
+          ) : (
+            <RichTextEditor
+              mode="full"
+              value={form.body_html}
+              onChange={(html) => setForm((f) => ({ ...f, body_html: html }))}
+              placeholder="Write the post body…"
+            />
+          )}
         </label>
-        <p className="cm-hint">Plain HTML, not a rich text editor — same fallback-to-textarea approach as the FAQ answer field.</p>
 
         <label className="cm-check">
           <input type="checkbox" checked={form.trusted_html} onChange={set("trusted_html")} />
@@ -195,6 +219,8 @@ function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
             tags={form.tags}
             publishedLabel={previewPublishedLabel}
           />
+          <span className="cms-preview-panel-label cms-preview-panel-label--body">Body preview</span>
+          <BlogBodyPreview html={form.body_html} />
         </aside>
 
         </div>

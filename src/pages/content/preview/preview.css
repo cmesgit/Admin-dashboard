@@ -91,3 +91,17 @@
    here so the card fits a narrow modal side-panel without dominating it. */
 .cms-preview .blog-list-image-wrap { height: 148px; }
 .cms-preview .blog-list-content h2 { font-size: 17px; }
+
+/* ── Blog body preview — rendered inside a sandboxed <iframe>
+ * (BlogBodyPreview.jsx), not this document, so it can safely show a
+ * pasted trusted_html page's own <style> block without that CSS leaking
+ * into the Admin dashboard's own layout. The actual `.blog-body` ruleset
+ * lives in ./blogBodyStyles.js (baked into the iframe's srcDoc) — this
+ * file only sizes the iframe itself. */
+.blog-body-preview-frame {
+  width: 100%;
+  min-height: 420px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}
