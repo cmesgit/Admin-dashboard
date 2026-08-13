@@ -3,8 +3,12 @@
    by another in-flight change); reuses .cm-field/.cm-row/.mod-btn/etc from
    Courses.css/Content.css/Moderator.css rather than redefining them. */
 
+/* Wider than the standard 1200px .dashboard-wrapper — a writing surface
+   benefits from more room than a settings form does, but is still capped
+   (rather than going full-bleed) so it doesn't feel like a spreadsheet on
+   ultrawide monitors. */
 .blog-editor {
-  max-width: none;
+  max-width: 1480px;
 }
 
 /* ── Sticky action bar ── */
@@ -14,8 +18,9 @@
   z-index: 5;
   background: #fff;
   border-bottom: 1px solid #e5e7eb;
-  margin: -8px -8px 18px;
-  padding: 12px 8px;
+  box-shadow: 0 2px 6px rgba(31, 41, 55, 0.04);
+  margin: -8px -8px 24px;
+  padding: 14px 16px;
 }
 .blog-editor-actionbar-row {
   display: flex;
@@ -54,7 +59,8 @@
   max-width: 320px;
 }
 .blog-editor-save-state {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
+  font-weight: 600;
   color: #9aa0aa;
   white-space: nowrap;
   flex-shrink: 0;
@@ -95,7 +101,7 @@
 /* ── Two-column body ── */
 .blog-editor-body {
   display: flex;
-  gap: 22px;
+  gap: 32px;
   align-items: flex-start;
 }
 .blog-editor-main {
@@ -103,49 +109,134 @@
   min-width: 0;
 }
 .blog-editor-sidebar {
-  width: 340px;
+  width: 360px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 @media (max-width: 1024px) {
   .blog-editor-body { flex-direction: column; }
   .blog-editor-sidebar { width: 100%; }
 }
 
+/* Focus mode: sidebar is unmounted entirely (see BlogEditor.jsx), so the
+   main column just needs a readable measure instead of stretching to fill
+   the full 1480px shell. */
+.blog-editor-body.focus-mode .blog-editor-main {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
 .blog-editor-title-input {
   width: 100%;
   border: none;
   outline: none;
-  font-size: 1.5rem;
+  font-size: 2rem;
+  line-height: 1.25;
   font-weight: 700;
   color: #1f2937;
-  padding: 6px 2px 14px;
+  padding: 10px 2px 20px;
   background: transparent;
 }
 .blog-editor-title-input::placeholder { color: #9aa0aa; }
 
 .blog-editor-wordcount {
-  margin-top: 6px;
+  margin-top: 12px;
 }
+
+/* ── Table of contents ── */
+.blog-editor-toc {
+  background: #f8fafc;
+  border: 1px solid #e2e6ee;
+  border-left: 3px solid #4f6df5;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 0 0 20px;
+}
+.blog-editor-toc-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+.blog-editor-toc-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+.blog-editor-toc-item {
+  background: none;
+  border: none;
+  padding: 2px 0;
+  font-size: 0.82rem;
+  color: #3b52d1;
+  cursor: pointer;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.blog-editor-toc-item:hover { text-decoration: underline; }
+.blog-editor-toc-item.lvl-h2 { padding-left: 12px; }
+.blog-editor-toc-item.lvl-h3 { padding-left: 24px; font-size: 0.78rem; color: #6b7280; }
 
 .blog-editor-card {
   background: #f8fafc;
   border: 1px solid #e2e6ee;
   border-radius: 10px;
-  padding: 14px;
+  padding: 18px;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04);
 }
 .blog-editor-card h4 {
-  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 14px;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: #6b7280;
 }
+.blog-editor-card h4 svg { color: #4f6df5; flex-shrink: 0; }
 .blog-editor-card .cm-field:last-child,
 .blog-editor-card .cm-row:last-child { margin-bottom: 0; }
+
+/* Collapsible card header — same look as a static h4, but a real button so
+   the whole row is clickable/keyboard-focusable. */
+.blog-editor-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 0 14px;
+  cursor: pointer;
+  color: #6b7280;
+}
+.blog-editor-card-head-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6b7280;
+}
+.blog-editor-card-head-label svg { color: #4f6df5; flex-shrink: 0; }
+.blog-editor-card-head svg:last-child { color: #9aa0aa; }
+/* When a card is collapsed, the header is the only child — drop its bottom
+   margin so the collapsed card doesn't carry dead space below the row. */
+.blog-editor-card-head:only-child { margin-bottom: 0; }
 
 .blog-editor-derived-slug { color: #9aa0aa; }
 .blog-editor-derived-slug code {

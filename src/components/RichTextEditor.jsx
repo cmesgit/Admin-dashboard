@@ -17,6 +17,7 @@
 // file grew a table/image/align toolbar.
 import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
+import { Node, mergeAttributes } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import TiptapImage from "@tiptap/extension-image";
 import { Table, TableRow, TableHeader, TableCell } from "@tiptap/extension-table";
@@ -28,7 +29,7 @@ import {
   Heading1, Heading2, Heading3, Quote, Code, Minus, Undo2, Redo2,
   AlignLeft, AlignCenter, AlignRight, ArrowUpToLine, ArrowDownToLine,
   ArrowLeftToLine, ArrowRightToLine, Rows, Columns, TableProperties,
-  TableCellsMerge, TableCellsSplit, Trash2, Loader2,
+  TableCellsMerge, TableCellsSplit, Trash2, Loader2, Info, ListCollapse,
 } from "lucide-react";
 import { uploadContentEditorImage } from "../api/admin";
 
@@ -67,6 +68,97 @@ const normalizeLinkUrl = (raw) => {
   return { value: `https://${trimmed}`, error: null };
 };
 
+// Callout and collapsible-section blocks each need a real TipTap schema
+// Node — NOT just a raw HTML string handed to insertContent. StarterKit's
+// schema has no node for a bare `div`/`details`/`summary`; ProseMirror's
+// HTML parser treats an element with no matching parseRule as transparent,
+// silently dropping the wrapper tag (and its class!) while still parsing
+// and keeping any recognized child content (a `<p>`). That was verified
+// directly against this app's real chapter content: 114 of 115 imported
+// legacy posts already contain hand-authored `<details><summary>` FAQ
+// accordions (see backend/content/sanitize.py's own allowlist comment), and
+// loading one of them into this editor without these Node definitions
+// silently strips every `<details>`/`<summary>` tag on load — an admin who
+// then hits Save would permanently delete that chapter's FAQ sections. The
+// two Node definitions below give `div.callout`/`details`/`summary` a real
+// place in the schema, so both round-trip on load AND stay well-formed when
+// inserted fresh via the toolbar.
+const Callout = Node.create({
+  name: "callout",
+  group: "block",
+  content: "block+",
+  defining: true,
+  addAttributes() {
+    return {
+      // Stored only as the class (callout-info/-warning/-success), never as
+      // a separate `variant="…"` DOM attribute — nh3's allowlist for `div`
+      // is just the global set (class/id/style/title/role), so a bare
+      // `variant` attribute would be silently stripped server-side anyway.
+      variant: {
+        default: "info",
+        parseHTML: (element) => {
+          const cls = element.getAttribute("class") || "";
+          if (cls.includes("callout-warning")) return "warning";
+          if (cls.includes("callout-success")) return "success";
+          return "info";
+        },
+        renderHTML: () => ({}),
+      },
+    };
+  },
+  parseHTML() {
+    return [{ tag: "div.callout" }];
+  },
+  renderHTML({ HTMLAttributes, node }) {
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, { class: `callout callout-${node.attrs.variant}` }),
+      0,
+    ];
+  },
+});
+
+// A `<summary>` is single-line/heading-like content, not a full block — kept
+// as its own node (rather than folding its text into `details`' attrs) so
+// it stays a normal editable text region with the same typing/selection
+// behavior as any other node.
+const DetailsSummary = Node.create({
+  name: "detailsSummary",
+  content: "inline*",
+  marks: "",
+  defining: true,
+  parseHTML() {
+    return [{ tag: "summary" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["summary", HTMLAttributes, 0];
+  },
+});
+
+// `content: "detailsSummary block+"` mirrors real `<details>` markup exactly
+// — a `<summary>` followed by one or more sibling block elements, not a
+// summary wrapping a nested body. `detailsSummary` isn't in the `block`
+// group, so the schema itself prevents it from being inserted anywhere
+// other than as the first child of a `details` node.
+const Details = Node.create({
+  name: "details",
+  group: "block",
+  content: "detailsSummary block+",
+  defining: true,
+  parseHTML() {
+    return [{ tag: "details" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["details", HTMLAttributes, 0];
+  },
+});
+
+const CALLOUT_VARIANTS = [
+  { key: "info", label: "Info" },
+  { key: "warning", label: "Warning" },
+  { key: "success", label: "Success" },
+];
+
 // One TipTap image node occupies exactly 1 position in the document, so
 // inserting a run of pasted/dropped images in order just means walking the
 // position forward by 1 after each successful insert — no need to re-query
@@ -89,6 +181,11 @@ const RichTextEditor = ({
   const [linkUrl, setLinkUrl] = useState("");
   const [linkError, setLinkError] = useState(null);
   const linkInputRef = useRef(null);
+
+  // Variant-picker popover for the callout block — mirrors the link
+  // popover's open/close plumbing above rather than inventing a second
+  // pattern for "toolbar button reveals a small floating panel".
+  const [calloutPopoverOpen, setCalloutPopoverOpen] = useState(false);
 
   // `state`: "idle" | "uploading" | "error". Surfaced next to the toolbar
   // instead of `window.alert`, and used to disable the insert-image button
@@ -120,6 +217,9 @@ const RichTextEditor = ({
             // properties, so this survives both the nh3 pass server-side
             // and the DOMPurify pass on the public frontend intact.
             TextAlign.configure({ types: ["heading", "paragraph"] }),
+            Callout,
+            Details,
+            DetailsSummary,
           ]
         : []),
     ],
@@ -273,6 +373,50 @@ const RichTextEditor = ({
     setLinkError(null);
   };
 
+  // Wraps the current selection's plain text (or a placeholder, if nothing
+  // is selected) in a callout node. Built as JSON content (a ProseMirror
+  // node/text tree), not an HTML string — a JSON text node's `text` field is
+  // a literal string with no markup-reparsing step, so no HTML-escaping is
+  // needed here the way it would be for a spliced-together HTML string.
+  // `insertContentAt({ from, to })` both reads and replaces the selection in
+  // one step, so a real selection is consumed rather than left duplicated
+  // after the callout lands.
+  const insertCallout = (variant) => {
+    const { from, to, empty } = editor.state.selection;
+    const text = empty ? "" : editor.state.doc.textBetween(from, to, " ");
+    editor
+      .chain()
+      .focus()
+      .insertContentAt({ from, to }, {
+        type: "callout",
+        attrs: { variant },
+        content: [{
+          type: "paragraph",
+          content: text ? [{ type: "text", text }] : [{ type: "text", text: "Add your note here." }],
+        }],
+      })
+      .run();
+    setCalloutPopoverOpen(false);
+  };
+
+  // Collapsible section — always inserted with placeholder copy in both
+  // slots (unlike the callout above, there's no single "the selection goes
+  // here" spot since a details block has two independently-editable text
+  // areas), so the author overwrites summary/body text after insertion.
+  const insertDetails = () => {
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "details",
+        content: [
+          { type: "detailsSummary", content: [{ type: "text", text: "Section title" }] },
+          { type: "paragraph", content: [{ type: "text", text: "Section content…" }] },
+        ],
+      })
+      .run();
+  };
+
   const pickImage = () => fileInputRef.current?.click();
 
   const onImageChosen = (e) => {
@@ -374,6 +518,30 @@ const RichTextEditor = ({
             {imageStatus.state === "error" && (
               <span className="rte-upload-status rte-upload-status--error">{imageStatus.message}</span>
             )}
+            <span className="rte-sep" />
+            <div className="rte-callout-group">
+              <ToolbarButton title="Insert callout" onClick={() => setCalloutPopoverOpen((o) => !o)}>
+                <Info size={15} />
+              </ToolbarButton>
+              {calloutPopoverOpen && (
+                <div className="rte-callout-popover">
+                  {CALLOUT_VARIANTS.map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`rte-callout-option rte-callout-option--${key}`}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => insertCallout(key)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <ToolbarButton title="Insert collapsible section" onClick={insertDetails}>
+              <ListCollapse size={15} />
+            </ToolbarButton>
           </>
         )}
         <span className="rte-sep" />

@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Code2, Pencil, Sparkles, Send, Undo2, ExternalLink } from "lucide-react";
+import {
+  ArrowLeft, Code2, Pencil, Sparkles, Send, Undo2, ExternalLink,
+  ChevronDown, ChevronRight, Maximize2, Minimize2, Layers, Link2,
+  Image as ImageIcon, FileText as ExcerptIcon, Tag, CalendarClock, List, Search, Info,
+} from "lucide-react";
 import customDesignTemplate from "./blogTemplates/customDesignTemplate.html?raw";
 import {
   getContentBlog, createContentBlog, updateContentBlog,
@@ -112,6 +116,33 @@ const formatRelativeTime = (ts) => {
 
 const draftKey = (id) => `blogEditorDraft:${id ?? "new"}`;
 
+// Sidebar collapse preference — a single app-wide localStorage object keyed
+// by card name, NOT scoped per-post. This is a UI layout preference (like a
+// sidebar width), not post data, so every post an author opens shares it.
+const CARD_COLLAPSE_KEY = "blogEditorCardCollapse";
+// Only applied when creating a brand-new post — the cards an author rarely
+// touches start out of the way so the writing surface reads bigger. Editing
+// an existing post always starts fully expanded (see the `collapsed` init
+// below) so previously-filled-in fields are never hidden without being asked.
+const DEFAULT_COLLAPSED_NEW = { scheduling: true, seo: true, listing: true };
+const loadStoredCollapse = () => {
+  try {
+    const raw = localStorage.getItem(CARD_COLLAPSE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+// Small clickable card header used by every collapsible sidebar section —
+// pulled out here rather than duplicated eight times below.
+const CardHead = ({ icon: Icon, label, cardKey, collapsed, onToggle }) => (
+  <button type="button" className="blog-editor-card-head" onClick={() => onToggle(cardKey)}>
+    <span className="blog-editor-card-head-label"><Icon size={14} /> {label}</span>
+    {collapsed[cardKey] ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+  </button>
+);
+
 const BlogEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -124,6 +155,25 @@ const BlogEditor = () => {
   const [file, setFile] = useState(null);
   const [rawMode, setRawMode] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Focus mode is a momentary writing preference, not a durable setting —
+  // it always resets to off on load rather than persisting like the card
+  // collapse state below.
+  const [focusMode, setFocusMode] = useState(false);
+
+  // Edit mode always starts fully expanded (never hide fields the author
+  // already filled in without asking); create mode uses whatever this
+  // browser last left collapsed, falling back to DEFAULT_COLLAPSED_NEW.
+  const [collapsed, setCollapsed] = useState(() => (
+    id ? {} : { ...DEFAULT_COLLAPSED_NEW, ...loadStoredCollapse() }
+  ));
+  const toggleCard = (key) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      try { localStorage.setItem(CARD_COLLAPSE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
 
   const [busy, setBusy] = useState(false); // manual save in flight
   const [saveError, setSaveError] = useState("");
@@ -399,6 +449,33 @@ const BlogEditor = () => {
     }));
   };
 
+  /* ───────────────────────── Table of contents ───────────────────────── */
+  // Read-only extraction over already-trusted-by-this-session content (this
+  // is the same body the author is currently editing, not third-party HTML),
+  // so a detached-DOM parse is fine here even though it'd be wrong for
+  // sanitizing untrusted input. Headings are indexed in document order across
+  // h1/h2/h3 combined — the click handler below re-queries the live RTE DOM
+  // with the same combined selector and jumps by that same index, since
+  // there's no id to key on inside TipTap's generated markup.
+  const tocHeadings = useMemo(() => {
+    const html = form.body_html || "";
+    if (!html.trim()) return [];
+    const scratch = document.createElement("div");
+    scratch.innerHTML = html;
+    return Array.from(scratch.querySelectorAll("h1, h2, h3"))
+      .map((el, index) => ({ index, level: el.tagName.toLowerCase(), text: el.textContent.trim() }))
+      .filter((h) => h.text);
+  }, [form.body_html]);
+
+  const jumpToHeading = (heading) => {
+    // Raw-HTML-source mode has no contenteditable heading to scroll to —
+    // the textarea has no per-heading DOM nodes — so clicks are a no-op there.
+    if (rawMode || showPreview) return;
+    const root = document.querySelector(".blog-editor-main .rte-content");
+    const target = root && root.querySelectorAll("h1, h2, h3")[heading.index];
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const derivedSlug = form.slug.trim() || deriveBlogSlug(form);
   const publicUrl = derivedSlug ? `${HOME_URL}/blogs/${derivedSlug}` : `${HOME_URL}/blogs/…`;
   const { words, minutes } = wordsAndReadingMinutes(form.body_html);
@@ -460,6 +537,14 @@ const BlogEditor = () => {
             {status === "published" && !saveIndicator ? "Autosave off (live post)" : saveIndicator}
           </span>
           <div className="blog-editor-actionbar-spacer" />
+          <button
+            className="mod-btn ghost small"
+            onClick={() => setFocusMode((v) => !v)}
+            title={focusMode ? "Exit focus mode" : "Hide the sidebar and widen the writing column"}
+          >
+            {focusMode ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+            {focusMode ? "Exit focus" : "Focus"}
+          </button>
           <button className="mod-btn ghost small" onClick={() => setShowPreview((v) => !v)}>
             {showPreview ? "Edit" : "Preview"}
           </button>
@@ -507,7 +592,7 @@ const BlogEditor = () => {
 
       {saveError && <div className="cm-form-error">{saveError}</div>}
 
-      <div className="blog-editor-body">
+      <div className={`blog-editor-body${focusMode ? " focus-mode" : ""}`}>
         <div className="blog-editor-main">
           {showPreview ? (
             <BlogBodyPreview html={form.body_html} />
@@ -520,6 +605,25 @@ const BlogEditor = () => {
                 placeholder="Post title"
                 autoFocus={!id}
               />
+
+              {tocHeadings.length > 0 && (
+                <div className="blog-editor-toc">
+                  <div className="blog-editor-toc-label"><List size={13} /> Jump to</div>
+                  <div className="blog-editor-toc-list">
+                    {tocHeadings.map((h) => (
+                      <button
+                        type="button"
+                        key={h.index}
+                        className={`blog-editor-toc-item lvl-${h.level}`}
+                        onClick={() => jumpToHeading(h)}
+                        title={rawMode ? "Switch to rich text to jump to this heading" : "Scroll to this heading"}
+                      >
+                        {h.text}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <label className="cm-field">
                 <div className="cm-field-label-row">
@@ -573,10 +677,14 @@ const BlogEditor = () => {
           )}
         </div>
 
+        {!focusMode && (
         <aside className="blog-editor-sidebar">
+          {/* Not collapsible: it's a 5-line static readonly grid already —
+              hiding it behind a click would save no room and costs a click
+              for info an author usually wants at a glance. */}
           {id && post && (
             <div className="blog-editor-card">
-              <h4>Details</h4>
+              <h4><Info size={14} /> Details</h4>
               <div className="cms-readonly-grid">
                 <div><span>Author</span><b>{post.author_name || "—"}</b></div>
                 <div><span>Reading time</span><b>{post.reading_minutes ? `${post.reading_minutes} min` : "—"}</b></div>
@@ -588,113 +696,144 @@ const BlogEditor = () => {
           )}
 
           <div className="blog-editor-card">
-            <h4>Taxonomy</h4>
-            <div className="cm-row">
-              <label className="cm-field">
-                <span>Class level</span>
-                <select value={form.class_level} onChange={set("class_level")}>
-                  {CLASS_LEVELS.map((v) => <option key={v} value={v}>{v === "general" ? "General" : `Class ${v}`}</option>)}
-                </select>
-              </label>
-              <label className="cm-field">
-                <span>Subject</span>
-                <select value={form.subject} onChange={set("subject")}>
-                  {SUBJECTS.map((v) => <option key={v} value={v}>{v}</option>)}
-                </select>
-              </label>
-            </div>
-            <label className="cm-field">
-              <span>Chapter # (optional)</span>
-              <input type="number" min="1" value={form.chapter_number} onChange={set("chapter_number")} />
-            </label>
-          </div>
-
-          <div className="blog-editor-card">
-            <h4>Slug</h4>
-            <label className="cm-field">
-              <span>Slug (optional)</span>
-              <input value={form.slug} onChange={set("slug")} placeholder="Leave blank to auto-generate" />
-            </label>
-            {!form.slug.trim() && (
-              <p className="cm-hint blog-editor-derived-slug">Auto-generated on save: <code>{derivedSlug || "post"}</code></p>
+            <CardHead icon={Layers} label="Taxonomy" cardKey="taxonomy" collapsed={collapsed} onToggle={toggleCard} />
+            {!collapsed.taxonomy && (
+              <>
+                <div className="cm-row">
+                  <label className="cm-field">
+                    <span>Class level</span>
+                    <select value={form.class_level} onChange={set("class_level")}>
+                      {CLASS_LEVELS.map((v) => <option key={v} value={v}>{v === "general" ? "General" : `Class ${v}`}</option>)}
+                    </select>
+                  </label>
+                  <label className="cm-field">
+                    <span>Subject</span>
+                    <select value={form.subject} onChange={set("subject")}>
+                      {SUBJECTS.map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </label>
+                </div>
+                <label className="cm-field">
+                  <span>Chapter # (optional)</span>
+                  <input type="number" min="1" value={form.chapter_number} onChange={set("chapter_number")} />
+                </label>
+              </>
             )}
-            <p className="blog-editor-public-url">{publicUrl}</p>
-            {id && <p className="cm-hint">The slug won't change if you rename this post later.</p>}
           </div>
 
           <div className="blog-editor-card">
-            <h4>Cover image</h4>
-            <ImageUploadField value={file} onChange={setFile} previewUrl={post?.cover} previewClassName="cms-image-preview" />
-            <p className="cm-hint">Cover changes are saved by pressing Save — they aren't autosaved.</p>
+            <CardHead icon={Link2} label="Slug" cardKey="slug" collapsed={collapsed} onToggle={toggleCard} />
+            {!collapsed.slug && (
+              <>
+                <label className="cm-field">
+                  <span>Slug (optional)</span>
+                  <input value={form.slug} onChange={set("slug")} placeholder="Leave blank to auto-generate" />
+                </label>
+                {!form.slug.trim() && (
+                  <p className="cm-hint blog-editor-derived-slug">Auto-generated on save: <code>{derivedSlug || "post"}</code></p>
+                )}
+                <p className="blog-editor-public-url">{publicUrl}</p>
+                {id && <p className="cm-hint">The slug won't change if you rename this post later.</p>}
+              </>
+            )}
           </div>
 
           <div className="blog-editor-card">
-            <h4>Excerpt</h4>
-            <textarea rows={3} value={form.excerpt} onChange={set("excerpt")} placeholder="Short summary shown in listings" />
+            <CardHead icon={ImageIcon} label="Cover image" cardKey="cover" collapsed={collapsed} onToggle={toggleCard} />
+            {!collapsed.cover && (
+              <>
+                <ImageUploadField value={file} onChange={setFile} previewUrl={post?.cover} previewClassName="cms-image-preview" />
+                <p className="cm-hint">Cover changes are saved by pressing Save — they aren't autosaved.</p>
+              </>
+            )}
           </div>
 
           <div className="blog-editor-card">
-            <h4>Tags</h4>
-            <TagChipInput value={form.tags} onChange={(v) => setForm((f) => ({ ...f, tags: v }))} placeholder="Type a tag, press Enter…" />
-            <label className="cm-check" style={{ marginTop: 10 }}>
-              <input type="checkbox" checked={form.is_featured} onChange={set("is_featured")} />
-              <span>Feature this post</span>
-            </label>
+            <CardHead icon={ExcerptIcon} label="Excerpt" cardKey="excerpt" collapsed={collapsed} onToggle={toggleCard} />
+            {!collapsed.excerpt && (
+              <textarea rows={3} value={form.excerpt} onChange={set("excerpt")} placeholder="Short summary shown in listings" />
+            )}
           </div>
 
           <div className="blog-editor-card">
-            <h4>Scheduling</h4>
-            <label className="cm-field">
-              <span>Publish at</span>
-              <input type="datetime-local" value={form.publish_at} onChange={set("publish_at")} />
-            </label>
-            <p className="cm-hint">This sets the scheduled time only — actual publish state is controlled by the Publish / Unpublish action, not this field.</p>
+            <CardHead icon={Tag} label="Tags" cardKey="tags" collapsed={collapsed} onToggle={toggleCard} />
+            {!collapsed.tags && (
+              <>
+                <TagChipInput value={form.tags} onChange={(v) => setForm((f) => ({ ...f, tags: v }))} placeholder="Type a tag, press Enter…" />
+                <label className="cm-check" style={{ marginTop: 10 }}>
+                  <input type="checkbox" checked={form.is_featured} onChange={set("is_featured")} />
+                  <span>Feature this post</span>
+                </label>
+              </>
+            )}
           </div>
 
           <div className="blog-editor-card">
-            <h4>Listing preview</h4>
-            <PlacementBadge items={placementItems} />
-            <BlogCardPreview
-              title={form.title}
-              excerpt={form.excerpt}
-              coverUrl={previewCoverUrl}
-              tags={form.tags}
-              publishedLabel={previewPublishedLabel}
-            />
+            <CardHead icon={CalendarClock} label="Scheduling" cardKey="scheduling" collapsed={collapsed} onToggle={toggleCard} />
+            {!collapsed.scheduling && (
+              <>
+                <label className="cm-field">
+                  <span>Publish at</span>
+                  <input type="datetime-local" value={form.publish_at} onChange={set("publish_at")} />
+                </label>
+                <p className="cm-hint">This sets the scheduled time only — actual publish state is controlled by the Publish / Unpublish action, not this field.</p>
+              </>
+            )}
           </div>
 
           <div className="blog-editor-card">
-            <h4>SEO</h4>
-            <button type="button" className="cm-inline-toggle" onClick={fillSeoFromContent}>
-              Use title &amp; excerpt
-            </button>
-            <label className="cm-field">
-              <div className="cm-field-label-row">
-                <span>SEO title</span>
-                <span className={`blog-editor-counter${form.seo_title.length >= SEO_TITLE_MAX ? " over" : form.seo_title.length >= SEO_TITLE_MAX * 0.9 ? " near" : ""}`}>
-                  {form.seo_title.length}/{SEO_TITLE_MAX}
-                </span>
-              </div>
-              <input value={form.seo_title} maxLength={SEO_TITLE_MAX} onChange={set("seo_title")} placeholder="Backfilled from title if left blank" />
-            </label>
-            <label className="cm-field">
-              <div className="cm-field-label-row">
-                <span>SEO description</span>
-                <span className={`blog-editor-counter${form.seo_description.length >= SEO_DESC_MAX ? " over" : form.seo_description.length >= SEO_DESC_MAX * 0.9 ? " near" : ""}`}>
-                  {form.seo_description.length}/{SEO_DESC_MAX}
-                </span>
-              </div>
-              <textarea rows={2} value={form.seo_description} maxLength={SEO_DESC_MAX} onChange={set("seo_description")} />
-            </label>
-            <SeoPreview
-              title={form.title}
-              excerpt={form.excerpt}
-              seoTitle={form.seo_title}
-              seoDescription={form.seo_description}
-              slug={form.slug.trim() || derivedSlug}
-            />
+            <CardHead icon={List} label="Listing preview" cardKey="listing" collapsed={collapsed} onToggle={toggleCard} />
+            {!collapsed.listing && (
+              <>
+                <PlacementBadge items={placementItems} />
+                <BlogCardPreview
+                  title={form.title}
+                  excerpt={form.excerpt}
+                  coverUrl={previewCoverUrl}
+                  tags={form.tags}
+                  publishedLabel={previewPublishedLabel}
+                />
+              </>
+            )}
+          </div>
+
+          <div className="blog-editor-card">
+            <CardHead icon={Search} label="SEO" cardKey="seo" collapsed={collapsed} onToggle={toggleCard} />
+            {!collapsed.seo && (
+              <>
+                <button type="button" className="cm-inline-toggle" onClick={fillSeoFromContent}>
+                  Use title &amp; excerpt
+                </button>
+                <label className="cm-field">
+                  <div className="cm-field-label-row">
+                    <span>SEO title</span>
+                    <span className={`blog-editor-counter${form.seo_title.length >= SEO_TITLE_MAX ? " over" : form.seo_title.length >= SEO_TITLE_MAX * 0.9 ? " near" : ""}`}>
+                      {form.seo_title.length}/{SEO_TITLE_MAX}
+                    </span>
+                  </div>
+                  <input value={form.seo_title} maxLength={SEO_TITLE_MAX} onChange={set("seo_title")} placeholder="Backfilled from title if left blank" />
+                </label>
+                <label className="cm-field">
+                  <div className="cm-field-label-row">
+                    <span>SEO description</span>
+                    <span className={`blog-editor-counter${form.seo_description.length >= SEO_DESC_MAX ? " over" : form.seo_description.length >= SEO_DESC_MAX * 0.9 ? " near" : ""}`}>
+                      {form.seo_description.length}/{SEO_DESC_MAX}
+                    </span>
+                  </div>
+                  <textarea rows={2} value={form.seo_description} maxLength={SEO_DESC_MAX} onChange={set("seo_description")} />
+                </label>
+                <SeoPreview
+                  title={form.title}
+                  excerpt={form.excerpt}
+                  seoTitle={form.seo_title}
+                  seoDescription={form.seo_description}
+                  slug={form.slug.trim() || derivedSlug}
+                />
+              </>
+            )}
           </div>
         </aside>
+        )}
       </div>
 
       {pendingNav && (

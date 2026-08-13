@@ -319,9 +319,60 @@
 .rte-content td, .rte-content th { border: 1px solid #d1d5db; padding: 6px 8px; }
 .rte-content th { background: #f8fafc; font-weight: 700; }
 .rte-content blockquote { border-left: 3px solid #d1d5db; margin: 8px 0; padding-left: 12px; color: #4b5563; }
+/* TipTap wraps list-item text in <p>; collapse that margin so bullets read as
+   tight in the editor, matching how the public page renders them (see
+   pages/content/preview/blogBodyStyles.js). */
+.rte-content li > p { margin: 0; }
 .rte-content pre { background: #f3f4f6; border-radius: 6px; padding: 10px 12px; overflow-x: auto; }
 .rte-content pre code { background: none; padding: 0; }
 .rte-content code { background: #f3f4f6; border-radius: 4px; padding: 1px 5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+/* Colors reused verbatim from Moderator.css's `.mod-btn.info/.warn/.success`
+   (bg/border) so this internal tool doesn't grow a second "info/warning/
+   success" palette; the left border repeats each variant's `.mod-btn` text
+   color for a stronger accent than the pale button border alone provides. */
+.rte-content .callout { margin: 10px 0; padding: 10px 14px; border-radius: 6px; border: 1px solid; border-left-width: 4px; }
+.rte-content .callout > p:last-child { margin-bottom: 0; }
+.rte-content .callout-info    { background: #eff6ff; border-color: #bfdbfe; border-left-color: #1d4ed8; }
+.rte-content .callout-warning { background: #fff8e8; border-color: #ecd080; border-left-color: #7a4c00; }
+.rte-content .callout-success { background: #e4f3e8; border-color: #b8d8bc; border-left-color: #125027; }
+/* Collapsible section — density matched to blockquote/pre right above:
+   a native <details> marker triangle is kept (no custom ::marker) since a
+   custom one risks cross-browser inconsistency for no real visual gain here. */
+.rte-content details { margin: 8px 0; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 12px; }
+.rte-content details summary { cursor: pointer; font-weight: 600; color: #1f2937; }
+.rte-content details[open] summary { margin-bottom: 8px; }
+.rte-content details p { margin: 0; }
+
+/* ── Callout variant-picker popover (opens from the toolbar's Info button) ── */
+.rte-callout-group { position: relative; display: inline-flex; align-items: center; }
+.rte-callout-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 140px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+.rte-callout-option {
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.rte-callout-option--info    { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.rte-callout-option--warning { background: #fff8e8; border-color: #ecd080; color: #7a4c00; }
+.rte-callout-option--success { background: #e4f3e8; border-color: #b8d8bc; color: #125027; }
+.rte-callout-option:hover { filter: brightness(0.97); }
 
 /* ── Link popover (replaces window.prompt for setting/editing a link) ── */
 .rte-link-group { position: relative; display: inline-flex; align-items: center; }

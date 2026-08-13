@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Star, Send, Undo2, ExternalLink } from "lucide-react";
+import { FileText, Star, Send, Undo2, ExternalLink, Copy } from "lucide-react";
 import {
-  getContentBlogs, deleteContentBlog, publishContentBlog, unpublishContentBlog,
+  getContentBlogs, getContentBlog, createContentBlog,
+  deleteContentBlog, publishContentBlog, unpublishContentBlog,
 } from "../../api/admin";
 import ConfirmModal from "../../components/ConfirmModal";
 import { errText } from "../../utils/errText";
@@ -52,6 +53,46 @@ const BlogPosts = ({ onAction }) => {
       setConfirm(null);
     } catch (e) {
       setConfirm((c) => ({ ...c, error: errText(e) }));
+    }
+  };
+
+  // Duplicate: the list row (`p`) is the lightweight list-serializer shape,
+  // which may not carry every field the editor needs (body_html, seo_*,
+  // etc.) — so re-fetch the full detail object first rather than copying
+  // straight off the row, same as the editor itself does after a create.
+  const handleDuplicate = async (row) => {
+    try {
+      const full = await getContentBlog(row.id);
+      const payload = {
+        title: `${full.title} (Copy)`,
+        slug: "", // cleared so the backend derives a fresh, non-colliding slug
+        class_level: full.class_level,
+        subject: full.subject,
+        chapter_number: full.chapter_number ?? null,
+        excerpt: full.excerpt || "",
+        body_html: full.body_html || "",
+        trusted_html: full.trusted_html ?? false,
+        tags: full.tags || [],
+        is_featured: false,
+        seo_title: full.seo_title || "",
+        seo_description: full.seo_description || "",
+        // `status` and `publish_at` are deliberately omitted, not sent as
+        // null: new posts already default to draft server-side (this create
+        // endpoint never accepts `status` directly — see BlogEditor's
+        // toApiFields), and `publish_at` isn't nullable at the model level
+        // so an explicit null 400s — omitting the key lets the backend's
+        // own default apply, exactly like a fresh "New Post" create.
+        //
+        // Cover image is NOT carried over: `full.cover` is a URL, not a
+        // File, so copying it would need a fetch-blob-then-reupload round
+        // trip. Skipped for this polish pass — the duplicate starts with no
+        // cover and the author can re-attach one if needed.
+      };
+      const created = await createContentBlog(payload, false);
+      notify(`Duplicated "${full.title}" as a new draft`);
+      navigate(`/content/blogs/${created.id}`);
+    } catch (e) {
+      notify(errText(e));
     }
   };
 
@@ -134,6 +175,7 @@ const BlogPosts = ({ onAction }) => {
                 ) : (
                   <button className="mod-btn success small" onClick={() => togglePublish(p)}><Send size={13} /> Publish</button>
                 )}
+                <button className="mod-btn ghost small" onClick={() => handleDuplicate(p)}><Copy size={13} /> Duplicate</button>
                 <button className="mod-btn danger small" onClick={() => setConfirm({ item: p })}>Delete</button>
               </div>
             </div>

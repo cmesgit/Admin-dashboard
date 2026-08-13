@@ -29,6 +29,11 @@ export const BLOG_BODY_PREVIEW_CSS = `
 .blog-body p { margin: 0 0 16px; }
 .blog-body ul, .blog-body ol { margin: 0 0 16px; padding-left: 1.4em; }
 .blog-body li { margin: 4px 0; }
+/* Keep in sync with shiksha-frontend/src/css/blogBodyStyles.js — TipTap stores
+   list items as <li><p>text</p></li>, and without this the generic
+   ".blog-body p" bottom margin makes every bullet render loose. */
+.blog-body li > p { margin: 0; }
+.blog-body li > p + p { margin-top: 8px; }
 .blog-body a { color: #0F9D6B; text-decoration: underline; }
 .blog-body strong { font-weight: 700; }
 .blog-body blockquote { border-left: 3px solid #d1d5db; margin: 20px 0; padding: 4px 0 4px 16px; color: #4b5563; font-style: italic; }
@@ -42,4 +47,24 @@ export const BLOG_BODY_PREVIEW_CSS = `
 .blog-body table { border-collapse: collapse; width: 100%; margin: 16px 0; }
 .blog-body td, .blog-body th { border: 1px solid #d1d5db; padding: 8px 10px; }
 .blog-body th { background: #f8fafc; font-weight: 700; }
+/* Callout / info box block (added alongside the RichTextEditor toolbar's
+   Info button) — same 3-variant palette as Admin-dashboard's
+   src/css/Content.css .rte-content .callout-* rules, itself reused
+   verbatim from Moderator.css's .mod-btn.info/.warn/.success so this
+   doesn't grow a second info/warning/success color scheme. NOT YET mirrored
+   into shiksha-frontend/src/css/blogBodyStyles.js — the public site's
+   BlogDetail page needs the same 5 rules below (callout + callout-info/
+   warning/success + details/summary) added by hand before published posts
+   using either block will render correctly there. */
+.blog-body .callout { margin: 16px 0; padding: 12px 16px; border-radius: 6px; border: 1px solid; border-left-width: 4px; }
+.blog-body .callout > p:last-child { margin-bottom: 0; }
+.blog-body .callout-info    { background: #eff6ff; border-color: #bfdbfe; border-left-color: #1d4ed8; }
+.blog-body .callout-warning { background: #fff8e8; border-color: #ecd080; border-left-color: #7a4c00; }
+.blog-body .callout-success { background: #e4f3e8; border-color: #b8d8bc; border-left-color: #125027; }
+/* Collapsible section block — plain native <details> marker (no custom
+   ::marker) for the same cross-browser-safety reason as the editor copy. */
+.blog-body details { margin: 20px 0; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px 16px; }
+.blog-body details summary { cursor: pointer; font-weight: 700; }
+.blog-body details[open] summary { margin-bottom: 10px; }
+.blog-body details p { margin: 0; }
 `;
