@@ -1,266 +1,26 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Star, Send, Undo2, Code2, Pencil, Sparkles } from "lucide-react";
-import customDesignTemplate from "./blogTemplates/customDesignTemplate.html?raw";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { FileText, Star, Send, Undo2, ExternalLink } from "lucide-react";
 import {
-  getContentBlogs, createContentBlog, updateContentBlog, deleteContentBlog,
-  publishContentBlog, unpublishContentBlog,
+  getContentBlogs, deleteContentBlog, publishContentBlog, unpublishContentBlog,
 } from "../../api/admin";
 import ConfirmModal from "../../components/ConfirmModal";
-import TagChipInput from "../../components/TagChipInput";
-import ImageUploadField from "../../components/ImageUploadField";
-import HtmlToolbar from "../../components/HtmlToolbar";
-import RichTextEditor from "../../components/RichTextEditor";
-import BlogCardPreview from "./preview/BlogCardPreview";
-import BlogBodyPreview from "./preview/BlogBodyPreview";
-import PlacementBadge from "./preview/PlacementBadge";
 import { errText } from "../../utils/errText";
 import { formatDate } from "../../utils/formatDate";
-import { buildBody } from "../../utils/buildBody";
-import { isoToLocalInput, localInputToIso } from "../../utils/datetimeLocal";
+import { HOME_URL } from "../../config/urls";
 
-const CLASS_LEVELS = ["8", "9", "10", "11", "12", "general"];
-const SUBJECTS = [
-  "science", "mathematics", "history", "geography", "economics",
-  "civics", "political-science", "english", "general",
-];
 const STATUS_PAL = { draft: "pal-gray", scheduled: "pal-blue", published: "pal-green", archived: "pal-gray" };
 
-/* ───────────────────────── Create/Edit modal ───────────────────────── */
-function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
-  const [form, setForm] = useState({
-    title: initial?.title || "",
-    slug: initial?.slug || "",
-    class_level: initial?.class_level || "general",
-    subject: initial?.subject || "general",
-    chapter_number: initial?.chapter_number ?? "",
-    excerpt: initial?.excerpt || "",
-    body_html: initial?.body_html || "",
-    trusted_html: initial?.trusted_html ?? false,
-    tags: initial?.tags || [],
-    is_featured: initial?.is_featured ?? false,
-    seo_title: initial?.seo_title || "",
-    seo_description: initial?.seo_description || "",
-    publish_at: isoToLocalInput(initial?.publish_at),
-  });
-  const [file, setFile] = useState(null);
-  const [rawMode, setRawMode] = useState(false); // escape hatch: hand-edit HTML source directly
-  const bodyRef = useRef(null);
-
-  // Instant local preview for a newly-picked-but-not-yet-uploaded cover
-  // image (ImageUploadField only shows the filename, not a rendered preview).
-  const filePreviewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
-  useEffect(() => () => { if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl); }, [filePreviewUrl]);
-
-  const set = (k) => (e) =>
-    setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
-
-  // ── Live preview: where this post will appear + a mini card render. ──
-  const previewCoverUrl = filePreviewUrl || initial?.cover || null;
-  const previewPublishedLabel = initial?.status === "published"
-    ? `Published${initial.updated_at ? ` · ${formatDate(initial.updated_at)}` : ""}`
-    : form.publish_at
-      ? `Scheduled for ${formatDate(localInputToIso(form.publish_at))}`
-      : "Not yet published";
-  const previewSlug = form.slug || initial?.slug || "";
-  const placementItems = [
-    { label: "/blogs", sublabel: "list" },
-    previewSlug
-      ? { label: `/blogs/${previewSlug}`, sublabel: "detail page" }
-      : { label: "/blogs/<slug>", sublabel: "(slug auto-generated on save)" },
-  ];
-
-  const submit = () => {
-    const payload = {
-      title: form.title.trim(),
-      slug: form.slug.trim(),
-      class_level: form.class_level,
-      subject: form.subject,
-      chapter_number: form.chapter_number === "" ? null : parseInt(form.chapter_number, 10),
-      excerpt: form.excerpt,
-      body_html: form.body_html,
-      trusted_html: form.trusted_html,
-      tags: form.tags,
-      is_featured: form.is_featured,
-      seo_title: form.seo_title,
-      seo_description: form.seo_description,
-      publish_at: form.publish_at ? localInputToIso(form.publish_at) : null,
-    };
-    onSubmit(payload, file);
-  };
-
-  return (
-    <div className="confirm-overlay" onClick={busy ? undefined : onCancel}>
-      <div className="cm-form-card cm-form-card--wide cm-form-card--with-preview" onClick={(e) => e.stopPropagation()}>
-        <h3>{mode === "edit" ? "Edit Blog Post" : "New Blog Post"}</h3>
-
-        <div className="cm-form-split">
-        <div className="cm-form-main">
-
-        {mode === "edit" && initial && (
-          <div className="cms-readonly-grid">
-            <div><span>Status</span><b><span className={`mod-badge ${STATUS_PAL[initial.status] || "pal-gray"}`}>{initial.status || "draft"}</span></b></div>
-            <div><span>Author</span><b>{initial.author_name || "—"}</b></div>
-            <div><span>Reading time</span><b>{initial.reading_minutes ? `${initial.reading_minutes} min` : "—"}</b></div>
-            <div><span>Views</span><b>{initial.view_count ?? 0}</b></div>
-            <div><span>Created</span><b>{formatDate(initial.created_at)}</b></div>
-            <div><span>Updated</span><b>{formatDate(initial.updated_at)}</b></div>
-          </div>
-        )}
-
-        <label className="cm-field">
-          <span>Title</span>
-          <input value={form.title} onChange={set("title")} placeholder="e.g. How to prepare for Class 10 boards" autoFocus />
-        </label>
-
-        <label className="cm-field">
-          <span>Slug (optional)</span>
-          <input value={form.slug} onChange={set("slug")} placeholder="Leave blank to auto-generate from class, subject & chapter" />
-        </label>
-
-        <div className="cm-row">
-          <label className="cm-field">
-            <span>Class level</span>
-            <select value={form.class_level} onChange={set("class_level")}>
-              {CLASS_LEVELS.map((v) => <option key={v} value={v}>{v === "general" ? "General" : `Class ${v}`}</option>)}
-            </select>
-          </label>
-          <label className="cm-field">
-            <span>Subject</span>
-            <select value={form.subject} onChange={set("subject")}>
-              {SUBJECTS.map((v) => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </label>
-          <label className="cm-field">
-            <span>Chapter # (optional)</span>
-            <input type="number" min="1" value={form.chapter_number} onChange={set("chapter_number")} />
-          </label>
-        </div>
-
-        <label className="cm-field">
-          <span>Excerpt</span>
-          <textarea rows={2} value={form.excerpt} onChange={set("excerpt")} placeholder="Short summary shown in listings" />
-        </label>
-
-        <label className="cm-field">
-          <span>Cover image</span>
-          <ImageUploadField value={file} onChange={setFile} previewUrl={initial?.cover} previewClassName="cms-image-preview" />
-        </label>
-
-        <label className="cm-field">
-          <div className="cm-field-label-row">
-            <span>Body</span>
-            <button
-              type="button"
-              className="cm-inline-toggle"
-              onClick={() => setRawMode((v) => !v)}
-              title={rawMode ? "Back to rich text editor" : "Edit raw HTML source"}
-            >
-              {rawMode ? <Pencil size={13} /> : <Code2 size={13} />}
-              {rawMode ? "Rich text" : "HTML source"}
-            </button>
-          </div>
-          {rawMode ? (
-            <>
-              <div className="cm-field-label-row">
-                <button
-                  type="button"
-                  className="cm-inline-toggle"
-                  title="Replace the body with a self-contained, hand-designed starter template (like the legacy chapter pages) — includes its own <style> block, so this also turns on 'Skip HTML sanitization' below"
-                  onClick={() => {
-                    if (form.body_html.trim() && !window.confirm("This replaces the current body content with the custom-design template. Continue?")) return;
-                    setForm((f) => ({ ...f, body_html: customDesignTemplate, trusted_html: true }));
-                  }}
-                >
-                  <Sparkles size={13} />
-                  Load custom-design template
-                </button>
-              </div>
-              <HtmlToolbar textareaRef={bodyRef} value={form.body_html} onChange={(v) => setForm((f) => ({ ...f, body_html: v }))} />
-              <textarea ref={bodyRef} rows={10} value={form.body_html} onChange={set("body_html")} placeholder="<p>Post body as plain HTML…</p>" />
-            </>
-          ) : (
-            <RichTextEditor
-              mode="full"
-              value={form.body_html}
-              onChange={(html) => setForm((f) => ({ ...f, body_html: html }))}
-              placeholder="Write the post body…"
-            />
-          )}
-        </label>
-
-        <label className="cm-check">
-          <input type="checkbox" checked={form.trusted_html} onChange={set("trusted_html")} />
-          <span>Skip HTML sanitization (only for trusted imported content)</span>
-        </label>
-
-        <label className="cm-field">
-          <span>Tags</span>
-          <TagChipInput value={form.tags} onChange={(v) => setForm((f) => ({ ...f, tags: v }))} placeholder="Type a tag, press Enter…" />
-        </label>
-
-        <div className="cm-row">
-          <label className="cm-check" style={{ marginTop: 0 }}>
-            <input type="checkbox" checked={form.is_featured} onChange={set("is_featured")} />
-            <span>Feature this post</span>
-          </label>
-          <label className="cm-field">
-            <span>Publish at (for scheduling)</span>
-            <input type="datetime-local" value={form.publish_at} onChange={set("publish_at")} />
-          </label>
-        </div>
-        <p className="cm-hint">This sets the scheduled time only — actual publish state is controlled by the Publish / Unpublish action, not this field.</p>
-
-        <details className="cms-details">
-          <summary>SEO (optional)</summary>
-          <label className="cm-field">
-            <span>SEO title</span>
-            <input value={form.seo_title} onChange={set("seo_title")} />
-          </label>
-          <label className="cm-field">
-            <span>SEO description</span>
-            <textarea rows={2} value={form.seo_description} onChange={set("seo_description")} />
-          </label>
-        </details>
-
-        </div>
-
-        <aside className="cms-preview-panel">
-          <span className="cms-preview-panel-label">Live preview</span>
-          <PlacementBadge items={placementItems} />
-          <BlogCardPreview
-            title={form.title}
-            excerpt={form.excerpt}
-            coverUrl={previewCoverUrl}
-            tags={form.tags}
-            publishedLabel={previewPublishedLabel}
-          />
-          <span className="cms-preview-panel-label cms-preview-panel-label--body">Body preview</span>
-          <BlogBodyPreview html={form.body_html} />
-        </aside>
-
-        </div>
-
-        {error && <div className="cm-form-error">{error}</div>}
-
-        <div className="confirm-actions">
-          <button className="confirm-cancel" onClick={onCancel} disabled={busy}>Cancel</button>
-          <button className="confirm-ok" onClick={submit} disabled={busy || !form.title.trim()}>
-            {busy ? "Saving…" : mode === "edit" ? "Save" : "Create"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+// The create/edit modal (BlogFormModal) was replaced by a full-page route
+// (src/pages/content/BlogEditor.jsx, mounted at /content/blogs/new and
+// /content/blogs/:id) — this file now only owns the list/search/publish/
+// delete surface.
 const BlogPosts = ({ onAction }) => {
+  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [modal, setModal] = useState(null);
   const [confirm, setConfirm] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState("");
 
   const notify = (msg) => onAction && onAction(msg);
 
@@ -283,30 +43,8 @@ const BlogPosts = ({ onAction }) => {
     );
   }, [rows, search]);
 
-  const handleSubmit = async (payload, file) => {
-    setBusy(true); setFormError("");
-    try {
-      const { data, isMultipart } = buildBody(payload, file, "cover");
-      if (modal.mode === "edit") {
-        const updated = await updateContentBlog(modal.initial.id, data, isMultipart);
-        setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-        notify(`Updated "${updated.title}"`);
-      } else {
-        const created = await createContentBlog(data, isMultipart);
-        setRows((prev) => [created, ...prev]);
-        notify(`Created "${created.title}"`);
-      }
-      setModal(null);
-    } catch (e) {
-      setFormError(errText(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const handleDelete = async () => {
     if (!confirm) return;
-    setBusy(true);
     try {
       await deleteContentBlog(confirm.item.id);
       setRows((prev) => prev.filter((r) => r.id !== confirm.item.id));
@@ -314,8 +52,6 @@ const BlogPosts = ({ onAction }) => {
       setConfirm(null);
     } catch (e) {
       setConfirm((c) => ({ ...c, error: errText(e) }));
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -342,7 +78,7 @@ const BlogPosts = ({ onAction }) => {
           onChange={(e) => setSearch(e.target.value)}
         />
         <div className="cms-toolbar-spacer" />
-        <button className="cm-add-btn" onClick={() => { setFormError(""); setModal({ mode: "create", initial: {} }); }}>
+        <button className="cm-add-btn" onClick={() => navigate("/content/blogs/new")}>
           + New Post
         </button>
       </div>
@@ -382,9 +118,19 @@ const BlogPosts = ({ onAction }) => {
                 )}
               </div>
               <div className="cms-card-footer">
-                <button className="mod-btn ghost small" onClick={() => { setFormError(""); setModal({ mode: "edit", initial: p }); }}>Edit</button>
+                <button className="mod-btn ghost small" onClick={() => navigate(`/content/blogs/${p.id}`)}>Edit</button>
                 {p.status === "published" ? (
-                  <button className="mod-btn warn small" onClick={() => togglePublish(p)}><Undo2 size={13} /> Unpublish</button>
+                  <>
+                    <button className="mod-btn warn small" onClick={() => togglePublish(p)}><Undo2 size={13} /> Unpublish</button>
+                    <a
+                      className="mod-btn ghost small"
+                      href={`${HOME_URL}/blogs/${p.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink size={13} /> View live
+                    </a>
+                  </>
                 ) : (
                   <button className="mod-btn success small" onClick={() => togglePublish(p)}><Send size={13} /> Publish</button>
                 )}
@@ -393,17 +139,6 @@ const BlogPosts = ({ onAction }) => {
             </div>
           ))}
         </div>
-      )}
-
-      {modal && (
-        <BlogFormModal
-          mode={modal.mode}
-          initial={modal.initial}
-          busy={busy}
-          error={formError}
-          onSubmit={handleSubmit}
-          onCancel={() => setModal(null)}
-        />
       )}
 
       {confirm && (

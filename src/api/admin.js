@@ -409,6 +409,11 @@ export const reorderHomeSections     = async (sections) =>
 /* ── Content: Blog Posts ── */
 export const getContentBlogs      = async (params) =>
   safe(async () => (await api.get("/content/admin/blogs/", { params })).data, []);
+// Unlike the list above, this deliberately isn't `safe()`-wrapped: the full-page
+// editor needs to distinguish "loading" from "this post doesn't exist / failed
+// to load" and show a real error state, not silently render an empty form.
+export const getContentBlog       = async (id) =>
+  (await api.get(`/content/admin/blogs/${id}/`)).data;
 export const createContentBlog    = async (data, isMultipart = false) =>
   (await api.post("/content/admin/blogs/", data, isMultipart ? multipartConfig : undefined)).data;
 export const updateContentBlog    = async (id, data, isMultipart = false) =>

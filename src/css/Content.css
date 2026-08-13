@@ -298,6 +298,14 @@
   line-height: 1.55;
   color: #1f2937;
 }
+/* Full-page editors (e.g. a dedicated blog-post page) opt into this via the
+   `tall` prop instead of being capped at the default 480px meant for an
+   in-modal field — height then comes from whatever the container gives it. */
+.rte-content--tall {
+  max-height: none;
+  min-height: 420px;
+  flex: 1 1 auto;
+}
 .rte-content:focus { outline: none; }
 .rte-content p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
@@ -314,6 +322,88 @@
 .rte-content pre { background: #f3f4f6; border-radius: 6px; padding: 10px 12px; overflow-x: auto; }
 .rte-content pre code { background: none; padding: 0; }
 .rte-content code { background: #f3f4f6; border-radius: 4px; padding: 1px 5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* ── Link popover (replaces window.prompt for setting/editing a link) ── */
+.rte-link-group { position: relative; display: inline-flex; align-items: center; }
+.rte-link-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 260px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+.rte-link-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #1f2937;
+}
+.rte-link-input:focus { outline: none; border-color: #4f6df5; }
+.rte-link-popover-actions { display: flex; gap: 6px; }
+.rte-link-apply, .rte-link-remove {
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.rte-link-apply { background: #4f6df5; color: #fff; }
+.rte-link-apply:hover { background: #3d59e0; }
+.rte-link-remove { background: #f8fafc; border-color: #d1d5db; color: #4b5563; }
+.rte-link-remove:hover { background: #eef1ff; border-color: #4f6df5; color: #4f6df5; }
+.rte-link-error { font-size: 0.76rem; color: #c0392b; }
+
+/* ── Contextual table toolbar (shown only while the cursor is in a table) ── */
+.rte-table-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 5px 6px;
+  background: #eef1ff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ── Image upload progress / error indicator, shown next to the toolbar ── */
+.rte-upload-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.rte-upload-status--busy { color: #4f6df5; background: #eef1ff; }
+.rte-upload-status--error { color: #c0392b; background: #fdecea; }
+.rte-spin { animation: rte-spin 0.8s linear infinite; }
+@keyframes rte-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Word/character count footer, shown when `showStats` is set ── */
+.rte-stats {
+  padding: 5px 14px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+  font-size: 0.76rem;
+  color: #6b7280;
+  text-align: right;
+}
 
 /* ── Inline note for fields disabled because a course/board is linked ── */
 .cms-derived-note {
