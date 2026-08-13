@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Star, Send, Undo2, Code2, Pencil } from "lucide-react";
+import { FileText, Star, Send, Undo2, Code2, Pencil, Sparkles } from "lucide-react";
+import customDesignTemplate from "./blogTemplates/customDesignTemplate.html?raw";
 import {
   getContentBlogs, createContentBlog, updateContentBlog, deleteContentBlog,
   publishContentBlog, unpublishContentBlog,
@@ -160,6 +161,20 @@ function BlogFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
           </div>
           {rawMode ? (
             <>
+              <div className="cm-field-label-row">
+                <button
+                  type="button"
+                  className="cm-inline-toggle"
+                  title="Replace the body with a self-contained, hand-designed starter template (like the legacy chapter pages) — includes its own <style> block, so this also turns on 'Skip HTML sanitization' below"
+                  onClick={() => {
+                    if (form.body_html.trim() && !window.confirm("This replaces the current body content with the custom-design template. Continue?")) return;
+                    setForm((f) => ({ ...f, body_html: customDesignTemplate, trusted_html: true }));
+                  }}
+                >
+                  <Sparkles size={13} />
+                  Load custom-design template
+                </button>
+              </div>
               <HtmlToolbar textareaRef={bodyRef} value={form.body_html} onChange={(v) => setForm((f) => ({ ...f, body_html: v }))} />
               <textarea ref={bodyRef} rows={10} value={form.body_html} onChange={set("body_html")} placeholder="<p>Post body as plain HTML…</p>" />
             </>
