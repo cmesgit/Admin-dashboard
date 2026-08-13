@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { Search, X, Clock, Star, Radio } from "lucide-react";
 import { getTeacherDirectory, getTeacherDetail } from "../api/admin";
+import TrackChips from "../components/TrackChips";
 import "../css/NewScreens.css";
 
 const TRACKS = [
@@ -16,14 +17,6 @@ const initials = (name = "") =>
   name.split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]).join("").toUpperCase() || "?";
 
 const rupees = (paise) => `₹${((paise || 0) / 100).toLocaleString("en-IN")}`;
-
-const TrackChips = ({ tracks = [] }) => (
-  <div className="ns-track-chips">
-    {tracks.map((t) => (
-      <span key={t} className={`ns-track-chip ${t}`}>{t === "academy" ? "Academy" : "Skill"}</span>
-    ))}
-  </div>
-);
 
 const TeacherDrawer = ({ userId, onClose }) => {
   const [data, setData] = useState(null);

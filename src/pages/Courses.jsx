@@ -20,6 +20,7 @@ import ImageUploadField from "../components/ImageUploadField";
 import FeaturedCardPreview from "./content/preview/FeaturedCardPreview";
 import NavMenuEntryPreview from "./content/preview/NavMenuEntryPreview";
 import PlacementBadge from "./content/preview/PlacementBadge";
+import TrackChips from "../components/TrackChips";
 import { errText } from "../utils/errText";
 import { formatDate } from "../utils/formatDate";
 import { buildBody } from "../utils/buildBody";
@@ -432,6 +433,8 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
 function TeacherAssignModal({ subject, onClose, onChanged }) {
   const [assigned, setAssigned] = useState([]);
   const [pool, setPool] = useState([]);
+  const [poolCount, setPoolCount] = useState(0);
+  const [poolHasMore, setPoolHasMore] = useState(false);
   const [q, setQ] = useState("");
   const [role, setRole] = useState("PRIMARY");
   const [loading, setLoading] = useState(true);
@@ -447,25 +450,32 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
     let cancel = false;
     (async () => {
       setLoading(true);
-      const [list, teachers] = await Promise.all([
-        getSubjectTeachers(subject.id),
-        getAdminAcademyTeachers(),
-      ]);
+      const list = await getSubjectTeachers(subject.id);
       if (cancel) return;
       setAssigned(Array.isArray(list) ? list : []);
-      setPool(Array.isArray(teachers) ? teachers : []);
       setLoading(false);
     })();
     return () => { cancel = true; };
   }, [subject.id]);
 
+  // Server-side search — debounced, so a teacher outside the server's first
+  // page (result truncation is now real: 50 rows, see getAdminAcademyTeachers)
+  // is still reachable by typing their exact name/email.
+  useEffect(() => {
+    let cancel = false;
+    const t = setTimeout(() => {
+      getAdminAcademyTeachers(q).then((res) => {
+        if (cancel) return;
+        setPool(res.data || []);
+        setPoolCount(res.count || 0);
+        setPoolHasMore(!!res.has_more);
+      });
+    }, q ? 300 : 0);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [q, subject.id]);
+
   const assignedIds = new Set(assigned.map((t) => t.user_id));
-  const matches = pool.filter(
-    (t) =>
-      !assignedIds.has(t.user_id) &&
-      ((t.name || "").toLowerCase().includes(q.toLowerCase()) ||
-        (t.email || "").toLowerCase().includes(q.toLowerCase()))
-  );
+  const matches = pool.filter((t) => !assignedIds.has(t.user_id));
 
   const runAction = async (id, fn) => {
     setBusyId(id); setErr("");
@@ -503,6 +513,7 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
                           {t.qualification || t.email}
                           {t.rating ? ` · ★ ${t.rating}` : ""}
                         </span>
+                        <TrackChips tracks={t.tracks} />
                       </div>
                     </div>
                     <div className="cm-assign-controls">
@@ -555,6 +566,11 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search approved teachers by name or email"
               />
+              {poolHasMore && (
+                <p className="cm-hint">
+                  Showing {pool.length} of {poolCount} — refine your search.
+                </p>
+              )}
               <div className="cm-pool-list">
                 {matches.length === 0 ? (
                   <div className="cm-pool-empty">
@@ -563,11 +579,12 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
                       : "No matches — everyone matching is already assigned."}
                   </div>
                 ) : (
-                  matches.slice(0, 30).map((t) => (
+                  matches.map((t) => (
                     <div className="cm-pool-row" key={t.user_id}>
                       <div className="cm-assign-meta">
                         <span className="cm-assign-name">{t.name}</span>
                         <span className="cm-assign-sub">{t.qualification || t.email}</span>
+                        <TrackChips tracks={t.tracks} />
                       </div>
                       <button
                         className="cm-icon-btn"

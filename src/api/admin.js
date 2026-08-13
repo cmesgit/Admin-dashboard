@@ -142,7 +142,8 @@ export const getBatchRoster = async (batchId, params = {}) =>
 
 /* ── Academy: subject-teacher assignment ── */
 export const getAdminAcademyTeachers = async (q = "") =>
-  safe(async () => (await api.get(`/courses/admin/teachers/`, { params: q ? { q } : {} })).data, []);
+  safe(async () => (await api.get(`/courses/admin/teachers/`, { params: q ? { q } : {} })).data,
+    { data: [], count: 0, has_more: false });
 export const getSubjectTeachers = async (subjectId) =>
   safe(async () => (await api.get(`/courses/admin/subjects/${subjectId}/teachers/`)).data, []);
 export const assignSubjectTeacher = async (subjectId, teacherId, display_role = "PRIMARY") =>
