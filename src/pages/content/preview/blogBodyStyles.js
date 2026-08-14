@@ -51,11 +51,9 @@ export const BLOG_BODY_PREVIEW_CSS = `
    Info button) — same 3-variant palette as Admin-dashboard's
    src/css/Content.css .rte-content .callout-* rules, itself reused
    verbatim from Moderator.css's .mod-btn.info/.warn/.success so this
-   doesn't grow a second info/warning/success color scheme. NOT YET mirrored
-   into shiksha-frontend/src/css/blogBodyStyles.js — the public site's
-   BlogDetail page needs the same 5 rules below (callout + callout-info/
-   warning/success + details/summary) added by hand before published posts
-   using either block will render correctly there. */
+   doesn't grow a second info/warning/success color scheme. Mirrored into
+   shiksha-frontend/src/css/blogBodyStyles.js — keep both in sync by hand,
+   same as every other rule in this file. */
 .blog-body .callout { margin: 16px 0; padding: 12px 16px; border-radius: 6px; border: 1px solid; border-left-width: 4px; }
 .blog-body .callout > p:last-child { margin-bottom: 0; }
 .blog-body .callout-info    { background: #eff6ff; border-color: #bfdbfe; border-left-color: #1d4ed8; }

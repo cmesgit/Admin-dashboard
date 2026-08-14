@@ -677,7 +677,7 @@ const BlogEditor = () => {
           )}
         </div>
 
-        {!focusMode && (
+        {!focusMode && !showPreview && (
         <aside className="blog-editor-sidebar">
           {/* Not collapsible: it's a 5-line static readonly grid already —
               hiding it behind a click would save no room and costs a click

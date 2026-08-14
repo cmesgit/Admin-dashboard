@@ -100,8 +100,11 @@
  * file only sizes the iframe itself. */
 .blog-body-preview-frame {
   width: 100%;
-  min-height: 420px;
+  height: 78vh;
+  min-height: 640px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
+  resize: vertical;
+  overflow: auto;
 }
