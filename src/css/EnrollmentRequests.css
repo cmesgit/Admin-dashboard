@@ -15,7 +15,7 @@
 
 .er-table-card {
   padding: 0;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .er-count {
@@ -181,6 +181,6 @@
 
 /* Payment-mode banner */
 .er-mode-banner {
-  background: #f1f5ff; border: 1px solid #dbe3ff; color: #3b4cca;
+  background: #f1f5ff; border: 1px solid #dbe3ff; color: var(--admin-primary-dark);
   padding: 10px 14px; border-radius: 10px; font-size: 0.86rem; margin-bottom: 16px;
 }

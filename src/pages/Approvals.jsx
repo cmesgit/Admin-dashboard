@@ -146,7 +146,7 @@ function FacultyTab({ search }) {
                   <span style={{ color: "#9ca3af", fontSize: 12 }}> · {docCount} docs</span>
                 </td>
                 <td className="approvals-actions">
-                  <button onClick={() => setDetail(a)} style={{ padding: "6px 12px", cursor: "pointer" }}>View</button>
+                  <button className="view-btn" onClick={() => setDetail(a)}>View</button>
                   <button className="approve-btn" onClick={() => act(a, "approve")}>Approve</button>
                   <button className="reject-btn" onClick={() => act(a, "reject")}>Reject</button>
                 </td>

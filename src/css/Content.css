@@ -82,7 +82,7 @@
 
 /* ── Bulk select mode (Blog Posts list) — mirrors Students.jsx's
    .stu-bulk-bar pattern, adapted to a card grid instead of a table row. ── */
-.mod-btn.ghost.active { background: #eef1ff; border-color: #4f6df5; color: #3b4cca; }
+.mod-btn.ghost.active { background: #eef1ff; border-color: #4f6df5; color: var(--admin-primary-dark); }
 .cms-bulk-bar {
   display: flex;
   align-items: center;
@@ -131,7 +131,7 @@
 .cms-card-locale-badge {
   display: inline-block;
   background: #f1f5ff;
-  color: #3b4cca;
+  color: var(--admin-primary-dark);
   border: 1px solid #dbe3ff;
   font-size: 0.65rem;
   font-weight: 700;
@@ -156,7 +156,7 @@
 .cms-card-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
 .cms-card-chip {
   background: #f1f5ff;
-  color: #3b4cca;
+  color: var(--admin-primary-dark);
   border: 1px solid #dbe3ff;
   padding: 2px 9px;
   border-radius: 999px;
@@ -217,7 +217,7 @@
   align-items: center;
   gap: 4px;
   background: #eef1ff;
-  color: #3b4cca;
+  color: var(--admin-primary-dark);
   border: 1px solid #dbe3ff;
   padding: 3px 4px 3px 10px;
   border-radius: 999px;
@@ -228,7 +228,7 @@
 .tag-chip-remove {
   border: none;
   background: #dbe3ff;
-  color: #3b4cca;
+  color: var(--admin-primary-dark);
   border-radius: 50%;
   width: 16px;
   height: 16px;
@@ -269,7 +269,7 @@
   border: none;
   cursor: pointer;
 }
-.tag-suggest-option:hover, .tag-suggest-option.active { background: #eef1ff; color: #3b4cca; }
+.tag-suggest-option:hover, .tag-suggest-option.active { background: #eef1ff; color: var(--admin-primary-dark); }
 
 /* ── JSON textarea (Showcase link_state) ── */
 .cms-json-textarea {
@@ -385,10 +385,12 @@
 }
 /* Full-page editors (e.g. a dedicated blog-post page) opt into this via the
    `tall` prop instead of being capped at the default 480px meant for an
-   in-modal field — height then comes from whatever the container gives it. */
+   in-modal field. The page is normal document flow (not a fixed-height app
+   shell), so `flex` has no ancestor to grow into — the min-height below is
+   what actually sets the visible size. */
 .rte-content--tall {
   max-height: none;
-  min-height: 420px;
+  min-height: 560px;
   flex: 1 1 auto;
 }
 .rte-content:focus { outline: none; }

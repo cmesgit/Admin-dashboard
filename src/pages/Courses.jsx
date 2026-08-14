@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getBoards, createBoard, updateBoard, deleteBoard,
-  getBoardCourses, createCourse, getCourse, updateCourse, deleteCourse,
+  getBoardCourses, getAllCourses, createCourse, getCourse, updateCourse, deleteCourse,
   getCourseSubjects, createSubject, updateSubject, deleteSubject,
   createChapter, updateChapter, deleteChapter,
   getSkillCategories, getSkillExperts, getSkillApplications,
@@ -1148,9 +1148,15 @@ const Courses = () => {
   const [tab, setTab] = useState("academy");
 
   // Academy drill-down: boards → courses (per board) → subjects|batches (per course)
+  // "all-courses" is a sibling entry point (flat, cross-board list) that
+  // feeds into the SAME subjects|batches levels — it never replaces the
+  // boards→courses drill-down, only skips straight past it.
   const [nav, setNav] = useState({ level: "boards", board: null, course: null });
   const [boards, setBoards] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
+  const [allCoursesSearch, setAllCoursesSearch] = useState("");
+  const [allCoursesBoardFilter, setAllCoursesBoardFilter] = useState("");
   const [subjects, setSubjects] = useState([]);
   const [batches, setBatches] = useState([]);
   const [teachersBySubject, setTeachersBySubject] = useState({});
@@ -1184,6 +1190,12 @@ const Courses = () => {
     setCourses(Array.isArray(c) ? c : []);
     setLoading(false);
   }, []);
+  const loadAllCourses = useCallback(async (params = {}) => {
+    setLoading(true);
+    const c = await getAllCourses(params);
+    setAllCourses(Array.isArray(c) ? c : []);
+    setLoading(false);
+  }, []);
   // Single whole-course staffing-grid call — replaces the previous N+1
   // (one getSubjectTeachers request per subject) that also re-ran on every
   // assignment change. Populates the SAME { [subjectId]: teachers[] } shape
@@ -1215,6 +1227,22 @@ const Courses = () => {
 
   useEffect(() => { loadBoards(); }, [loadBoards]);
 
+  // Server-side search/filter for the All Courses tab, debounced same as
+  // the teacher-picker search elsewhere in this file. Only fires while
+  // that tab is actually the active level.
+  useEffect(() => {
+    if (nav.level !== "all-courses") return;
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (cancelled) return;
+      loadAllCourses({
+        ...(allCoursesSearch ? { search: allCoursesSearch } : {}),
+        ...(allCoursesBoardFilter ? { board: allCoursesBoardFilter } : {}),
+      });
+    }, allCoursesSearch ? 300 : 0);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [nav.level, allCoursesSearch, allCoursesBoardFilter, loadAllCourses]);
+
   useEffect(() => {
     let cancelled = false;
     Promise.all([getSkillCategories(), getSkillExperts(), getSkillApplications()])
@@ -1235,6 +1263,23 @@ const Courses = () => {
   const goCourses = () => { setNav((n) => ({ ...n, level: "courses", course: null })); if (nav.board) loadCourses(nav.board.id); };
   const goSubjects = () => { if (!nav.course) return; setNav((n) => ({ ...n, level: "subjects" })); loadSubjects(nav.course.id); };
   const goBatches = () => { if (!nav.course) return; setNav((n) => ({ ...n, level: "batches" })); loadBatches(nav.course.id); };
+
+  // "All Courses" — flat cross-board list, a sibling entry point to Boards.
+  const goAllCourses = () => {
+    setNav({ level: "all-courses", board: null, course: null });
+    setAllCoursesSearch(""); setAllCoursesBoardFilter("");
+    loadAllCourses();
+  };
+  // Opening a course from the flat list still lands on the exact same
+  // Subjects/Batches views as the Boards drill-down — but nav.board has to
+  // be populated with the course's real board (row carries board_id/
+  // board_name from the new admin/courses/ GET) so the breadcrumb's board
+  // crumb and "back up to this board's course list" (goCourses) keep
+  // working exactly as if the admin had drilled down via Boards.
+  const openCourseFromAllCourses = (course, level = "subjects") => {
+    setNav({ level, board: { id: course.board_id, name: course.board_name }, course });
+    if (level === "batches") loadBatches(course.id); else loadSubjects(course.id);
+  };
 
   const openCreate = (type, initial = {}) => { setFormError(""); setModal({ type, mode: "create", initial }); };
   const openEdit = (type, initial) => { setFormError(""); setModal({ type, mode: "edit", initial }); };
@@ -1496,7 +1541,7 @@ const Courses = () => {
                         : "Draft"}
                     </StatusBadge>
                     {publishedIncomplete && (
-                      <div className="cm-muted" style={{ marginTop: 4 }}>⚠ published incomplete</div>
+                      <div className="cm-warning" style={{ marginTop: 4 }}>⚠ published incomplete</div>
                     )}
                   </td>
                   <td>
@@ -1524,6 +1569,101 @@ const Courses = () => {
                       onClick={() => setConfirm({ kind: "course", item: c, message: `Delete course "${c.title}"? Its subjects and content links are removed too. This can't be undone.` })}>
                       Delete
                     </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+
+  /* Flat, searchable list of every course across every board — an ADDITION
+     alongside the Boards drill-down (renderBoards/renderCourses above),
+     not a replacement. Same visual pattern (dashboard-card courses-table-card
+     / cm-card-head / courses-table / StatusBadge / cm-icon-btn) as the
+     rest of this page. */
+  const renderAllCourses = () => (
+    <div className="dashboard-card courses-table-card">
+      <div className="cm-card-head">
+        <div className="courses-count">
+          {allCourses.length} course{allCourses.length !== 1 ? "s" : ""} across all boards
+        </div>
+      </div>
+      <div className="cm-row" style={{ padding: "12px 20px", borderBottom: "1px solid #f0f0f0" }}>
+        <input
+          className="cm-search"
+          style={{ marginBottom: 0, maxWidth: 340 }}
+          value={allCoursesSearch}
+          onChange={(e) => setAllCoursesSearch(e.target.value)}
+          placeholder="Search courses by title"
+        />
+        <select
+          className="cm-search"
+          style={{ marginBottom: 0, maxWidth: 240 }}
+          value={allCoursesBoardFilter}
+          onChange={(e) => setAllCoursesBoardFilter(e.target.value)}
+        >
+          <option value="">All boards</option>
+          {boards.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      </div>
+      {loading ? (
+        <div className="dashboard-loading">Loading…</div>
+      ) : allCourses.length === 0 ? (
+        <div className="dashboard-loading">No courses match this search/filter.</div>
+      ) : (
+        <table className="courses-table">
+          <thead>
+            <tr>
+              <th>Course</th><th>Board</th><th>Status</th><th>Content complete</th>
+              <th>Fee</th><th>Access</th><th>Subjects</th><th>Enrolled</th><th aria-label="actions" />
+            </tr>
+          </thead>
+          <tbody>
+            {allCourses.map((c) => {
+              const { pct, missing } = completeness(c);
+              const publishedIncomplete = c.status === "PUBLISHED" && pct < 100;
+              return (
+                <tr key={c.id}>
+                  <td className="courses-title">
+                    <button className="cm-link" onClick={() => openCourseFromAllCourses(c)}>{c.title}</button>
+                  </td>
+                  <td>{c.board_name || "—"}</td>
+                  <td>
+                    <StatusBadge
+                      color={
+                        c.status === "PUBLISHED" ? "green"
+                        : c.status === "ARCHIVED" ? "gray"
+                        : c.status === "COMING_SOON" ? "orange"
+                        : "yellow"
+                      }
+                    >
+                      {c.status === "PUBLISHED" ? "Published"
+                        : c.status === "ARCHIVED" ? "Archived"
+                        : c.status === "COMING_SOON" ? "Coming Soon"
+                        : "Draft"}
+                    </StatusBadge>
+                    {publishedIncomplete && (
+                      <div className="cm-warning" style={{ marginTop: 4 }}>⚠ published incomplete</div>
+                    )}
+                  </td>
+                  <td>
+                    <ProgressBar percent={pct} />
+                    {missing.length > 0 && (
+                      <div className="cm-muted" style={{ marginTop: 4 }}>Missing: {missing.join(", ")}</div>
+                    )}
+                  </td>
+                  <td>{rupees(c.price)}</td>
+                  <td>{c.subscription_duration_days ? `${c.subscription_duration_days}d` : "—"}</td>
+                  <td>{c.subject_count ?? 0}</td>
+                  <td>{c.enrollment_count ?? 0}</td>
+                  <td className="cm-actions">
+                    <button className="cm-icon-btn" onClick={() => openCourseFromAllCourses(c)}>Subjects</button>
+                    <button className="cm-icon-btn" onClick={() => openCourseFromAllCourses(c, "batches")}>Batches</button>
                   </td>
                 </tr>
               );
@@ -1707,6 +1847,7 @@ const Courses = () => {
         <>
           <div className="cm-crumbs">
             <button className="cm-crumb" onClick={goBoards} disabled={nav.level === "boards"}>Boards</button>
+            <button className="cm-crumb" onClick={goAllCourses} disabled={nav.level === "all-courses"}>All Courses</button>
             {nav.board && (
               <>
                 <span className="cm-crumb-sep">/</span>
@@ -1722,6 +1863,7 @@ const Courses = () => {
           </div>
 
           {nav.level === "boards" && renderBoards()}
+          {nav.level === "all-courses" && renderAllCourses()}
           {nav.level === "courses" && renderCourses()}
           {nav.level === "subjects" && renderSubjects()}
           {nav.level === "batches" && renderBatches()}

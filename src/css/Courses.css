@@ -1,6 +1,6 @@
 .courses-table-card {
   padding: 0;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .courses-count {
@@ -56,7 +56,7 @@
 .courses-tab.active { background: #4f6df5; border-color: #4f6df5; color: #fff; }
 .courses-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0; }
 .courses-chip {
-  background: #f1f5ff; color: #3b4cca; border: 1px solid #dbe3ff;
+  background: #f1f5ff; color: var(--admin-primary-dark); border: 1px solid #dbe3ff;
   padding: 6px 12px; border-radius: 999px; font-size: 0.84rem; font-weight: 600;
 }
 
@@ -269,7 +269,7 @@
 
 /* ============================================================================
    Batch management + teacher assignment + progress/roster
-   (same palette: #4f6df5 primary, #f1f5ff/#3b4cca chips, grey text)
+   (same palette: #4f6df5 primary, #f1f5ff/var(--admin-primary-dark) chips, grey text)
    ========================================================================== */
 
 /* Wider modal for assignment / progress / roster panels */
@@ -277,10 +277,14 @@
 
 /* Small shared bits */
 .cm-muted { color: #9aa0aa; font-size: 0.85rem; }
+/* Same orange as StatusBadge's "orange" variant — for a warning that a
+   LIVE published course is missing content, which needs to read as more
+   urgent than the neutral missing-fields checklist below it. */
+.cm-warning { color: #9a3412; font-size: 0.85rem; font-weight: 600; }
 .cm-empty-note { color: #6b7280; font-size: 0.9rem; margin: 4px 0 16px; }
 .cm-code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  background: #f1f5ff; color: #3b4cca; border: 1px solid #dbe3ff;
+  background: #f1f5ff; color: var(--admin-primary-dark); border: 1px solid #dbe3ff;
   padding: 1px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 600;
 }
 

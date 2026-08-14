@@ -35,6 +35,8 @@ import {
   Plus,
   ImageIcon,
   Award,
+  Menu,
+  X,
 } from "lucide-react";
 import { getEnrollmentRequests } from "../api/admin";
 import { getAdminSupportTickets } from "../api/admin_communication";
@@ -125,6 +127,15 @@ const AdminLayout = () => {
   const location = useLocation();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [badges, setBadges] = useState({ enroll: 0, support: 0, scholarship: 0 });
+  // Below the tablet breakpoint (see AdminLayout.css) the sidebar becomes a
+  // slide-in overlay instead of a permanent 238px column — this just tracks
+  // whether it's open. Irrelevant above that breakpoint (CSS keeps the
+  // sidebar always visible there regardless of this state).
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Close the mobile overlay on every navigation, so picking a nav link
+  // doesn't leave the sidebar covering the page it just opened.
+  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
   // Live nav count pills: pending enrollment requests + open support tickets
   // + scholarship items needing attention (flagged sessions + pending
@@ -159,13 +170,23 @@ const AdminLayout = () => {
 
   return (
     <div className="admin-layout">
-      <aside className="admin-sidebar">
+      {sidebarOpen && (
+        <div className="admin-sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+      )}
+      <aside className={`admin-sidebar${sidebarOpen ? " mobile-open" : ""}`}>
         <div className="sidebar-brand">
           <div className="sidebar-logo">S</div>
           <div className="sidebar-brand-text">
             <h2>ShikshaCom</h2>
             <span>Admin Console</span>
           </div>
+          <button
+            className="sidebar-close"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -205,19 +226,25 @@ const AdminLayout = () => {
 
       <div className="admin-main">
         <header className="admin-header">
-          <label className="admin-search">
-            <Search size={16} />
-            <input
-              type="search"
-              placeholder="Search users, courses, batches, teachers…"
-              aria-label="Search"
-            />
-          </label>
-          <div className="admin-header-spacer" />
-          <button className="admin-new-btn" onClick={() => setWizardOpen(true)}>
-            <Plus size={16} />
-            New course
+          {/* CSS-only visible below the tablet breakpoint — see .admin-menu-toggle
+              in AdminLayout.css. */}
+          <button
+            className="admin-menu-toggle"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu size={20} />
           </button>
+          <div className="admin-header-spacer" />
+          {/* Only relevant on the pages courses actually live on — showing a
+              course-creation shortcut on e.g. Roles or Analytics read as a
+              stray, unexplained button. */}
+          {(location.pathname === "/" || location.pathname.startsWith("/courses")) && (
+            <button className="admin-new-btn" onClick={() => setWizardOpen(true)}>
+              <Plus size={16} />
+              New course
+            </button>
+          )}
           <div className="admin-avatar" title={user?.email}>
             {avatarInitials}
           </div>

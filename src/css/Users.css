@@ -6,6 +6,18 @@
   align-items: center;
 }
 
+/* Separates the course/batch filter row from the profile filters above it —
+   without this the two rows read as one undifferentiated list of 9 equally-
+   weighted dropdowns instead of two distinct filter groups. */
+.users-controls-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a0b3;
+  margin: -8px 0 8px;
+}
+
 .users-search {
   display: flex;
   align-items: center;
@@ -43,7 +55,7 @@
 
 .users-table-card {
   padding: 0;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .users-count {

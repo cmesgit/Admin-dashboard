@@ -9,7 +9,11 @@ import { getEnrollments, actOnEnrollment } from "../api/admin";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
 
-const STATUSES = ["all", "ACTIVE", "REVOKED"];
+const STATUSES = ["all", "ACTIVE", "EXPIRED", "REVOKED"];
+// Only these two are real Enrollment.status values the backend can filter
+// on — EXPIRED is computed client-side from subscription_expires_at, so
+// selecting it still fetches everything and filters the result in `view`.
+const BACKEND_STATUSES = ["ACTIVE", "REVOKED"];
 
 const fmt = (iso) => {
   if (!iso) return "—";
@@ -17,7 +21,16 @@ const fmt = (iso) => {
   catch { return iso; }
 };
 const asList = (r) => (Array.isArray(r) ? r : r?.results || []);
-const badgeColor = (s) => (s === "ACTIVE" ? "green" : "red");
+
+// An enrollment can be stored ACTIVE yet have a lapsed subscription — this
+// computes the display state on read instead of a new stored status, so it
+// never drifts out of sync with the subscription's actual expiry date.
+const displayStatus = (e) => {
+  if (e.status === "REVOKED") return "REVOKED";
+  if (e.subscription_expires_at && new Date(e.subscription_expires_at) < new Date()) return "EXPIRED";
+  return "ACTIVE";
+};
+const badgeColor = (s) => (s === "ACTIVE" ? "green" : s === "EXPIRED" ? "orange" : "red");
 
 const EnrollmentManagement = () => {
   const [rows, setRows]       = useState([]);
@@ -31,7 +44,8 @@ const EnrollmentManagement = () => {
 
   const load = () => {
     setLoading(true);
-    getEnrollments(status === "all" ? undefined : { status })
+    const backendStatus = BACKEND_STATUSES.includes(status) ? status : undefined;
+    getEnrollments(backendStatus ? { status: backendStatus } : undefined)
       .then((r) => setRows(asList(r)))
       .catch(() => setRows([]))
       .finally(() => setLoading(false));
@@ -39,12 +53,14 @@ const EnrollmentManagement = () => {
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [status]);
 
   const view = useMemo(() => {
+    let list = rows;
+    if (status === "EXPIRED") list = list.filter((e) => displayStatus(e) === "EXPIRED");
     const needle = q.trim().toLowerCase();
-    if (!needle) return rows;
-    return rows.filter((e) =>
+    if (!needle) return list;
+    return list.filter((e) =>
       [e.course_title, e.user_name, e.user_email, e.batch_code]
         .filter(Boolean).join(" ").toLowerCase().includes(needle));
-  }, [rows, q]);
+  }, [rows, q, status]);
 
   const act = (row, action) => {
     const verb = action === "revoke" ? "Revoke" : "Reactivate";
@@ -104,7 +120,14 @@ const EnrollmentManagement = () => {
                   </td>
                   <td>{e.course_title || "—"}</td>
                   <td>{e.batch_code || "—"}</td>
-                  <td><StatusBadge color={badgeColor(e.status)}>{e.status}</StatusBadge></td>
+                  <td>
+                    <StatusBadge color={badgeColor(displayStatus(e))}>{displayStatus(e)}</StatusBadge>
+                    {displayStatus(e) === "EXPIRED" && (
+                      <div style={{ fontSize: 11, color: "#9a3412", marginTop: 3 }}>
+                        since {fmt(e.subscription_expires_at)}
+                      </div>
+                    )}
+                  </td>
                   <td>{fmt(e.enrolled_at)}</td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     {e.status === "REVOKED" ? (

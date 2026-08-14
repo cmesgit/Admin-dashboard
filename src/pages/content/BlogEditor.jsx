@@ -778,7 +778,7 @@ const BlogEditor = () => {
                       </button>
                     </div>
                     <HtmlToolbar textareaRef={bodyRef} value={form.body_html} onChange={(v) => setForm((f) => ({ ...f, body_html: v }))} />
-                    <textarea ref={bodyRef} rows={16} value={form.body_html} onChange={set("body_html")} placeholder="<p>Post body as plain HTML…</p>" />
+                    <textarea ref={bodyRef} rows={16} className="blog-editor-html-textarea" value={form.body_html} onChange={set("body_html")} placeholder="<p>Post body as plain HTML…</p>" />
                   </>
                 ) : (
                   <RichTextEditor

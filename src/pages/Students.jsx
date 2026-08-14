@@ -259,6 +259,7 @@ const Students = () => {
       </div>
 
       {/* Course/batch row — the axis academy admins actually work along */}
+      <div className="users-controls-label">Course &amp; batch placement</div>
       <div className="users-controls">
         <select
           value={courseFilter}

@@ -87,6 +87,16 @@ export const deleteCourseCategory = async (id) =>
 
 export const getBoardCourses = async (boardId) =>
   safe(async () => (await api.get(`/courses/admin/boards/${boardId}/courses/`)).data, []);
+// Flat list of every course across every board (adds board_id/board_name),
+// for the "All Courses" tab that sits alongside the Boards drill-down.
+export const getAllCourses = async ({ search, board, status } = {}) =>
+  safe(async () => (await api.get("/courses/admin/courses/", {
+    params: {
+      ...(search ? { search } : {}),
+      ...(board ? { board } : {}),
+      ...(status ? { status } : {}),
+    },
+  })).data, []);
 export const createCourse = async (data, isMultipart = false) =>
   (await api.post("/courses/admin/courses/", data,
     isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined)).data;

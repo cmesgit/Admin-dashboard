@@ -149,7 +149,10 @@ const RolesTab = ({ notify }) => {
                 </div>
               </div>
             ) : (
-              <p className="rbac-role-desc rbac-role-desc-editable" onClick={() => startEditDesc(role)}>
+              <p
+                className={`rbac-role-desc rbac-role-desc-editable${role.description ? "" : " rbac-role-desc-placeholder"}`}
+                onClick={() => startEditDesc(role)}
+              >
                 {role.description || "Add a description of what this role can do…"}
                 <Pencil size={11} />
               </p>

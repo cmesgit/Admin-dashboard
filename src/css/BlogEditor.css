@@ -145,6 +145,14 @@
   margin-top: 12px;
 }
 
+/* Matches .rte-content--tall's min-height so switching between rich-text and
+   HTML-source mode doesn't shrink the writing area. */
+.blog-editor-html-textarea {
+  min-height: 560px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
 /* ── Table of contents ── */
 .blog-editor-toc {
   background: #f8fafc;

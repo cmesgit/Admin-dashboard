@@ -1,6 +1,6 @@
 .approvals-table-card {
   padding: 0;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .approvals-count {
@@ -43,6 +43,7 @@
   gap: 8px;
 }
 
+.view-btn,
 .approve-btn,
 .reject-btn {
   padding: 6px 14px;
@@ -51,6 +52,15 @@
   font-weight: 500;
   cursor: pointer;
   border: none;
+}
+
+.view-btn {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.view-btn:hover {
+  background: #e5e7eb;
 }
 
 .approve-btn {
