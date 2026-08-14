@@ -1,0 +1,340 @@
+/* Media-library picker modal (see MediaLibraryModal.jsx). Reuses the
+   .confirm-overlay/.confirm-card shell from ConfirmModal.css for the overlay
+   and card chrome, but needs a much larger card than a yes/no dialog — the
+   grid + preview need real room — so .media-lib-card overrides the confirm
+   card's fixed small dimensions. */
+
+.media-lib-card {
+  width: min(90vw, 720px);
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px 22px;
+  text-align: left;
+}
+
+.media-lib-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.media-lib-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #222;
+}
+
+.media-lib-close {
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+}
+.media-lib-close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.media-lib-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+/* ── Tabs ── */
+.media-lib-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+.media-lib-tab {
+  border: none;
+  background: transparent;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.media-lib-tab:hover {
+  color: #374151;
+}
+.media-lib-tab.active {
+  color: #4f6df5;
+  border-bottom-color: #4f6df5;
+}
+
+/* ── Upload dropzone ── */
+.media-lib-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  color: #6b7280;
+  transition: border-color 0.15s, background 0.15s;
+}
+.media-lib-dropzone:hover,
+.media-lib-dropzone.drag-over {
+  border-color: #4f6df5;
+  background: #f5f7ff;
+  color: #4f6df5;
+}
+.media-lib-dz-inner {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+/* ── Library browse ── */
+.media-lib-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  padding: 8px 12px;
+  color: #6b7280;
+  margin-bottom: 14px;
+}
+.media-lib-search input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font-size: 0.9rem;
+  color: #111827;
+  background: transparent;
+}
+
+.media-lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.media-lib-thumb {
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  overflow: hidden;
+  padding: 0;
+  cursor: pointer;
+  aspect-ratio: 1 / 1;
+  background: #f9fafb;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.media-lib-thumb:hover {
+  border-color: #4f6df5;
+  box-shadow: 0 4px 14px rgba(79, 109, 245, 0.18);
+}
+.media-lib-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.media-lib-grid-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.media-lib-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+.media-lib-pager button {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 7px;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #374151;
+}
+.media-lib-pager button:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+.media-lib-pager button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Review ── */
+.media-lib-preview {
+  text-align: center;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+.media-lib-preview img {
+  max-width: 100%;
+  max-height: 45vh;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.media-lib-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.media-lib-field span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+}
+.media-lib-field input {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  color: #111827;
+  outline: none;
+}
+.media-lib-field input:focus {
+  border-color: #4f6df5;
+  box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.15);
+}
+
+/* ── Actions ── */
+.media-lib-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.media-lib-actions-right {
+  display: flex;
+  gap: 10px;
+}
+.media-lib-btn-ghost,
+.media-lib-btn-primary {
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.media-lib-btn-ghost {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #374151;
+}
+.media-lib-btn-ghost:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+.media-lib-btn-primary {
+  border: none;
+  background: #4f6df5;
+  color: #fff;
+}
+.media-lib-btn-primary:hover:not(:disabled) {
+  background: #4361e0;
+}
+.media-lib-btn-ghost:disabled,
+.media-lib-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Crop ── */
+.media-lib-cropper {
+  position: relative;
+  width: 100%;
+  height: 360px;
+  background: #1f2937;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+/* Focal-point crosshair marker — display only, doesn't intercept clicks. */
+.media-lib-focal {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  margin-top: -9px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px rgba(79, 109, 245, 0.9), 0 0 6px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 5;
+}
+.media-lib-focal::before,
+.media-lib-focal::after {
+  content: "";
+  position: absolute;
+  background: #fff;
+}
+.media-lib-focal::before {
+  left: 50%;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  margin-left: -1px;
+}
+.media-lib-focal::after {
+  top: 50%;
+  left: 3px;
+  right: 3px;
+  height: 2px;
+  margin-top: -1px;
+}
+
+.media-lib-crop-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 12px;
+}
+.media-lib-zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 18px;
+}
+.media-lib-zoom input {
+  flex: 1;
+}
+
+/* Spinner reuse (matches the rte-spin keyframes convention). */
+.media-lib-spin {
+  animation: media-lib-spin 0.8s linear infinite;
+}
+@keyframes media-lib-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

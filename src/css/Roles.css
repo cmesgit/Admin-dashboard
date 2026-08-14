@@ -2,6 +2,22 @@
    for tabs/buttons/tables; this file adds the role-specific layout. */
 
 .rbac-sub { margin: 0 0 18px; color: #667; font-size: 0.9rem; max-width: 720px; }
+.rbac-role-desc { margin: -4px 0 12px; color: #667; font-size: 0.82rem; max-width: 560px; }
+.rbac-role-desc-editable {
+  cursor: pointer; display: flex; align-items: baseline; gap: 6px;
+  border-radius: 6px; padding: 4px 6px; margin-left: -6px;
+}
+.rbac-role-desc-editable:hover { background: #f5f7fb; color: #445; }
+.rbac-role-desc-editable svg { flex: none; opacity: 0.5; }
+/* Distinguishes the click-to-add invitation from a real, saved description —
+   without this, "Add a description…" on a built-in role reads as an
+   unfinished field rather than deliberate empty-state copy. Chained with
+   .rbac-role-desc for specificity: there's a second, later `.rbac-role-desc`
+   color rule below (line ~55) that would otherwise win the cascade. */
+.rbac-role-desc.rbac-role-desc-placeholder { font-style: italic; color: #98a1b3; }
+.rbac-role-desc-edit { margin: -4px 0 12px; }
+.rbac-role-desc-edit textarea { width: 100%; resize: vertical; font-size: 0.82rem; }
+.rbac-role-desc-edit-actions { display: flex; gap: 8px; margin-top: 6px; justify-content: flex-end; }
 
 .rbac-toolbar {
   display: flex;
@@ -63,7 +79,9 @@
   padding: 7px 8px; border-radius: 8px; cursor: pointer;
 }
 .rbac-perm-row:hover { background: #f5f7fb; }
-.rbac-perm-name { flex: 1; font-size: 0.88rem; color: #223; }
+.rbac-perm-info { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.rbac-perm-name { font-size: 0.88rem; color: #223; }
+.rbac-perm-desc { font-size: 0.74rem; color: #8a93a6; }
 .rbac-perm-code {
   font-size: 0.72rem; color: #667; background: #eef1f6;
   padding: 2px 7px; border-radius: 5px;

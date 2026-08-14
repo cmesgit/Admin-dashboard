@@ -24,6 +24,7 @@ import {
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
 import Toast from "../components/Toast";
+import { errText } from "../utils/errText";
 import "../css/UserDetail.css";
 import "../css/Students.css";
 
@@ -104,23 +105,6 @@ const StudentDetail = () => {
 
   const setField = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
 
-  const apiError = (e) => {
-    const d = e?.response?.data;
-    if (!d) return "Something went wrong.";
-    if (typeof d === "string") return d;
-    // DRF serialises ValidationError("a plain message") as a JSON *array*, so
-    // this has to come before the object branch — otherwise Object.entries
-    // turns it into "0: a plain message".
-    if (Array.isArray(d)) return String(d[0] ?? "Something went wrong.");
-    if (d.detail) return String(d.detail);
-    const first = Object.entries(d)[0];
-    if (!first) return "Something went wrong.";
-    const [k, v] = first;
-    const msg = Array.isArray(v) ? v[0] : v;
-    // Field errors keep their field name; non_field_errors read better bare.
-    return k === "non_field_errors" ? String(msg) : `${k}: ${msg}`;
-  };
-
   const save = async () => {
     setSaving(true);
     setErr("");
@@ -128,7 +112,7 @@ const StudentDetail = () => {
       hydrate(await updateStudent(id, form));
       fireToast("Student details saved");
     } catch (e) {
-      setErr(apiError(e));
+      setErr(errText(e));
     } finally {
       setSaving(false);
     }
@@ -148,7 +132,7 @@ const StudentDetail = () => {
           await load();
           fireToast(next ? "Student reactivated" : "Student deactivated");
         } catch (e) {
-          setErr(apiError(e));
+          setErr(errText(e));
         } finally {
           setConfirm(null);
         }
@@ -169,7 +153,7 @@ const StudentDetail = () => {
           await load();
           fireToast(action === "revoke" ? "Enrollment revoked" : "Enrollment reactivated");
         } catch (e) {
-          setErr(apiError(e));
+          setErr(errText(e));
         } finally {
           setConfirm(null);
         }
@@ -184,7 +168,7 @@ const StudentDetail = () => {
       await load();
       fireToast("Batch updated");
     } catch (e) {
-      setErr(apiError(e));
+      setErr(errText(e));
     }
   };
 

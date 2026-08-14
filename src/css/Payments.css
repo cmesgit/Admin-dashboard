@@ -14,7 +14,7 @@
 
 .payments-table-card {
   padding: 0;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .payments-count {

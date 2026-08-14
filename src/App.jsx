@@ -9,6 +9,7 @@ import UserDetail from "./pages/UserDetail";
 import Courses from "./pages/Courses";
 import RolesPage from "./pages/roles/RolesPage";
 import ContentPanel from "./pages/content/ContentPanel";
+import BlogEditor from "./pages/content/BlogEditor";
 import SkillCMSPanel from "./pages/skillcms/SkillCMSPanel";
 import ScholarshipPanel from "./pages/scholarship/ScholarshipPanel";
 import AcademyQuizzes from "./pages/AcademyQuizzes";
@@ -96,6 +97,12 @@ const App = () => {
           <Route path="recordings" element={<Recordings />} />
           <Route path="roles" element={<RolesPage />} />
           <Route path="content" element={<ContentPanel />} />
+          {/* Registered before "content" would be fine too (react-router v7
+              matches by specificity, not declaration order) but keeping the
+              more specific blog routes visually grouped next to the parent
+              tab route they replace the modal for. */}
+          <Route path="content/blogs/new" element={<BlogEditor />} />
+          <Route path="content/blogs/:id" element={<BlogEditor />} />
           <Route path="communication/reports" element={<CommunicationReports />} />
           <Route path="communication/messages" element={<MessageSearch />} />
           <Route path="communication/broadcast" element={<CommunicationBroadcast />} />
@@ -105,7 +112,6 @@ const App = () => {
           <Route path="enrollments" element={<EnrollmentManagement />} />
           <Route path="payments" element={<Payments />} />
           <Route path="payment-settings" element={<PaymentSettings />} />
-          <Route path="skill-approvals" element={<SkillApprovals />} />
           <Route path="counselor-approvals" element={<CounselorApprovals />} />
           <Route path="counseling-sessions" element={<CounselingSessions />} />
           <Route path="skill-experts" element={<SkillExperts />} />

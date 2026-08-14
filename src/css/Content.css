@@ -80,6 +80,41 @@
   right: 10px;
 }
 
+/* ── Bulk select mode (Blog Posts list) — mirrors Students.jsx's
+   .stu-bulk-bar pattern, adapted to a card grid instead of a table row. ── */
+.mod-btn.ghost.active { background: #eef1ff; border-color: #4f6df5; color: var(--admin-primary-dark); }
+.cms-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #f2f6fb;
+  border: 1px solid #d8e3f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.cms-bulk-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c4a70;
+  cursor: pointer;
+  user-select: none;
+}
+.cms-bulk-count input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; }
+.cms-card-select {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
 .cms-card-body {
   padding: 14px 16px 4px;
   display: flex;
@@ -92,6 +127,19 @@
   font-weight: 600;
   color: #1f2937;
   line-height: 1.35;
+}
+.cms-card-locale-badge {
+  display: inline-block;
+  background: #f1f5ff;
+  color: var(--admin-primary-dark);
+  border: 1px solid #dbe3ff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+  vertical-align: 1px;
 }
 .cms-card-sub { font-size: 0.78rem; color: #8a8f98; }
 .cms-card-meta {
@@ -108,7 +156,7 @@
 .cms-card-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
 .cms-card-chip {
   background: #f1f5ff;
-  color: #3b4cca;
+  color: var(--admin-primary-dark);
   border: 1px solid #dbe3ff;
   padding: 2px 9px;
   border-radius: 999px;
@@ -169,7 +217,7 @@
   align-items: center;
   gap: 4px;
   background: #eef1ff;
-  color: #3b4cca;
+  color: var(--admin-primary-dark);
   border: 1px solid #dbe3ff;
   padding: 3px 4px 3px 10px;
   border-radius: 999px;
@@ -180,7 +228,7 @@
 .tag-chip-remove {
   border: none;
   background: #dbe3ff;
-  color: #3b4cca;
+  color: var(--admin-primary-dark);
   border-radius: 50%;
   width: 16px;
   height: 16px;
@@ -191,6 +239,37 @@
   padding: 0;
 }
 .tag-chip-remove:hover { background: #c7d2fe; }
+
+/* Tag input's flex item is now this wrapper (not the <input> directly), since
+   the input needs a positioning context for the suggestion popover below it. */
+.tag-suggest-anchor { position: relative; flex: 1; min-width: 90px; }
+.tag-suggest-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+  max-width: 280px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+.tag-suggest-option {
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #1f2937;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.tag-suggest-option:hover, .tag-suggest-option.active { background: #eef1ff; color: var(--admin-primary-dark); }
 
 /* ── JSON textarea (Showcase link_state) ── */
 .cms-json-textarea {
@@ -252,6 +331,220 @@
 }
 .html-toolbar-btn:hover { background: #eef1ff; border-color: #4f6df5; color: #4f6df5; }
 
+/* ── Rich text editor (TipTap) — blog body, homepage body fields ── */
+.rte {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.rte-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 6px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+}
+.rte-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+}
+.rte-btn:hover:not(:disabled) { background: #eef1ff; border-color: #4f6df5; color: #4f6df5; }
+.rte-btn.active { background: #e5e9ff; border-color: #4f6df5; color: #4f6df5; }
+.rte-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+/* Quality floor: visible keyboard focus (mirrors Courses.css's
+   .cm-subnav-tab/.cm-role-opt/.cm-search precedent). */
+.rte-btn:focus-visible {
+  outline: 2px solid #4f6df5;
+  outline-offset: 2px;
+}
+.rte-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 4px;
+  background: #e5e7eb;
+}
+.rte-content {
+  min-height: 160px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 12px 14px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #1f2937;
+}
+/* Full-page editors (e.g. a dedicated blog-post page) opt into this via the
+   `tall` prop instead of being capped at the default 480px meant for an
+   in-modal field. The page is normal document flow (not a fixed-height app
+   shell), so `flex` has no ancestor to grow into — the min-height below is
+   what actually sets the visible size. */
+.rte-content--tall {
+  max-height: none;
+  min-height: 560px;
+  flex: 1 1 auto;
+}
+.rte-content:focus { outline: none; }
+.rte-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+.rte-content img { max-width: 100%; border-radius: 6px; }
+.rte-content table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+.rte-content td, .rte-content th { border: 1px solid #d1d5db; padding: 6px 8px; }
+.rte-content th { background: #f8fafc; font-weight: 700; }
+.rte-content blockquote { border-left: 3px solid #d1d5db; margin: 8px 0; padding-left: 12px; color: #4b5563; }
+/* TipTap wraps list-item text in <p>; collapse that margin so bullets read as
+   tight in the editor, matching how the public page renders them (see
+   pages/content/preview/blogBodyStyles.js). */
+.rte-content li > p { margin: 0; }
+.rte-content pre { background: #f3f4f6; border-radius: 6px; padding: 10px 12px; overflow-x: auto; }
+.rte-content pre code { background: none; padding: 0; }
+.rte-content code { background: #f3f4f6; border-radius: 4px; padding: 1px 5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+/* Colors reused verbatim from Moderator.css's `.mod-btn.info/.warn/.success`
+   (bg/border) so this internal tool doesn't grow a second "info/warning/
+   success" palette; the left border repeats each variant's `.mod-btn` text
+   color for a stronger accent than the pale button border alone provides. */
+.rte-content .callout { margin: 10px 0; padding: 10px 14px; border-radius: 6px; border: 1px solid; border-left-width: 4px; }
+.rte-content .callout > p:last-child { margin-bottom: 0; }
+.rte-content .callout-info    { background: #eff6ff; border-color: #bfdbfe; border-left-color: #1d4ed8; }
+.rte-content .callout-warning { background: #fff8e8; border-color: #ecd080; border-left-color: #7a4c00; }
+.rte-content .callout-success { background: #e4f3e8; border-color: #b8d8bc; border-left-color: #125027; }
+/* Collapsible section — density matched to blockquote/pre right above:
+   a native <details> marker triangle is kept (no custom ::marker) since a
+   custom one risks cross-browser inconsistency for no real visual gain here. */
+.rte-content details { margin: 8px 0; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 12px; }
+.rte-content details summary { cursor: pointer; font-weight: 600; color: #1f2937; }
+.rte-content details[open] summary { margin-bottom: 8px; }
+.rte-content details p { margin: 0; }
+
+/* ── Callout variant-picker popover (opens from the toolbar's Info button) ── */
+.rte-callout-group { position: relative; display: inline-flex; align-items: center; }
+.rte-callout-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 140px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+.rte-callout-option {
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.rte-callout-option--info    { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+.rte-callout-option--warning { background: #fff8e8; border-color: #ecd080; color: #7a4c00; }
+.rte-callout-option--success { background: #e4f3e8; border-color: #b8d8bc; color: #125027; }
+.rte-callout-option--highlight { background: linear-gradient(135deg, #1e1b4b, #312e81); border-color: #312e81; color: #e0e7ff; }
+.rte-callout-option:hover { filter: brightness(0.97); }
+.rte-callout-option--highlight:hover { filter: brightness(1.15); }
+
+/* ── Link popover (replaces window.prompt for setting/editing a link) ── */
+.rte-link-group { position: relative; display: inline-flex; align-items: center; }
+.rte-link-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 260px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+.rte-link-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #1f2937;
+}
+.rte-link-input:focus { outline: none; border-color: #4f6df5; }
+.rte-link-popover-actions { display: flex; gap: 6px; }
+.rte-link-apply, .rte-link-remove {
+  flex: 1;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.rte-link-apply { background: #4f6df5; color: #fff; }
+.rte-link-apply:hover { background: #3d59e0; }
+.rte-link-remove { background: #f8fafc; border-color: #d1d5db; color: #4b5563; }
+.rte-link-remove:hover { background: #eef1ff; border-color: #4f6df5; color: #4f6df5; }
+.rte-link-error { font-size: 0.76rem; color: #c0392b; }
+
+/* ── Contextual table toolbar (shown only while the cursor is in a table) ── */
+.rte-table-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 5px 6px;
+  background: #eef1ff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* ── Image upload progress / error indicator, shown next to the toolbar ── */
+.rte-upload-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.rte-upload-status--busy { color: #4f6df5; background: #eef1ff; }
+.rte-upload-status--error { color: #c0392b; background: #fdecea; }
+.rte-spin { animation: rte-spin 0.8s linear infinite; }
+@keyframes rte-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Word/character count footer, shown when `showStats` is set ── */
+.rte-stats {
+  padding: 5px 14px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+  font-size: 0.76rem;
+  color: #6b7280;
+  text-align: right;
+}
+
 /* ── Inline note for fields disabled because a course/board is linked ── */
 .cms-derived-note {
   font-size: 0.76rem;
@@ -307,6 +600,28 @@
   text-transform: uppercase;
   color: #9aa0aa;
 }
+.cms-preview-panel-label--body { margin-top: 4px; }
+
+/* ── Field-label row with an inline mode toggle (rich text ⇄ HTML source) ── */
+.cm-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cm-inline-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  color: #4b5563;
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cm-inline-toggle:hover { background: #eef1ff; border-color: #4f6df5; color: #4f6df5; }
 
 @media (max-width: 860px) {
   .cm-form-split { flex-direction: column; }
@@ -340,3 +655,21 @@
 .cms-navlink-dot { width: 6px; height: 6px; border-radius: 50%; background: #4f6df5; flex: none; }
 .cms-navlink-label { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cms-navlink-soon { flex: none; }
+
+/* ── Homepage section order (SectionOrderPanel, HomeContent.jsx) ── */
+.section-order-list { list-style: none; margin: 0 0 20px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.section-order-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafbfc;
+}
+.section-order-row.is-hidden { opacity: 0.55; }
+.section-order-index { flex: none; width: 22px; font-weight: 700; color: #6b7280; text-align: center; }
+.section-order-label { flex: 1; font-weight: 600; color: #1f2937; }
+.section-order-visible { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #4b5563; cursor: pointer; }
+.section-order-moves { display: flex; gap: 4px; flex: none; }
+.section-order-moves button {
+  width: 28px; height: 28px; border-radius: 6px; border: 1px solid #ddd; background: #fff;
+  cursor: pointer; font-size: 14px; line-height: 1;
+}
+.section-order-moves button:disabled { cursor: not-allowed; opacity: 0.4; }
+.section-order-moves button:not(:disabled):hover { background: #f3f4f6; }

@@ -1,8 +1,18 @@
 import api from "./apiClient";
 
-/* ── small helper: never let a missing/optional endpoint crash a page ── */
+/* ── small helper: never let a missing/optional endpoint crash a page ──
+   Still returns the fallback on ANY failure (call sites render it as an
+   empty state either way), but a 404 ("this endpoint/resource genuinely
+   doesn't exist yet") is silently expected, while anything else (500,
+   network failure, timeout) is a real outage — log those so they don't
+   look identical to "no data" in the UI. */
 const safe = async (fn, fallback) => {
-  try { return await fn(); } catch { return fallback; }
+  try { return await fn(); } catch (err) {
+    if (err?.response?.status !== 404) {
+      console.error("[admin api] request failed, falling back to empty state:", err);
+    }
+    return fallback;
+  }
 };
 
 /* ── Dashboard ── */
@@ -52,10 +62,14 @@ export const getCourses = getAcademicCourses;
 /* ── Academic course management: Boards → Courses → Subjects ── */
 export const getBoards   = async () =>
   safe(async () => (await api.get("/courses/admin/boards/")).data, []);
-export const createBoard = async (data) =>
-  (await api.post("/courses/admin/boards/", data)).data;
-export const updateBoard = async (id, data) =>
-  (await api.patch(`/courses/admin/boards/${id}/`, data)).data;
+// data may be a plain object (JSON) or a FormData (multipart, when a logo
+// file is included) — same isMultipart convention as createCourse/updateCourse.
+export const createBoard = async (data, isMultipart = false) =>
+  (await api.post("/courses/admin/boards/", data,
+    isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined)).data;
+export const updateBoard = async (id, data, isMultipart = false) =>
+  (await api.patch(`/courses/admin/boards/${id}/`, data,
+    isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined)).data;
 export const deleteBoard = async (id) =>
   (await api.delete(`/courses/admin/boards/${id}/`)).data;
 
@@ -73,6 +87,16 @@ export const deleteCourseCategory = async (id) =>
 
 export const getBoardCourses = async (boardId) =>
   safe(async () => (await api.get(`/courses/admin/boards/${boardId}/courses/`)).data, []);
+// Flat list of every course across every board (adds board_id/board_name),
+// for the "All Courses" tab that sits alongside the Boards drill-down.
+export const getAllCourses = async ({ search, board, status } = {}) =>
+  safe(async () => (await api.get("/courses/admin/courses/", {
+    params: {
+      ...(search ? { search } : {}),
+      ...(board ? { board } : {}),
+      ...(status ? { status } : {}),
+    },
+  })).data, []);
 export const createCourse = async (data, isMultipart = false) =>
   (await api.post("/courses/admin/courses/", data,
     isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined)).data;
@@ -128,7 +152,8 @@ export const getBatchRoster = async (batchId, params = {}) =>
 
 /* ── Academy: subject-teacher assignment ── */
 export const getAdminAcademyTeachers = async (q = "") =>
-  safe(async () => (await api.get(`/courses/admin/teachers/`, { params: q ? { q } : {} })).data, []);
+  safe(async () => (await api.get(`/courses/admin/teachers/`, { params: q ? { q } : {} })).data,
+    { data: [], count: 0, has_more: false });
 export const getSubjectTeachers = async (subjectId) =>
   safe(async () => (await api.get(`/courses/admin/subjects/${subjectId}/teachers/`)).data, []);
 export const assignSubjectTeacher = async (subjectId, teacherId, display_role = "PRIMARY") =>
@@ -137,6 +162,15 @@ export const updateSubjectTeacher = async (assignmentId, display_role) =>
   (await api.patch(`/courses/admin/subject-teachers/${assignmentId}/`, { display_role })).data;
 export const removeSubjectTeacher = async (assignmentId) =>
   (await api.delete(`/courses/admin/subject-teachers/${assignmentId}/`)).data;
+
+/* ── Academy: whole-course staffing grid (replaces the per-subject N+1 above
+   for the Subjects table's Teachers column) + bulk-assign one teacher across
+   many subjects at once. ── */
+export const getCourseStaffing = async (courseId) =>
+  safe(async () => (await api.get(`/courses/admin/courses/${courseId}/staffing/`)).data,
+    { course: null, subjects: [], unstaffed_count: 0 });
+export const bulkAssignTeacher = async (courseId, payload) =>
+  (await api.post(`/courses/admin/courses/${courseId}/staffing/bulk-assign/`, payload)).data;
 
 /* ── Teachers directory + detail (rich admin screen) ── */
 export const getTeacherDirectory = async (params) =>
@@ -374,9 +408,22 @@ export const updateHomeFloater  = async (id, data) =>
 export const deleteHomeFloater  = async (id) =>
   (await api.delete(`/content/admin/home-floaters/${id}/`)).data;
 
+/* ── Content: Homepage Section Order (sequence + show/hide, no create/delete — fixed row set) ── */
+export const getHomeSectionOrder     = async () =>
+  safe(async () => (await api.get("/content/admin/home-section-order/")).data, []);
+export const updateHomeSectionOrder  = async (id, data) =>
+  (await api.patch(`/content/admin/home-section-order/${id}/`, data)).data;
+export const reorderHomeSections     = async (sections) =>
+  (await api.post("/content/admin/home-section-order/reorder/", { sections })).data;
+
 /* ── Content: Blog Posts ── */
 export const getContentBlogs      = async (params) =>
   safe(async () => (await api.get("/content/admin/blogs/", { params })).data, []);
+// Unlike the list above, this deliberately isn't `safe()`-wrapped: the full-page
+// editor needs to distinguish "loading" from "this post doesn't exist / failed
+// to load" and show a real error state, not silently render an empty form.
+export const getContentBlog       = async (id) =>
+  (await api.get(`/content/admin/blogs/${id}/`)).data;
 export const createContentBlog    = async (data, isMultipart = false) =>
   (await api.post("/content/admin/blogs/", data, isMultipart ? multipartConfig : undefined)).data;
 export const updateContentBlog    = async (id, data, isMultipart = false) =>
@@ -387,6 +434,35 @@ export const publishContentBlog   = async (id) =>
   (await api.post(`/content/admin/blogs/${id}/publish/`, {})).data;
 export const unpublishContentBlog = async (id) =>
   (await api.post(`/content/admin/blogs/${id}/unpublish/`, {})).data;
+// Server assigns translation_group/slug/etc from the source post itself
+// (see BlogPostAdminViewSet.duplicate_translation) — this just names the
+// target locale. Rejects with 409 if that locale's translation already
+// exists in the group; caller surfaces the error, doesn't retry.
+export const duplicateTranslationContentBlog = async (id, locale) =>
+  (await api.post(`/content/admin/blogs/${id}/duplicate-translation/`, { locale })).data;
+
+/* ── Content: rich-text editor image uploads (blog/homepage body content —
+   distinct from the single `cover`/`image` fields above; a body can embed
+   several) ── */
+export const uploadContentEditorImage = async (file) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  return (await api.post("/content/admin/editor-images/", fd, multipartConfig)).data;
+};
+// Media-library browse/edit/delete for the same editor-images ViewSet. The
+// list is `safe()`-wrapped (like getContentTags) so a transient failure just
+// renders an empty grid instead of throwing inside the picker modal; the
+// paginated envelope ({count, next, previous, results}) is passed through
+// untouched for the caller's Prev/Next controls. update/delete deliberately
+// aren't wrapped — the modal needs the real error to keep the image visible
+// rather than silently swallowing a failed alt-text save.
+export const listContentImages  = async (params) =>
+  safe(async () => (await api.get("/content/admin/editor-images/", { params })).data,
+       { count: 0, next: null, previous: null, results: [] });
+export const updateContentImage = async (id, data) =>
+  (await api.patch(`/content/admin/editor-images/${id}/`, data)).data;
+export const deleteContentImage = async (id) =>
+  (await api.delete(`/content/admin/editor-images/${id}/`)).data;
 
 /* ── Content: Current Affairs (same CRUD + publish/unpublish shape as Blog
    Posts; the backend contract given to us didn't spell out the URL segment

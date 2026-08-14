@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import { Send, BarChart3 } from "lucide-react";
 import { sendBroadcast, getCommsLogs } from "../api/admin_communication";
+import ConfirmModal from "../components/ConfirmModal";
 import "../css/CommunicationReports.css";
 
 const AUDIENCES = [
@@ -49,10 +50,18 @@ export default function CommunicationBroadcast() {
   const [linkUrl, setLinkUrl] = useState("");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
+  const [confirming, setConfirming] = useState(false);
 
-  const send = async (e) => {
+  const audienceLabel = AUDIENCES.find(([val]) => val === audience)?.[1] || audience;
+
+  const requestSend = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
+    setConfirming(true);
+  };
+
+  const send = async () => {
+    setConfirming(false);
     setSending(true);
     setResult(null);
     try {
@@ -69,7 +78,7 @@ export default function CommunicationBroadcast() {
     <div className="dashboard-wrapper">
       <h1 className="dashboard-title"><Send size={22} style={{ verticalAlign: "-3px", marginRight: 8 }} />Platform Broadcast</h1>
 
-      <form className="dashboard-card comm-broadcast-form" onSubmit={send}>
+      <form className="dashboard-card comm-broadcast-form" onSubmit={requestSend}>
         <label>Audience</label>
         <div className="comm-filter-row">
           {AUDIENCES.map(([val, label]) => (
@@ -102,6 +111,15 @@ export default function CommunicationBroadcast() {
 
       <h2 className="comm-section-title"><BarChart3 size={18} style={{ verticalAlign: "-3px", marginRight: 6 }} />At a glance</h2>
       <LogsPanel />
+
+      {confirming && (
+        <ConfirmModal
+          title="Send platform broadcast?"
+          message={`This notifies ${audienceLabel} — "${title.trim()}". This can't be undone.`}
+          onConfirm={send}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
     </div>
   );
 }

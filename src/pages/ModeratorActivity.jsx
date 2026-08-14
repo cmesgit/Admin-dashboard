@@ -16,6 +16,21 @@ const SCOPES = [
   { key: "chat", label: "Chat", load: getChatModerationOverview },
 ];
 
+// Forum breaks its chart down by moderator action verb (ModerationAction.action,
+// e.g. "suspend"); Chat breaks it down by report status instead (Report.status,
+// e.g. "ACTION_TAKEN") — this screen renders both through the same bars, so one
+// map covers both shapes. Falls back to a de-underscored, capitalized version
+// of the raw code for anything not listed, so a future backend addition never
+// surfaces a literal snake_case/SCREAMING_CASE string.
+const ACTION_LABEL = {
+  dismiss: "Dismissed", delete: "Deleted", warn: "Warned", ban: "Banned",
+  unban: "Unbanned", restore: "Restored", suspend: "Suspended",
+  lock: "Locked", unlock: "Unlocked",
+  OPEN: "Open", REVIEWED: "Reviewed", ACTION_TAKEN: "Action taken", DISMISSED: "Dismissed",
+};
+const actionLabel = (type) =>
+  ACTION_LABEL[type] || (type || "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+
 const ModeratorActivity = () => {
   const [data, setData] = useState({ kpis: [], moderators: [], breakdown: [], queues: [] });
   const [loading, setLoading] = useState(true);
@@ -93,7 +108,7 @@ const ModeratorActivity = () => {
               ) : (
                 data.breakdown.map((b) => (
                   <div key={b.type} className="ns-bar-row">
-                    <span className="ns-bar-label">{b.type}</span>
+                    <span className="ns-bar-label">{actionLabel(b.type)}</span>
                     <div className="ns-bar-track">
                       <div className="ns-bar-fill" style={{ width: `${(b.count / maxBreak) * 100}%` }} />
                     </div>

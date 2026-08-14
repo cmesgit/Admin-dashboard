@@ -91,3 +91,27 @@
    here so the card fits a narrow modal side-panel without dominating it. */
 .cms-preview .blog-list-image-wrap { height: 148px; }
 .cms-preview .blog-list-content h2 { font-size: 17px; }
+
+/* ── Blog body preview — rendered inside a sandboxed <iframe>
+ * (BlogBodyPreview.jsx), not this document, so it can safely show a
+ * pasted trusted_html page's own <style> block without that CSS leaking
+ * into the Admin dashboard's own layout. The actual `.blog-body` ruleset
+ * lives in ./blogBodyStyles.js (baked into the iframe's srcDoc) — this
+ * file only sizes the iframe itself. */
+/* Device-width toggle above the preview iframe (BlogEditor.jsx's Preview
+   mode) — purely a container max-width constraint; the iframe's own content
+   (blogBodyStyles.js's @media rules) reacts to the narrower iframe on its
+   own, no iframe-content changes needed here. */
+.blog-editor-preview-devicebar { display: flex; gap: 8px; margin-bottom: 12px; }
+.blog-editor-preview-frame-wrap { margin: 0 auto; }
+
+.blog-body-preview-frame {
+  width: 100%;
+  height: 78vh;
+  min-height: 640px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  resize: vertical;
+  overflow: auto;
+}

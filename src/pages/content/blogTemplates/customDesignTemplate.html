@@ -1,0 +1,259 @@
+<style>
+  /* ============================================================
+     CUSTOM DESIGN — STARTER TEMPLATE (paste into the CMS body-HTML field)
+     HOW TO USE:
+       1. Edit the :root palette below FIRST — change ~20 hex values
+          to retint the whole page (accent = your primary brand colour).
+       2. Then find-and-replace the placeholder copy ("Section One",
+          "Point A", the lorem-ish text, the FAQ questions, etc.).
+       3. If you paste MORE THAN ONE of these blocks on a single page,
+          rename the ".cd-" prefix (e.g. ".cd2-") in both the CSS rules
+          above and the markup below, so their styles don't collide.
+     No JavaScript is used anywhere — the FAQ uses a native, JS-free
+     expand/collapse element (see the FAQ section near the bottom).
+     Do not spell out an HTML tag name in bracketed form inside this
+     comment block (write "the style block" or "the details element",
+     never the bracketed form) — the sanitizer that runs on save
+     silently drops this entire block if it sees what looks like a
+     nested tag inside a style block's own text.
+     ============================================================ */
+  :root {
+    --ink:        #16181d;
+    --ink2:       #2a2d36;
+    --muted:      #626878;
+    --paper:      #f6f7fb;
+    --paper2:     #e9ebf5;
+    --accent:     #4f46e5;
+    --accent2:    #3730a3;
+    --accent-lt:  #e0e7ff;
+    --coral:      #e0562b;
+    --coral-lt:   #fde7df;
+    --gold:       #b45309;
+    --gold-lt:    #fef3c7;
+    --purple:     #7c3aed;
+    --purple-lt:  #ede9fe;
+    --blue:       #1d4ed8;
+    --blue-lt:    #dbeafe;
+    --rose:       #be123c;
+    --rose-lt:    #ffe4e6;
+    --green:      #167a4a;
+    --green-lt:   #d7f5e3;
+    --red:        #b91c1c;
+    --red-lt:     #fee2e2;
+    --rule:       #c7cbe6;
+    --white:      #ffffff;
+  }
+  * { box-sizing: border-box; }
+  .cd-root { font-family: 'Inter', sans-serif; background: var(--paper); color: var(--ink); }
+  .cd-root p, .cd-root h1, .cd-root h2, .cd-root div { margin: 0; }
+
+  /* ── HERO ─────────────────────────────────────────────── */
+  .cd-hero {
+    background: linear-gradient(135deg, #0b0c1a 0%, #14163a 50%, #1c1f4d 100%);
+    min-height: 78vh; display: flex; align-items: flex-end;
+    position: relative; overflow: hidden; padding: 0 0 56px;
+  }
+  .cd-hero::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--coral) 32%, var(--purple) 60%, var(--rose) 82%, var(--gold) 100%); }
+  .cd-hero-dots { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(129,140,248,0.16) 1px, transparent 1px); background-size: 28px 28px; pointer-events: none; }
+  .cd-hero-hex { position: absolute; top: 50%; right: 5%; transform: translateY(-50%); width: clamp(140px,22vw,260px); height: clamp(140px,22vw,260px); pointer-events: none; }
+  .cd-hero-hex::before { content: ''; position: absolute; inset: 0; background: rgba(129,140,248,0.07); clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); }
+  .cd-hero-hex::after { content: ''; position: absolute; inset: 26%; background: rgba(129,140,248,0.06); clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); }
+  .cd-hero-inner { max-width: 900px; width: 100%; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
+  .cd-overline { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #a5b4fc; margin-bottom: 22px; display: flex; align-items: center; gap: 14px; }
+  .cd-overline::before, .cd-overline::after { content: ''; flex: 0 0 40px; height: 1px; background: #a5b4fc; }
+  .cd-hero-title { font-family: 'Montserrat', sans-serif; font-size: clamp(36px,7.5vw,74px); font-weight: 900; color: #fff; line-height: 0.98; letter-spacing: -0.03em; margin-bottom: 30px; }
+  .cd-hero-title span { color: #a5b4fc; }
+  .cd-hero-bar { display: flex; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 24px; }
+  .cd-hero-bar-item { flex: 1 1 150px; padding-right: 24px; border-right: 1px solid rgba(255,255,255,0.08); margin-right: 24px; }
+  .cd-hero-bar-item:last-child { border-right: none; margin-right: 0; }
+  .cd-bar-label { font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.32); margin-bottom: 5px; }
+  .cd-bar-value { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.75); }
+  @media (max-width: 700px) {
+    .cd-hero { min-height: auto; align-items: flex-start; padding: 72px 0 44px; }
+    .cd-hero-inner { padding: 0 18px; }
+    .cd-hero-title { font-size: clamp(34px,10vw,54px); margin-bottom: 22px; }
+    .cd-hero-bar-item { flex: 1 1 120px; padding-right: 14px; margin-right: 14px; }
+    .cd-bar-label { font-size: 9px; } .cd-bar-value { font-size: 13px; }
+  }
+
+  /* ── BODY WRAP ────────────────────────────────────────── */
+  .cd-body { max-width: 880px; margin: 0 auto; padding: 64px 32px 96px; }
+  @media (max-width: 700px) { .cd-body { padding: 44px 18px 68px; } }
+
+  /* ── INTRO / HIGHLIGHT CARD ───────────────────────────── */
+  .cd-intro { background: linear-gradient(135deg, #0b0c1a, #1c1f4d); border-left: 5px solid var(--accent); border-radius: 4px; padding: 34px 40px; margin-bottom: 64px; position: relative; overflow: hidden; }
+  .cd-intro::after { content: '✦'; position: absolute; right: 30px; top: 50%; transform: translateY(-50%); font-size: 96px; opacity: 0.08; color: #fff; }
+  .cd-intro p { font-family: 'Poppins', sans-serif; font-size: 17px; font-weight: 500; color: rgba(255,255,255,0.86); line-height: 1.8; margin-bottom: 14px; }
+  .cd-intro p:last-child { margin-bottom: 0; }
+  .cd-intro strong { color: #a5b4fc; }
+  @media (max-width: 700px) { .cd-intro { padding: 24px 20px; } .cd-intro p { font-size: 15px; } }
+
+  /* ── SECTION HEADER ───────────────────────────────────── */
+  .cd-sec { margin-bottom: 48px; }
+  .cd-sec-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-lt); color: var(--accent2); font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; margin-bottom: 14px; }
+  .cd-badge-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .cd-sec-title { font-family: 'Montserrat', sans-serif; font-size: clamp(22px,4vw,32px); font-weight: 900; color: var(--ink); letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 6px; }
+  .cd-sec-title span { color: var(--accent); }
+  .cd-sec-rule { width: 48px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--purple)); margin-bottom: 22px; }
+  .cd-text { font-family: 'Inter', sans-serif; font-size: 15.5px; color: var(--ink2); line-height: 1.85; margin-bottom: 24px; }
+  .cd-text strong { color: var(--accent2); font-weight: 600; }
+
+  /* ── DIVIDER (rule + hex mark) ────────────────────────── */
+  .cd-divider { margin: 48px 0; display: flex; align-items: center; gap: 14px; }
+  .cd-divider::before, .cd-divider::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+  .cd-divider-mark { width: 20px; height: 20px; background: var(--accent); clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%); flex-shrink: 0; }
+
+  /* ── FEATURE CARD GRID (dark gradient headers) ────────── */
+  .cd-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 12px; }
+  @media (max-width: 620px) { .cd-card-grid { grid-template-columns: 1fr; } }
+  .cd-card { border-radius: 10px; overflow: hidden; border: 1.5px solid var(--rule); background: var(--white); }
+  .cd-card.cd-c1 .cd-card-hdr { background: linear-gradient(135deg, #10122e, var(--accent)); }
+  .cd-card.cd-c2 .cd-card-hdr { background: linear-gradient(135deg, #1a0a00, var(--coral)); }
+  .cd-card.cd-c3 .cd-card-hdr { background: linear-gradient(135deg, #06231a, var(--green)); }
+  .cd-card.cd-c1 .cd-card-dot { background: var(--accent); }
+  .cd-card.cd-c2 .cd-card-dot { background: var(--coral); }
+  .cd-card.cd-c3 .cd-card-dot { background: var(--green); }
+  .cd-card-hdr { padding: 14px 16px; }
+  .cd-card-tag { font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 3px; }
+  .cd-card-name { font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 900; color: #fff; }
+  .cd-card-body { padding: 14px 16px; }
+  .cd-card-row { font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--ink2); line-height: 1.65; padding: 5px 0; border-bottom: 1px solid var(--rule); display: flex; gap: 8px; }
+  .cd-card-row:last-child { border-bottom: none; }
+  .cd-card-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+  .cd-card-row strong { font-weight: 600; color: var(--ink); }
+
+  /* ── DATA / COMPARISON TABLE (striped, coloured header) ─ */
+  .cd-scroll-hint { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+  .cd-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 12px; border-radius: 10px; border: 1.5px solid var(--rule); }
+  .cd-table { width: 100%; border-collapse: collapse; min-width: 520px; }
+  .cd-table th { font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 13px 16px; color: #fff; text-align: left; white-space: nowrap; }
+  .cd-table td { font-family: 'Inter', sans-serif; font-size: 13px; color: var(--ink2); padding: 11px 16px; border-top: 1px solid var(--rule); border-right: 1px solid var(--rule); line-height: 1.55; }
+  .cd-table td:first-child { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--accent2); }
+  .cd-table td:last-child { border-right: none; }
+  .cd-table tr:nth-child(even) td { background: var(--paper2); }
+
+  /* ── FAQ (native details element, no JS) ─────────────── */
+  .cd-faq-label { display: inline-flex; align-items: center; gap: 8px; background: var(--accent-lt); color: var(--accent2); font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; margin-bottom: 14px; }
+  .cd-faq-heading { font-family: 'Montserrat', sans-serif; font-size: clamp(24px,4vw,34px); font-weight: 900; color: var(--ink); letter-spacing: -0.02em; margin-bottom: 6px; }
+  .cd-faq-rule { width: 48px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--purple)); margin-bottom: 26px; }
+  .cd-faq-item { border: 1.5px solid var(--rule); border-radius: 8px; margin-bottom: 10px; background: var(--white); transition: border-color 0.2s, box-shadow 0.2s; }
+  .cd-faq-item[open] { border-color: var(--accent); box-shadow: 0 2px 12px rgba(79,70,229,0.14); }
+  .cd-faq-q { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 22px; font-family: 'Poppins', sans-serif; font-size: 14.5px; font-weight: 600; color: var(--ink); line-height: 1.5; }
+  .cd-faq-q::-webkit-details-marker { display: none; }
+  .cd-faq-q::after { content: '+'; font-size: 22px; font-weight: 400; color: var(--accent); line-height: 1; flex-shrink: 0; }
+  .cd-faq-item[open] .cd-faq-q { color: var(--accent); }
+  .cd-faq-item[open] .cd-faq-q::after { content: '\2212'; }
+  .cd-faq-ans { font-family: 'Inter', sans-serif; font-size: 14.5px; color: var(--ink2); line-height: 1.85; padding: 0 22px 20px; }
+  .cd-faq-ans strong { color: var(--accent2); font-weight: 600; }
+  @media (max-width: 700px) { .cd-faq-q { padding: 16px; } .cd-faq-ans { padding: 0 16px 18px; } }
+</style>
+<div class="cd-root">
+  <div class="cd-hero">
+    <div class="cd-hero-dots"></div>
+    <div class="cd-hero-hex"></div>
+    <div class="cd-hero-inner">
+      <div class="cd-overline">Overline Label · Category · Subtitle</div>
+      <h1 class="cd-hero-title">Your Main <span>Title Here</span></h1>
+      <div class="cd-hero-bar">
+        <div class="cd-hero-bar-item"><div class="cd-bar-label">Subject</div><div class="cd-bar-value">Replace me</div></div>
+        <div class="cd-hero-bar-item"><div class="cd-bar-label">Topics</div><div class="cd-bar-value">A · B · C</div></div>
+        <div class="cd-hero-bar-item"><div class="cd-bar-label">Read time</div><div class="cd-bar-value">00 min</div></div>
+        <div class="cd-hero-bar-item"><div class="cd-bar-label">Board</div><div class="cd-bar-value">Replace me</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cd-body">
+    <div class="cd-intro">
+      <p><strong>Intro placeholder.</strong> Write one or two punchy sentences that frame the topic and tell the reader why it matters. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+      <p>Second line of the highlight card — a short overview of what this page covers. Replace all of this placeholder copy with your own.</p>
+    </div>
+
+    <!-- SECTION ONE — feature card grid -->
+    <div class="cd-sec">
+      <div class="cd-sec-badge"><div class="cd-badge-dot"></div>Badge Label One</div>
+      <h2 class="cd-sec-title">Section One — <span>Colored Word</span></h2>
+      <div class="cd-sec-rule"></div>
+      <p class="cd-text">Placeholder paragraph for section one. Explain the idea in a sentence or two, then present the sub-topics as cards below. <strong>Highlight key terms</strong> with strong tags. Lorem ipsum dolor sit amet.</p>
+      <div class="cd-card-grid">
+        <div class="cd-card cd-c1">
+          <div class="cd-card-hdr"><div class="cd-card-tag">Tag · Label</div><div class="cd-card-name">Point A</div></div>
+          <div class="cd-card-body">
+            <div class="cd-card-row"><div class="cd-card-dot"></div><span>First placeholder detail about Point A.</span></div>
+            <div class="cd-card-row"><div class="cd-card-dot"></div><span>Second detail — <strong>emphasise</strong> what matters.</span></div>
+            <div class="cd-card-row"><div class="cd-card-dot"></div><span>Third supporting fact goes here.</span></div>
+          </div>
+        </div>
+        <div class="cd-card cd-c2">
+          <div class="cd-card-hdr"><div class="cd-card-tag">Tag · Label</div><div class="cd-card-name">Point B</div></div>
+          <div class="cd-card-body">
+            <div class="cd-card-row"><div class="cd-card-dot"></div><span>First placeholder detail about Point B.</span></div>
+            <div class="cd-card-row"><div class="cd-card-dot"></div><span>Second detail with a <strong>key term</strong>.</span></div>
+            <div class="cd-card-row"><div class="cd-card-dot"></div><span>Third supporting fact goes here.</span></div>
+          </div>
+        </div>
+        <div class="cd-card cd-c3">
+          <div class="cd-card-hdr"><div class="cd-card-tag">Tag · Label</div><div class="cd-card-name">Point C</div></div>
+          <div class="cd-card-body">
+            <div class="cd-card-row"><div class="cd-card-dot"></div><span>First placeholder detail about Point C.</span></div>
+            <div class="cd-card-row"><div class="cd-card-dot"></div><span>Second detail — replace this text.</span></div>
+            <div class="cd-card-row"><div class="cd-card-dot"></div><span>Third supporting fact goes here.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cd-divider"><div class="cd-divider-mark"></div></div>
+
+    <!-- SECTION TWO — comparison table -->
+    <div class="cd-sec">
+      <div class="cd-sec-badge"><div class="cd-badge-dot"></div>Badge Label Two</div>
+      <h2 class="cd-sec-title">Section Two — <span>Comparison</span></h2>
+      <div class="cd-sec-rule"></div>
+      <p class="cd-text">Placeholder paragraph for section two. Use a table when you need to compare several items across the same set of attributes. <strong>Swap the header colours</strong> by editing the inline <code>background</code> on each <code>th</code>.</p>
+      <div class="cd-scroll-hint">← Swipe to see the full table →</div>
+      <div class="cd-table-wrap">
+        <table class="cd-table">
+          <thead>
+            <tr>
+              <th style="background:#3730a3">Feature</th>
+              <th style="background:#4f46e5">Option A</th>
+              <th style="background:#7c3aed">Option B</th>
+              <th style="background:#167a4a">Option C</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Attribute one</td><td>Value A1</td><td>Value B1</td><td>Value C1</td></tr>
+            <tr><td>Attribute two</td><td>Value A2</td><td>Value B2</td><td>Value C2</td></tr>
+            <tr><td>Attribute three</td><td>Value A3</td><td>Value B3</td><td>Value C3</td></tr>
+            <tr><td>Attribute four</td><td>Value A4</td><td>Value B4</td><td>Value C4</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="cd-divider"><div class="cd-divider-mark"></div></div>
+
+    <!-- FAQ -->
+    <div class="cd-faq-label"><div class="cd-badge-dot"></div>FAQ</div>
+    <h2 class="cd-faq-heading">Frequently Asked Questions</h2>
+    <div class="cd-faq-rule"></div>
+    <details class="cd-faq-item">
+      <summary class="cd-faq-q">Q1. First placeholder question goes here?</summary>
+      <div class="cd-faq-ans">Placeholder answer. Replace this with a clear, self-contained explanation. <strong>Bold the key point</strong> so it stands out. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+    </details>
+    <details class="cd-faq-item">
+      <summary class="cd-faq-q">Q2. Second placeholder question goes here?</summary>
+      <div class="cd-faq-ans">Placeholder answer for the second question. Use line breaks<br><br>to separate paragraphs or list points inside the answer.</div>
+    </details>
+    <details class="cd-faq-item">
+      <summary class="cd-faq-q">Q3. Third placeholder question goes here?</summary>
+      <div class="cd-faq-ans">Placeholder answer for the third question. Keep answers concise but complete — this is where exam-style detail belongs.</div>
+    </details>
+    <details class="cd-faq-item">
+      <summary class="cd-faq-q">Q4. Fourth placeholder question goes here?</summary>
+      <div class="cd-faq-ans">Placeholder answer for the fourth question. Delete or duplicate these <code>&lt;details&gt;</code> blocks to change how many FAQs you show.</div>
+    </details>
+  </div>
+</div>

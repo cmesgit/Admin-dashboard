@@ -106,7 +106,7 @@ const Overview = () => {
 
       <div className="dashboard-cards" style={{ marginTop: 32, gridTemplateColumns: "1fr 1fr" }}>
         {/* Needs attention queue */}
-        <div className="dashboard-card empty" style={{ alignItems: "stretch", textAlign: "left" }}>
+        <div className="dashboard-card" style={{ alignItems: "stretch", textAlign: "left" }}>
           <h3 style={{ marginTop: 0 }}>Needs attention</h3>
           {!queue ? (
             <p>Loading…</p>
@@ -129,7 +129,7 @@ const Overview = () => {
         </div>
 
         {/* Payment mode */}
-        <div className="dashboard-card empty" style={{ alignItems: "stretch", textAlign: "left" }}>
+        <div className="dashboard-card" style={{ alignItems: "stretch", textAlign: "left" }}>
           <h3 style={{ marginTop: 0 }}>Payment mode</h3>
           <p>
             {stats
@@ -147,7 +147,7 @@ const Overview = () => {
       </div>
 
       {/* Live now */}
-      <div className="dashboard-card empty" style={{ marginTop: 24, alignItems: "stretch", textAlign: "left" }}>
+      <div className="dashboard-card" style={{ marginTop: 24, alignItems: "stretch", textAlign: "left" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <h3 style={{ margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
             <Radio size={16} color="#ef4444" /> Live now

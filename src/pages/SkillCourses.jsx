@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { getSkillCourses, reviewSkillCourse } from "../api/admin";
+import { errText } from "../utils/errText";
 
 const formatRupees = (paise) => (paise ? `₹${(paise / 100).toLocaleString("en-IN")}` : "Free");
 
@@ -38,8 +39,7 @@ const SkillCourses = () => {
       setMsg(`"${course.title}" ${action}d.`);
       await load();
     } catch (e) {
-      const d = e?.response?.data;
-      setErr(typeof d === "object" ? Object.values(d).flat().join(" ") : "Action failed.");
+      setErr(errText(e));
     } finally {
       setBusyId(null);
     }

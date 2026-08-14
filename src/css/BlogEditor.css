@@ -1,0 +1,320 @@
+/* Full-page blog editor — replaces the old cramped BlogFormModal. New file
+   per the concurrent-edit rule (RichTextEditor.jsx / Content.css are owned
+   by another in-flight change); reuses .cm-field/.cm-row/.mod-btn/etc from
+   Courses.css/Content.css/Moderator.css rather than redefining them. */
+
+/* Wider than the standard 1200px .dashboard-wrapper — a writing surface
+   benefits from more room than a settings form does, but is still capped
+   (rather than going full-bleed) so it doesn't feel like a spreadsheet on
+   ultrawide monitors. */
+.blog-editor {
+  max-width: 1480px;
+}
+
+/* ── Sticky action bar ── */
+.blog-editor-actionbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(31, 41, 55, 0.04);
+  margin: -8px -8px 24px;
+  padding: 14px 16px;
+}
+.blog-editor-actionbar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.blog-editor-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid #e2e6ee;
+  border-radius: 8px;
+  color: #4f6df5;
+  cursor: pointer;
+  padding: 7px 9px;
+  flex-shrink: 0;
+}
+.blog-editor-back:hover { background: #f1f5ff; }
+.blog-editor-back:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.blog-editor-title-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-shrink: 1;
+}
+.blog-editor-title-text {
+  font-weight: 700;
+  color: #1f2937;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+.blog-editor-save-state {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #9aa0aa;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.blog-editor-actionbar-spacer { flex: 1; }
+
+.blog-editor-live-notice {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: #7a4c00;
+  background: #fff8e8;
+  border: 1px solid #ecd080;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.blog-editor-autosave-error {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: #c0392b;
+  background: #fdf0ee;
+  border: 1px solid #f0c8c0;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.blog-editor-recover-banner {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+/* ── Two-column body ── */
+.blog-editor-body {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+.blog-editor-main {
+  flex: 1;
+  min-width: 0;
+}
+.blog-editor-sidebar {
+  width: 360px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (max-width: 1024px) {
+  .blog-editor-body { flex-direction: column; }
+  .blog-editor-sidebar { width: 100%; }
+}
+
+/* Focus mode: sidebar is unmounted entirely (see BlogEditor.jsx), so the
+   main column just needs a readable measure instead of stretching to fill
+   the full 1480px shell. */
+.blog-editor-body.focus-mode .blog-editor-main {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.blog-editor-title-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 2rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #1f2937;
+  padding: 10px 2px 20px;
+  background: transparent;
+}
+.blog-editor-title-input::placeholder { color: #9aa0aa; }
+
+.blog-editor-wordcount {
+  margin-top: 12px;
+}
+
+/* Matches .rte-content--tall's min-height so switching between rich-text and
+   HTML-source mode doesn't shrink the writing area. */
+.blog-editor-html-textarea {
+  min-height: 560px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+/* ── Table of contents ── */
+.blog-editor-toc {
+  background: #f8fafc;
+  border: 1px solid #e2e6ee;
+  border-left: 3px solid #4f6df5;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 0 0 20px;
+}
+.blog-editor-toc-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+.blog-editor-toc-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+.blog-editor-toc-item {
+  background: none;
+  border: none;
+  padding: 2px 0;
+  font-size: 0.82rem;
+  color: #3b52d1;
+  cursor: pointer;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.blog-editor-toc-item:hover { text-decoration: underline; }
+.blog-editor-toc-item.lvl-h2 { padding-left: 12px; }
+.blog-editor-toc-item.lvl-h3 { padding-left: 24px; font-size: 0.78rem; color: #6b7280; }
+
+.blog-editor-card {
+  background: #f8fafc;
+  border: 1px solid #e2e6ee;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.04);
+}
+.blog-editor-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6b7280;
+}
+.blog-editor-card h4 svg { color: #4f6df5; flex-shrink: 0; }
+.blog-editor-card .cm-field:last-child,
+.blog-editor-card .cm-row:last-child { margin-bottom: 0; }
+
+/* Collapsible card header — same look as a static h4, but a real button so
+   the whole row is clickable/keyboard-focusable. */
+.blog-editor-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 0 14px;
+  cursor: pointer;
+  color: #6b7280;
+}
+.blog-editor-card-head-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6b7280;
+}
+.blog-editor-card-head-label svg { color: #4f6df5; flex-shrink: 0; }
+.blog-editor-card-head svg:last-child { color: #9aa0aa; }
+/* When a card is collapsed, the header is the only child — drop its bottom
+   margin so the collapsed card doesn't carry dead space below the row. */
+.blog-editor-card-head:only-child { margin-bottom: 0; }
+/* Quality floor: visible keyboard focus (mirrors Courses.css's
+   .cm-subnav-tab/.cm-role-opt/.cm-search precedent). */
+.blog-editor-card-head:focus-visible { outline: 2px solid #4f6df5; outline-offset: 2px; }
+
+/* Locale tab strip (English/हिंदी) shown when this post has a translation
+   sibling — mirrors Courses.css's .cm-subnav-tab pattern rather than
+   inventing a new tab style. */
+.blog-editor-locale-tabs { display: flex; gap: 4px; }
+.blog-editor-locale-tab {
+  border: 1px solid #e5e7eb; background: #fff; color: #4b5563;
+  padding: 5px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer;
+}
+.blog-editor-locale-tab:hover:not(:disabled) { background: #f3f4f6; }
+.blog-editor-locale-tab.active { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; cursor: default; }
+.blog-editor-locale-tab:disabled { cursor: default; }
+
+.blog-editor-derived-slug { color: #9aa0aa; }
+.blog-editor-derived-slug code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #4b5563;
+}
+.blog-editor-public-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.78rem;
+  color: #4b5563;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 6px 0 0;
+  word-break: break-all;
+}
+
+.blog-editor-counter {
+  font-size: 0.72rem;
+  color: #9aa0aa;
+  font-weight: 600;
+}
+.blog-editor-counter.near { color: #b45309; }
+.blog-editor-counter.over { color: #c0392b; }
+
+/* ── SEO snippet preview (Google-result mimic) ── */
+.seo-preview {
+  margin-top: 10px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: arial, sans-serif;
+}
+.seo-preview-breadcrumb {
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+.seo-preview-breadcrumb span { color: #9aa0aa; }
+.seo-preview-title {
+  font-size: 1rem;
+  color: #1a0dab;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.seo-preview-desc {
+  font-size: 0.82rem;
+  color: #4d5156;
+  margin-top: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

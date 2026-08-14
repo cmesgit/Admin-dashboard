@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getBoards, createBoard, updateBoard, deleteBoard,
-  getBoardCourses, createCourse, getCourse, updateCourse, deleteCourse,
+  getBoardCourses, getAllCourses, createCourse, getCourse, updateCourse, deleteCourse,
   getCourseSubjects, createSubject, updateSubject, deleteSubject,
   createChapter, updateChapter, deleteChapter,
   getSkillCategories, getSkillExperts, getSkillApplications,
@@ -11,6 +11,7 @@ import {
   getBatchProgress, getBatchRoster, moveEnrollmentBatch,
   getAdminAcademyTeachers, getSubjectTeachers,
   assignSubjectTeacher, updateSubjectTeacher, removeSubjectTeacher,
+  getCourseStaffing, bulkAssignTeacher,
   // ── new: course categories (multi-select on the course form) ──
   getCourseCategories,
 } from "../api/admin";
@@ -20,6 +21,7 @@ import ImageUploadField from "../components/ImageUploadField";
 import FeaturedCardPreview from "./content/preview/FeaturedCardPreview";
 import NavMenuEntryPreview from "./content/preview/NavMenuEntryPreview";
 import PlacementBadge from "./content/preview/PlacementBadge";
+import TrackChips from "../components/TrackChips";
 import { errText } from "../utils/errText";
 import { formatDate } from "../utils/formatDate";
 import { buildBody } from "../utils/buildBody";
@@ -155,6 +157,10 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
             <label className="cm-check">
               <input type="checkbox" checked={form.is_active ?? true} onChange={set("is_active")} />
               <span>Active (visible on the public site)</span>
+            </label>
+            <label className="cm-field">
+              <span>Logo (shown on board cards / filters)</span>
+              <ImageUploadField value={file} onChange={setFile} previewUrl={form.logo} />
             </label>
           </>
         )}
@@ -428,6 +434,8 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
 function TeacherAssignModal({ subject, onClose, onChanged }) {
   const [assigned, setAssigned] = useState([]);
   const [pool, setPool] = useState([]);
+  const [poolCount, setPoolCount] = useState(0);
+  const [poolHasMore, setPoolHasMore] = useState(false);
   const [q, setQ] = useState("");
   const [role, setRole] = useState("PRIMARY");
   const [loading, setLoading] = useState(true);
@@ -443,25 +451,32 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
     let cancel = false;
     (async () => {
       setLoading(true);
-      const [list, teachers] = await Promise.all([
-        getSubjectTeachers(subject.id),
-        getAdminAcademyTeachers(),
-      ]);
+      const list = await getSubjectTeachers(subject.id);
       if (cancel) return;
       setAssigned(Array.isArray(list) ? list : []);
-      setPool(Array.isArray(teachers) ? teachers : []);
       setLoading(false);
     })();
     return () => { cancel = true; };
   }, [subject.id]);
 
+  // Server-side search — debounced, so a teacher outside the server's first
+  // page (result truncation is now real: 50 rows, see getAdminAcademyTeachers)
+  // is still reachable by typing their exact name/email.
+  useEffect(() => {
+    let cancel = false;
+    const t = setTimeout(() => {
+      getAdminAcademyTeachers(q).then((res) => {
+        if (cancel) return;
+        setPool(res.data || []);
+        setPoolCount(res.count || 0);
+        setPoolHasMore(!!res.has_more);
+      });
+    }, q ? 300 : 0);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [q, subject.id]);
+
   const assignedIds = new Set(assigned.map((t) => t.user_id));
-  const matches = pool.filter(
-    (t) =>
-      !assignedIds.has(t.user_id) &&
-      ((t.name || "").toLowerCase().includes(q.toLowerCase()) ||
-        (t.email || "").toLowerCase().includes(q.toLowerCase()))
-  );
+  const matches = pool.filter((t) => !assignedIds.has(t.user_id));
 
   const runAction = async (id, fn) => {
     setBusyId(id); setErr("");
@@ -499,6 +514,7 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
                           {t.qualification || t.email}
                           {t.rating ? ` · ★ ${t.rating}` : ""}
                         </span>
+                        <TrackChips tracks={t.tracks} />
                       </div>
                     </div>
                     <div className="cm-assign-controls">
@@ -551,6 +567,11 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search approved teachers by name or email"
               />
+              {poolHasMore && (
+                <p className="cm-hint">
+                  Showing {pool.length} of {poolCount} — refine your search.
+                </p>
+              )}
               <div className="cm-pool-list">
                 {matches.length === 0 ? (
                   <div className="cm-pool-empty">
@@ -559,11 +580,12 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
                       : "No matches — everyone matching is already assigned."}
                   </div>
                 ) : (
-                  matches.slice(0, 30).map((t) => (
+                  matches.map((t) => (
                     <div className="cm-pool-row" key={t.user_id}>
                       <div className="cm-assign-meta">
                         <span className="cm-assign-name">{t.name}</span>
                         <span className="cm-assign-sub">{t.qualification || t.email}</span>
+                        <TrackChips tracks={t.tracks} />
                       </div>
                       <button
                         className="cm-icon-btn"
@@ -587,6 +609,172 @@ function TeacherAssignModal({ subject, onClose, onChanged }) {
         <div className="confirm-actions">
           <button className="confirm-ok" onClick={onClose}>Done</button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────── Bulk teacher assignment modal ─────────────────────
+   One teacher → many subjects of the same course in a single request.
+   Reuses the exact same server-side-search teacher picker (+ TrackChips)
+   as TeacherAssignModal above, just swapping "pick a subject" for
+   "pick many subjects". */
+function BulkAssignModal({ course, subjects, teachersBySubject, onClose, onAssigned }) {
+  const [pool, setPool] = useState([]);
+  const [poolCount, setPoolCount] = useState(0);
+  const [poolHasMore, setPoolHasMore] = useState(false);
+  const [q, setQ] = useState("");
+  const [teacherId, setTeacherId] = useState(null);
+  const [role, setRole] = useState("PRIMARY");
+  const [selected, setSelected] = useState(() => new Set());
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [result, setResult] = useState(null);
+
+  // Server-side search — debounced, same convention as TeacherAssignModal.
+  useEffect(() => {
+    let cancel = false;
+    const t = setTimeout(() => {
+      getAdminAcademyTeachers(q).then((res) => {
+        if (cancel) return;
+        setPool(res.data || []);
+        setPoolCount(res.count || 0);
+        setPoolHasMore(!!res.has_more);
+      });
+    }, q ? 300 : 0);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [q]);
+
+  const toggleSubject = (id) =>
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  const selectAll = () => setSelected(new Set(subjects.map((s) => s.id)));
+  const selectNone = () => setSelected(new Set());
+
+  const submit = async () => {
+    if (!teacherId || selected.size === 0) return;
+    setBusy(true); setErr("");
+    try {
+      const res = await bulkAssignTeacher(course.id, {
+        teacher_id: teacherId,
+        subject_ids: Array.from(selected),
+        display_role: role,
+      });
+      setResult(res);
+      onAssigned?.();
+    } catch (e) {
+      setErr(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="confirm-overlay" onClick={onClose}>
+      <div className="cm-form-card cm-form-card--wide" onClick={(e) => e.stopPropagation()}>
+        <h3>Bulk assign teacher · {course.title}</h3>
+
+        {result ? (
+          <>
+            <p className="cm-empty-note">
+              Assigned to {result.assigned} subject{result.assigned !== 1 ? "s" : ""}.
+              {result.skipped_already_assigned?.length > 0 &&
+                ` ${result.skipped_already_assigned.length} skipped (already assigned).`}
+              {result.skipped_not_in_course?.length > 0 &&
+                ` ${result.skipped_not_in_course.length} skipped (not in this course).`}
+            </p>
+            <div className="confirm-actions">
+              <button className="confirm-ok" onClick={onClose}>Done</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="cm-assign-add-head">
+              <span className="cm-assign-add-title">Teacher</span>
+              <div className="cm-role-toggle">
+                <button
+                  className={`cm-role-opt${role === "PRIMARY" ? " active" : ""}`}
+                  onClick={() => setRole("PRIMARY")}
+                >
+                  Primary
+                </button>
+                <button
+                  className={`cm-role-opt${role === "ASSISTANT" ? " active" : ""}`}
+                  onClick={() => setRole("ASSISTANT")}
+                >
+                  Assistant
+                </button>
+              </div>
+            </div>
+            <input
+              className="cm-search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search approved teachers by name or email"
+            />
+            {poolHasMore && (
+              <p className="cm-hint">
+                Showing {pool.length} of {poolCount} — refine your search.
+              </p>
+            )}
+            <div className="cm-pool-list">
+              {pool.length === 0 ? (
+                <div className="cm-pool-empty">No approved teachers found.</div>
+              ) : (
+                pool.map((t) => (
+                  <div className="cm-pool-row" key={t.user_id}>
+                    <div className="cm-assign-meta">
+                      <span className="cm-assign-name">{t.name}</span>
+                      <span className="cm-assign-sub">{t.qualification || t.email}</span>
+                      <TrackChips tracks={t.tracks} />
+                    </div>
+                    <button
+                      className="cm-icon-btn"
+                      style={teacherId === t.user_id ? { borderColor: "#4f6df5", color: "#4f6df5" } : undefined}
+                      onClick={() => setTeacherId(t.user_id)}
+                    >
+                      {teacherId === t.user_id ? "Selected" : "Select"}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="cm-assign-add-head" style={{ marginTop: 16 }}>
+              <span className="cm-assign-add-title">Subjects ({selected.size} selected)</span>
+              <div className="cm-assign-controls">
+                <button className="cm-icon-btn" onClick={selectAll}>Select all</button>
+                <button className="cm-icon-btn" onClick={selectNone}>Select none</button>
+              </div>
+            </div>
+            <div className="cm-checkbox-group">
+              {subjects.map((s) => {
+                const hasTeachers = (teachersBySubject[s.id] || []).length > 0;
+                return (
+                  <label className="cm-check cm-check--inline" key={s.id}>
+                    <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSubject(s.id)} />
+                    <span>
+                      {s.name}
+                      {!hasTeachers && <em className="cm-chip-role"> unstaffed</em>}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+
+            {err && <div className="cm-form-error">{err}</div>}
+
+            <div className="confirm-actions">
+              <button className="confirm-cancel" onClick={onClose} disabled={busy}>Cancel</button>
+              <button className="confirm-ok" onClick={submit} disabled={busy || !teacherId || selected.size === 0}>
+                {busy ? "Assigning…" : `Assign to ${selected.size} subject${selected.size !== 1 ? "s" : ""}`}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -643,6 +831,52 @@ function ChapterModal({ subject, onClose, onChanged }) {
     }
   };
 
+  const sortedChapters = useMemo(
+    () => [...chapters].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [chapters],
+  );
+
+  // Assigns order = target array position (idx/otherIdx) rather than
+  // swapping the chapters' existing `order` values — two chapters can share
+  // the same order (e.g. both default to 0 via the custom-chapter upload
+  // path), which would make a value-swap a silent no-op. Runs the two PATCHes
+  // sequentially, not in parallel: if the second fails after the first
+  // already landed, the server would otherwise be left with only one side of
+  // the swap applied with no client-visible sign of it — compensate by
+  // reverting the first PATCH so a failed reorder doesn't silently corrupt
+  // server state.
+  const move = async (idx, direction) => {
+    const otherIdx = idx + direction;
+    if (otherIdx < 0 || otherIdx >= sortedChapters.length) return;
+    const ch = sortedChapters[idx];
+    const other = sortedChapters[otherIdx];
+    setBusy(true); setErr("");
+    try {
+      const updatedA = await updateChapter(ch.id, { order: otherIdx });
+      try {
+        const updatedB = await updateChapter(other.id, { order: idx });
+        setChapters((cs) => cs.map((c) => {
+          if (c.id === updatedA.id) return updatedA;
+          if (c.id === updatedB.id) return updatedB;
+          return c;
+        }));
+        onChanged?.();
+      } catch (e) {
+        try {
+          const reverted = await updateChapter(ch.id, { order: idx });
+          setChapters((cs) => cs.map((c) => (c.id === reverted.id ? reverted : c)));
+        } catch {
+          // Best-effort revert; surface the original failure either way.
+        }
+        throw e;
+      }
+    } catch (e) {
+      setErr(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="confirm-overlay" onClick={onClose}>
       <div className="cm-form-card cm-form-card--wide" onClick={(e) => e.stopPropagation()}>
@@ -652,7 +886,7 @@ function ChapterModal({ subject, onClose, onChanged }) {
           <p className="cm-empty-note">No chapters yet. Add the first one below.</p>
         ) : (
           <div className="cm-assign-list">
-            {chapters.map((ch) =>
+            {sortedChapters.map((ch, idx) =>
               editingId === ch.id ? (
                 <div className="cm-chapter-edit" key={ch.id}>
                   <label className="cm-field">
@@ -680,6 +914,8 @@ function ChapterModal({ subject, onClose, onChanged }) {
                     </span>
                   </div>
                   <div className="cm-assign-controls">
+                    <button className="cm-icon-btn" disabled={busy || idx === 0} onClick={() => move(idx, -1)} aria-label="Move up">↑</button>
+                    <button className="cm-icon-btn" disabled={busy || idx === sortedChapters.length - 1} onClick={() => move(idx, 1)} aria-label="Move down">↓</button>
                     <button className="cm-icon-btn" disabled={busy} onClick={() => startEdit(ch)}>Edit</button>
                     <button className="cm-icon-btn cm-icon-btn--danger" disabled={busy} onClick={() => remove(ch)}>Delete</button>
                   </div>
@@ -912,12 +1148,19 @@ const Courses = () => {
   const [tab, setTab] = useState("academy");
 
   // Academy drill-down: boards → courses (per board) → subjects|batches (per course)
+  // "all-courses" is a sibling entry point (flat, cross-board list) that
+  // feeds into the SAME subjects|batches levels — it never replaces the
+  // boards→courses drill-down, only skips straight past it.
   const [nav, setNav] = useState({ level: "boards", board: null, course: null });
   const [boards, setBoards] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
+  const [allCoursesSearch, setAllCoursesSearch] = useState("");
+  const [allCoursesBoardFilter, setAllCoursesBoardFilter] = useState("");
   const [subjects, setSubjects] = useState([]);
   const [batches, setBatches] = useState([]);
   const [teachersBySubject, setTeachersBySubject] = useState({});
+  const [unstaffedCount, setUnstaffedCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Skill Dev (read-only overview, unchanged)
@@ -928,6 +1171,7 @@ const Courses = () => {
   const [modal, setModal] = useState(null);       // { type, mode, initial }
   const [confirm, setConfirm] = useState(null);    // { kind, item, message, error? }
   const [teacherModal, setTeacherModal] = useState(null);   // subject
+  const [bulkAssignModal, setBulkAssignModal] = useState(false);
   const [chapterModal, setChapterModal] = useState(null);   // subject
   const [progressModal, setProgressModal] = useState(null); // batch
   const [rosterModal, setRosterModal] = useState(null);     // batch
@@ -946,18 +1190,25 @@ const Courses = () => {
     setCourses(Array.isArray(c) ? c : []);
     setLoading(false);
   }, []);
-  const loadSubjectTeachers = useCallback(async (subjectList) => {
-    const entries = await Promise.allSettled(
-      subjectList.map(async (s) => [s.id, await getSubjectTeachers(s.id)])
-    );
+  const loadAllCourses = useCallback(async (params = {}) => {
+    setLoading(true);
+    const c = await getAllCourses(params);
+    setAllCourses(Array.isArray(c) ? c : []);
+    setLoading(false);
+  }, []);
+  // Single whole-course staffing-grid call — replaces the previous N+1
+  // (one getSubjectTeachers request per subject) that also re-ran on every
+  // assignment change. Populates the SAME { [subjectId]: teachers[] } shape
+  // the Subjects table's Teachers-column chips already consume, so that
+  // rendering path is untouched.
+  const loadStaffing = useCallback(async (courseId) => {
+    const data = await getCourseStaffing(courseId);
     const map = {};
-    entries.forEach((r) => {
-      if (r.status === "fulfilled") {
-        const [id, list] = r.value;
-        map[id] = Array.isArray(list) ? list : [];
-      }
+    (data?.subjects || []).forEach((s) => {
+      map[s.id] = Array.isArray(s.teachers) ? s.teachers : [];
     });
     setTeachersBySubject(map);
+    setUnstaffedCount(data?.unstaffed_count ?? 0);
   }, []);
   const loadSubjects = useCallback(async (courseId) => {
     setLoading(true);
@@ -965,8 +1216,8 @@ const Courses = () => {
     const list = Array.isArray(s) ? s : [];
     setSubjects(list);
     setLoading(false);
-    loadSubjectTeachers(list);
-  }, [loadSubjectTeachers]);
+    loadStaffing(courseId);
+  }, [loadStaffing]);
   const loadBatches = useCallback(async (courseId) => {
     setLoading(true);
     const b = await getCourseBatches(courseId);
@@ -975,6 +1226,22 @@ const Courses = () => {
   }, []);
 
   useEffect(() => { loadBoards(); }, [loadBoards]);
+
+  // Server-side search/filter for the All Courses tab, debounced same as
+  // the teacher-picker search elsewhere in this file. Only fires while
+  // that tab is actually the active level.
+  useEffect(() => {
+    if (nav.level !== "all-courses") return;
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (cancelled) return;
+      loadAllCourses({
+        ...(allCoursesSearch ? { search: allCoursesSearch } : {}),
+        ...(allCoursesBoardFilter ? { board: allCoursesBoardFilter } : {}),
+      });
+    }, allCoursesSearch ? 300 : 0);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [nav.level, allCoursesSearch, allCoursesBoardFilter, loadAllCourses]);
 
   useEffect(() => {
     let cancelled = false;
@@ -996,6 +1263,23 @@ const Courses = () => {
   const goCourses = () => { setNav((n) => ({ ...n, level: "courses", course: null })); if (nav.board) loadCourses(nav.board.id); };
   const goSubjects = () => { if (!nav.course) return; setNav((n) => ({ ...n, level: "subjects" })); loadSubjects(nav.course.id); };
   const goBatches = () => { if (!nav.course) return; setNav((n) => ({ ...n, level: "batches" })); loadBatches(nav.course.id); };
+
+  // "All Courses" — flat cross-board list, a sibling entry point to Boards.
+  const goAllCourses = () => {
+    setNav({ level: "all-courses", board: null, course: null });
+    setAllCoursesSearch(""); setAllCoursesBoardFilter("");
+    loadAllCourses();
+  };
+  // Opening a course from the flat list still lands on the exact same
+  // Subjects/Batches views as the Boards drill-down — but nav.board has to
+  // be populated with the course's real board (row carries board_id/
+  // board_name from the new admin/courses/ GET) so the breadcrumb's board
+  // crumb and "back up to this board's course list" (goCourses) keep
+  // working exactly as if the admin had drilled down via Boards.
+  const openCourseFromAllCourses = (course, level = "subjects") => {
+    setNav({ level, board: { id: course.board_id, name: course.board_name }, course });
+    if (level === "batches") loadBatches(course.id); else loadSubjects(course.id);
+  };
 
   const openCreate = (type, initial = {}) => { setFormError(""); setModal({ type, mode: "create", initial }); };
   const openEdit = (type, initial) => { setFormError(""); setModal({ type, mode: "edit", initial }); };
@@ -1043,8 +1327,9 @@ const Courses = () => {
           description: form.description || "",
           is_active: form.is_active ?? true,
         };
-        if (modal.mode === "edit") await updateBoard(modal.initial.id, payload);
-        else await createBoard(payload);
+        const { data, isMultipart } = buildBody(payload, file, "logo");
+        if (modal.mode === "edit") await updateBoard(modal.initial.id, data, isMultipart);
+        else await createBoard(data, isMultipart);
         setModal(null);
         await loadBoards();
       } else if (modal.type === "course") {
@@ -1194,7 +1479,7 @@ const Courses = () => {
                   <button className="cm-icon-btn" onClick={() => openBoard(b)}>Open</button>
                   <button className="cm-icon-btn" onClick={() => openEdit("board", {
                     id: b.id, name: b.name, board_type: b.board_type,
-                    description: b.description, is_active: b.is_active,
+                    description: b.description, is_active: b.is_active, logo: b.logo,
                   })}>Edit</button>
                   <button className="cm-icon-btn cm-icon-btn--danger"
                     onClick={() => setConfirm({ kind: "board", item: b, message: `Delete board "${b.name}"? A board with courses can't be deleted — remove its courses first.` })}>
@@ -1256,7 +1541,7 @@ const Courses = () => {
                         : "Draft"}
                     </StatusBadge>
                     {publishedIncomplete && (
-                      <div className="cm-muted" style={{ marginTop: 4 }}>⚠ published incomplete</div>
+                      <div className="cm-warning" style={{ marginTop: 4 }}>⚠ published incomplete</div>
                     )}
                   </td>
                   <td>
@@ -1294,6 +1579,101 @@ const Courses = () => {
     </div>
   );
 
+  /* Flat, searchable list of every course across every board — an ADDITION
+     alongside the Boards drill-down (renderBoards/renderCourses above),
+     not a replacement. Same visual pattern (dashboard-card courses-table-card
+     / cm-card-head / courses-table / StatusBadge / cm-icon-btn) as the
+     rest of this page. */
+  const renderAllCourses = () => (
+    <div className="dashboard-card courses-table-card">
+      <div className="cm-card-head">
+        <div className="courses-count">
+          {allCourses.length} course{allCourses.length !== 1 ? "s" : ""} across all boards
+        </div>
+      </div>
+      <div className="cm-row" style={{ padding: "12px 20px", borderBottom: "1px solid #f0f0f0" }}>
+        <input
+          className="cm-search"
+          style={{ marginBottom: 0, maxWidth: 340 }}
+          value={allCoursesSearch}
+          onChange={(e) => setAllCoursesSearch(e.target.value)}
+          placeholder="Search courses by title"
+        />
+        <select
+          className="cm-search"
+          style={{ marginBottom: 0, maxWidth: 240 }}
+          value={allCoursesBoardFilter}
+          onChange={(e) => setAllCoursesBoardFilter(e.target.value)}
+        >
+          <option value="">All boards</option>
+          {boards.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      </div>
+      {loading ? (
+        <div className="dashboard-loading">Loading…</div>
+      ) : allCourses.length === 0 ? (
+        <div className="dashboard-loading">No courses match this search/filter.</div>
+      ) : (
+        <table className="courses-table">
+          <thead>
+            <tr>
+              <th>Course</th><th>Board</th><th>Status</th><th>Content complete</th>
+              <th>Fee</th><th>Access</th><th>Subjects</th><th>Enrolled</th><th aria-label="actions" />
+            </tr>
+          </thead>
+          <tbody>
+            {allCourses.map((c) => {
+              const { pct, missing } = completeness(c);
+              const publishedIncomplete = c.status === "PUBLISHED" && pct < 100;
+              return (
+                <tr key={c.id}>
+                  <td className="courses-title">
+                    <button className="cm-link" onClick={() => openCourseFromAllCourses(c)}>{c.title}</button>
+                  </td>
+                  <td>{c.board_name || "—"}</td>
+                  <td>
+                    <StatusBadge
+                      color={
+                        c.status === "PUBLISHED" ? "green"
+                        : c.status === "ARCHIVED" ? "gray"
+                        : c.status === "COMING_SOON" ? "orange"
+                        : "yellow"
+                      }
+                    >
+                      {c.status === "PUBLISHED" ? "Published"
+                        : c.status === "ARCHIVED" ? "Archived"
+                        : c.status === "COMING_SOON" ? "Coming Soon"
+                        : "Draft"}
+                    </StatusBadge>
+                    {publishedIncomplete && (
+                      <div className="cm-warning" style={{ marginTop: 4 }}>⚠ published incomplete</div>
+                    )}
+                  </td>
+                  <td>
+                    <ProgressBar percent={pct} />
+                    {missing.length > 0 && (
+                      <div className="cm-muted" style={{ marginTop: 4 }}>Missing: {missing.join(", ")}</div>
+                    )}
+                  </td>
+                  <td>{rupees(c.price)}</td>
+                  <td>{c.subscription_duration_days ? `${c.subscription_duration_days}d` : "—"}</td>
+                  <td>{c.subject_count ?? 0}</td>
+                  <td>{c.enrollment_count ?? 0}</td>
+                  <td className="cm-actions">
+                    <button className="cm-icon-btn" onClick={() => openCourseFromAllCourses(c)}>Subjects</button>
+                    <button className="cm-icon-btn" onClick={() => openCourseFromAllCourses(c, "batches")}>Batches</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+
   const renderSubjects = () => (
     <>
       {renderCourseSubnav()}
@@ -1301,10 +1681,24 @@ const Courses = () => {
         <div className="cm-card-head">
           <div className="courses-count">
             {subjects.length} subject{subjects.length !== 1 ? "s" : ""} in {nav.course?.title}
+            {unstaffedCount > 0 && (
+              <span className="cm-muted" style={{ marginLeft: 8 }}>
+                · {unstaffedCount} subject{unstaffedCount !== 1 ? "s" : ""} have no teacher
+              </span>
+            )}
           </div>
-          <button className="cm-add-btn" onClick={() => openCreate("subject", {})}>
-            + Add Subject
-          </button>
+          <div className="cm-actions">
+            <button
+              className="cm-icon-btn"
+              disabled={subjects.length === 0}
+              onClick={() => setBulkAssignModal(true)}
+            >
+              Bulk assign teacher
+            </button>
+            <button className="cm-add-btn" onClick={() => openCreate("subject", {})}>
+              + Add Subject
+            </button>
+          </div>
         </div>
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
@@ -1453,6 +1847,7 @@ const Courses = () => {
         <>
           <div className="cm-crumbs">
             <button className="cm-crumb" onClick={goBoards} disabled={nav.level === "boards"}>Boards</button>
+            <button className="cm-crumb" onClick={goAllCourses} disabled={nav.level === "all-courses"}>All Courses</button>
             {nav.board && (
               <>
                 <span className="cm-crumb-sep">/</span>
@@ -1468,6 +1863,7 @@ const Courses = () => {
           </div>
 
           {nav.level === "boards" && renderBoards()}
+          {nav.level === "all-courses" && renderAllCourses()}
           {nav.level === "courses" && renderCourses()}
           {nav.level === "subjects" && renderSubjects()}
           {nav.level === "batches" && renderBatches()}
@@ -1560,7 +1956,17 @@ const Courses = () => {
         <TeacherAssignModal
           subject={teacherModal}
           onClose={() => setTeacherModal(null)}
-          onChanged={() => { const s = subjects.find((x) => x.id === teacherModal.id); if (s) loadSubjectTeachers(subjects); }}
+          onChanged={() => nav.course && loadStaffing(nav.course.id)}
+        />
+      )}
+
+      {bulkAssignModal && nav.course && (
+        <BulkAssignModal
+          course={nav.course}
+          subjects={subjects}
+          teachersBySubject={teachersBySubject}
+          onClose={() => setBulkAssignModal(false)}
+          onAssigned={() => loadStaffing(nav.course.id)}
         />
       )}
 

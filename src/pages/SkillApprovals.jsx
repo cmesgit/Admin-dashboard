@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from "react";
 import { getSkillApplications, submitEvaluation } from "../api/admin";
+import { errText } from "../utils/errText";
 
 const DECISIONS = [
   { value: "approve", label: "Approve" },
@@ -61,8 +62,7 @@ const SkillApprovals = ({ embedded = false }) => {
       setActive(null);
       await load();
     } catch (e) {
-      const d = e?.response?.data;
-      setErr(typeof d === "object" ? Object.values(d).flat().join(" ") : "Submit failed.");
+      setErr(errText(e));
     } finally {
       setSaving(false);
     }
