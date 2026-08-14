@@ -18,7 +18,11 @@ const statusColor = { PENDING: "yellow", APPROVED: "green", REJECTED: "red" };
    chosen batch fills Enrollment.batch (capacity enforced server-side). */
 function ApproveModal({ req, onClose, onApproved }) {
   const [batches, setBatches] = useState([]);
-  const [batchId, setBatchId] = useState("");
+  // Pre-select whatever the student asked for at request time (see
+  // EnrollmentRequestCreateSerializer's `batch` field) — approving with this
+  // untouched honors their choice, matching what the backend now defaults to
+  // anyway (AdminActionSerializer.validate) when `batch` is left unset.
+  const [batchId, setBatchId] = useState(req.requested_batch_id || "");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -56,6 +60,11 @@ function ApproveModal({ req, onClose, onApproved }) {
         <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#4b5563", marginBottom: 6 }}>
           Place in batch (optional)
         </label>
+        {req.requested_batch_name && (
+          <p style={{ fontSize: "0.82rem", color: "#374151", marginTop: -2, marginBottom: 8 }}>
+            Student requested <strong>{req.requested_batch_name}</strong> — pre-selected below.
+          </p>
+        )}
 
         {loading ? (
           <div style={{ fontSize: "0.85rem", color: "#888", marginBottom: 16 }}>Loading batches…</div>
@@ -70,7 +79,9 @@ function ApproveModal({ req, onClose, onApproved }) {
             disabled={busy}
             style={{ width: "100%", padding: "9px 11px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: "0.9rem", marginBottom: 16, background: "#fff", boxSizing: "border-box" }}
           >
-            <option value="">No batch (assign later)</option>
+            <option value="">
+              {req.requested_batch_name ? "Don't place in a batch" : "No batch (assign later)"}
+            </option>
             {batches.map((b) => {
               const seats = `${b.seats_taken}${b.capacity != null ? `/${b.capacity}` : ""}`;
               const flags = `${b.is_full ? " · full" : ""}${!b.is_active ? " · closed" : ""}`;

@@ -831,6 +831,52 @@ function ChapterModal({ subject, onClose, onChanged }) {
     }
   };
 
+  const sortedChapters = useMemo(
+    () => [...chapters].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [chapters],
+  );
+
+  // Assigns order = target array position (idx/otherIdx) rather than
+  // swapping the chapters' existing `order` values — two chapters can share
+  // the same order (e.g. both default to 0 via the custom-chapter upload
+  // path), which would make a value-swap a silent no-op. Runs the two PATCHes
+  // sequentially, not in parallel: if the second fails after the first
+  // already landed, the server would otherwise be left with only one side of
+  // the swap applied with no client-visible sign of it — compensate by
+  // reverting the first PATCH so a failed reorder doesn't silently corrupt
+  // server state.
+  const move = async (idx, direction) => {
+    const otherIdx = idx + direction;
+    if (otherIdx < 0 || otherIdx >= sortedChapters.length) return;
+    const ch = sortedChapters[idx];
+    const other = sortedChapters[otherIdx];
+    setBusy(true); setErr("");
+    try {
+      const updatedA = await updateChapter(ch.id, { order: otherIdx });
+      try {
+        const updatedB = await updateChapter(other.id, { order: idx });
+        setChapters((cs) => cs.map((c) => {
+          if (c.id === updatedA.id) return updatedA;
+          if (c.id === updatedB.id) return updatedB;
+          return c;
+        }));
+        onChanged?.();
+      } catch (e) {
+        try {
+          const reverted = await updateChapter(ch.id, { order: idx });
+          setChapters((cs) => cs.map((c) => (c.id === reverted.id ? reverted : c)));
+        } catch {
+          // Best-effort revert; surface the original failure either way.
+        }
+        throw e;
+      }
+    } catch (e) {
+      setErr(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="confirm-overlay" onClick={onClose}>
       <div className="cm-form-card cm-form-card--wide" onClick={(e) => e.stopPropagation()}>
@@ -840,7 +886,7 @@ function ChapterModal({ subject, onClose, onChanged }) {
           <p className="cm-empty-note">No chapters yet. Add the first one below.</p>
         ) : (
           <div className="cm-assign-list">
-            {chapters.map((ch) =>
+            {sortedChapters.map((ch, idx) =>
               editingId === ch.id ? (
                 <div className="cm-chapter-edit" key={ch.id}>
                   <label className="cm-field">
@@ -868,6 +914,8 @@ function ChapterModal({ subject, onClose, onChanged }) {
                     </span>
                   </div>
                   <div className="cm-assign-controls">
+                    <button className="cm-icon-btn" disabled={busy || idx === 0} onClick={() => move(idx, -1)} aria-label="Move up">↑</button>
+                    <button className="cm-icon-btn" disabled={busy || idx === sortedChapters.length - 1} onClick={() => move(idx, 1)} aria-label="Move down">↓</button>
                     <button className="cm-icon-btn" disabled={busy} onClick={() => startEdit(ch)}>Edit</button>
                     <button className="cm-icon-btn cm-icon-btn--danger" disabled={busy} onClick={() => remove(ch)}>Delete</button>
                   </div>
