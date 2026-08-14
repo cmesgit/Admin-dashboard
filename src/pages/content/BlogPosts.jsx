@@ -166,7 +166,7 @@ const BlogPosts = ({ onAction }) => {
       const results = await Promise.allSettled(
         ids.map((id) => (publish ? publishContentBlog(id) : unpublishContentBlog(id)))
       );
-      setRows((prev) => prev.map((r, i) => {
+      setRows((prev) => prev.map((r) => {
         const idx = ids.indexOf(r.id);
         return idx === -1 || results[idx].status !== "fulfilled"
           ? r

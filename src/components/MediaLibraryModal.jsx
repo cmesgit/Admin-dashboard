@@ -89,7 +89,7 @@ const MediaLibraryModal = ({ onInsert, onClose }) => {
   // How the reviewed image entered the flow — a fresh upload prefills nothing
   // (alt text starts empty, title used only as a placeholder); a library pick
   // prefills its stored alt_text and, if the author edits it, persists it back.
-  const [imageSource, setImageSource] = useState("upload");
+  const [, setImageSource] = useState("upload");
   const [altText, setAltText] = useState("");
 
   // Busy flag for any in-flight upload/crop/patch, plus an error message
