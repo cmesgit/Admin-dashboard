@@ -80,6 +80,41 @@
   right: 10px;
 }
 
+/* ── Bulk select mode (Blog Posts list) — mirrors Students.jsx's
+   .stu-bulk-bar pattern, adapted to a card grid instead of a table row. ── */
+.mod-btn.ghost.active { background: #eef1ff; border-color: #4f6df5; color: #3b4cca; }
+.cms-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #f2f6fb;
+  border: 1px solid #d8e3f0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.cms-bulk-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c4a70;
+  cursor: pointer;
+  user-select: none;
+}
+.cms-bulk-count input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; }
+.cms-card-select {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
 .cms-card-body {
   padding: 14px 16px 4px;
   display: flex;
@@ -92,6 +127,19 @@
   font-weight: 600;
   color: #1f2937;
   line-height: 1.35;
+}
+.cms-card-locale-badge {
+  display: inline-block;
+  background: #f1f5ff;
+  color: #3b4cca;
+  border: 1px solid #dbe3ff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+  vertical-align: 1px;
 }
 .cms-card-sub { font-size: 0.78rem; color: #8a8f98; }
 .cms-card-meta {
@@ -192,6 +240,37 @@
 }
 .tag-chip-remove:hover { background: #c7d2fe; }
 
+/* Tag input's flex item is now this wrapper (not the <input> directly), since
+   the input needs a positioning context for the suggestion popover below it. */
+.tag-suggest-anchor { position: relative; flex: 1; min-width: 90px; }
+.tag-suggest-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+  max-width: 280px;
+  padding: 4px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.12);
+}
+.tag-suggest-option {
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #1f2937;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.tag-suggest-option:hover, .tag-suggest-option.active { background: #eef1ff; color: #3b4cca; }
+
 /* ── JSON textarea (Showcase link_state) ── */
 .cms-json-textarea {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -283,6 +362,12 @@
 .rte-btn:hover:not(:disabled) { background: #eef1ff; border-color: #4f6df5; color: #4f6df5; }
 .rte-btn.active { background: #e5e9ff; border-color: #4f6df5; color: #4f6df5; }
 .rte-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+/* Quality floor: visible keyboard focus (mirrors Courses.css's
+   .cm-subnav-tab/.cm-role-opt/.cm-search precedent). */
+.rte-btn:focus-visible {
+  outline: 2px solid #4f6df5;
+  outline-offset: 2px;
+}
 .rte-sep {
   width: 1px;
   align-self: stretch;

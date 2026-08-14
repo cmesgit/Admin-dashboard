@@ -33,6 +33,7 @@ import {
   PanelTop, LayoutGrid,
 } from "lucide-react";
 import { uploadContentEditorImage } from "../api/admin";
+import MediaLibraryModal from "./MediaLibraryModal";
 
 const ToolbarButton = ({ active, disabled, onClick, title, children }) => (
   <button
@@ -40,6 +41,13 @@ const ToolbarButton = ({ active, disabled, onClick, title, children }) => (
     className={`rte-btn${active ? " active" : ""}`}
     disabled={disabled}
     title={title}
+    aria-label={title}
+    // Only a real toggle (bold/italic/heading/etc, where `active` is a
+    // boolean) gets aria-pressed — action buttons like "Insert image" or
+    // "Undo" never pass `active` at all, and aria-pressed={undefined} would
+    // still render as aria-pressed="false" in the DOM, wrongly implying
+    // those are toggles too.
+    aria-pressed={typeof active === "boolean" ? active : undefined}
     onMouseDown={(e) => e.preventDefault()} // keep editor selection on click
     onClick={onClick}
   >
@@ -288,13 +296,18 @@ const RichTextEditor = ({
   showStats = false,
   onStats,
 }) => {
-  const fileInputRef = useRef(null);
   const isFull = mode === "full";
 
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [linkError, setLinkError] = useState(null);
   const linkInputRef = useRef(null);
+
+  // The toolbar "Insert image" button opens the media-library picker (upload
+  // or reuse + review + optional crop). Paste/drag-drop deliberately bypass
+  // this modal and keep the fast direct-upload path in
+  // `insertImagesSequentially` untouched.
+  const [mediaModalOpen, setMediaModalOpen] = useState(false);
 
   // Variant-picker popover for the callout block — mirrors the link
   // popover's open/close plumbing above rather than inventing a second
@@ -572,13 +585,19 @@ const RichTextEditor = ({
       .run();
   };
 
-  const pickImage = () => fileInputRef.current?.click();
-
-  const onImageChosen = (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    insertImagesSequentially([file], editor.state.selection.from);
+  // Insert the image the picker returned at the current selection — same
+  // insertContentAt shape as the paste/drop path, but with the author-supplied
+  // alt text (not hardcoded empty) and `pos` read at insert time.
+  const onMediaInsert = (imageObject, altText) => {
+    const pos = editor.state.selection.from;
+    editor
+      .chain()
+      .focus()
+      .insertContentAt(pos, {
+        type: "image",
+        attrs: { src: imageObject.file, alt: altText || "" },
+      })
+      .run();
   };
 
   const inTable = isFull && editor.isActive("table");
@@ -663,7 +682,7 @@ const RichTextEditor = ({
             <ToolbarButton title="Code block" active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()}><Code size={15} /></ToolbarButton>
             <ToolbarButton title="Horizontal rule" onClick={() => editor.chain().focus().setHorizontalRule().run()}><Minus size={15} /></ToolbarButton>
             <span className="rte-sep" />
-            <ToolbarButton title="Insert image" disabled={uploading} onClick={pickImage}><ImageIcon size={15} /></ToolbarButton>
+            <ToolbarButton title="Insert image" disabled={uploading} onClick={() => setMediaModalOpen(true)}><ImageIcon size={15} /></ToolbarButton>
             <ToolbarButton title="Insert table" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableIcon size={15} /></ToolbarButton>
             {uploading && (
               <span className="rte-upload-status rte-upload-status--busy">
@@ -743,13 +762,12 @@ const RichTextEditor = ({
         </div>
       )}
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: "none" }}
-        onChange={onImageChosen}
-      />
+      {mediaModalOpen && (
+        <MediaLibraryModal
+          onInsert={onMediaInsert}
+          onClose={() => setMediaModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

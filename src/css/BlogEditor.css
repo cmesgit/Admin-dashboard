@@ -237,6 +237,22 @@
 /* When a card is collapsed, the header is the only child — drop its bottom
    margin so the collapsed card doesn't carry dead space below the row. */
 .blog-editor-card-head:only-child { margin-bottom: 0; }
+/* Quality floor: visible keyboard focus (mirrors Courses.css's
+   .cm-subnav-tab/.cm-role-opt/.cm-search precedent). */
+.blog-editor-card-head:focus-visible { outline: 2px solid #4f6df5; outline-offset: 2px; }
+
+/* Locale tab strip (English/हिंदी) shown when this post has a translation
+   sibling — mirrors Courses.css's .cm-subnav-tab pattern rather than
+   inventing a new tab style. */
+.blog-editor-locale-tabs { display: flex; gap: 4px; }
+.blog-editor-locale-tab {
+  border: 1px solid #e5e7eb; background: #fff; color: #4b5563;
+  padding: 5px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer;
+}
+.blog-editor-locale-tab:hover:not(:disabled) { background: #f3f4f6; }
+.blog-editor-locale-tab.active { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; cursor: default; }
+.blog-editor-locale-tab:disabled { cursor: default; }
 
 .blog-editor-derived-slug { color: #9aa0aa; }
 .blog-editor-derived-slug code {

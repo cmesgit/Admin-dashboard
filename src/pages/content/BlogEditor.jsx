@@ -4,10 +4,12 @@ import {
   ArrowLeft, Code2, Pencil, Sparkles, Send, Undo2, ExternalLink,
   ChevronDown, ChevronRight, Maximize2, Minimize2, Layers, Link2,
   Image as ImageIcon, FileText as ExcerptIcon, Tag, CalendarClock, List, Search, Info,
+  Monitor, Tablet, Smartphone, Languages,
 } from "lucide-react";
 import customDesignTemplate from "./blogTemplates/customDesignTemplate.html?raw";
 import {
-  getContentBlog, createContentBlog, updateContentBlog,
+  getContentBlog, getContentBlogs, createContentBlog, updateContentBlog, getContentTags,
+  duplicateTranslationContentBlog,
   publishContentBlog, unpublishContentBlog,
 } from "../../api/admin";
 import ConfirmModal from "../../components/ConfirmModal";
@@ -137,7 +139,12 @@ const loadStoredCollapse = () => {
 // Small clickable card header used by every collapsible sidebar section —
 // pulled out here rather than duplicated eight times below.
 const CardHead = ({ icon: Icon, label, cardKey, collapsed, onToggle }) => (
-  <button type="button" className="blog-editor-card-head" onClick={() => onToggle(cardKey)}>
+  <button
+    type="button"
+    className="blog-editor-card-head"
+    onClick={() => onToggle(cardKey)}
+    aria-expanded={!collapsed[cardKey]}
+  >
     <span className="blog-editor-card-head-label"><Icon size={14} /> {label}</span>
     {collapsed[cardKey] ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
   </button>
@@ -153,8 +160,57 @@ const BlogEditor = () => {
   const [status, setStatus] = useState("draft"); // controlled solely by Publish/Unpublish, never by Save
   const [form, setForm] = useState(emptyForm());
   const [file, setFile] = useState(null);
+  // All distinct tag names already in use, for TagChipInput's autocomplete —
+  // fetched once (not per-keystroke); a stale list just means a brand-new
+  // tag from elsewhere isn't suggested yet, no real cost to that staleness.
+  const [tagSuggestions, setTagSuggestions] = useState([]);
+  useEffect(() => {
+    getContentTags().then((d) => {
+      const list = Array.isArray(d) ? d : d.results || [];
+      setTagSuggestions(list.map((t) => t.name).filter(Boolean));
+    });
+  }, []);
+
+  // Other locales of THIS post, for the locale tab strip below. The admin
+  // detail endpoint (BlogPostAdminSerializer) doesn't carry a `translations`
+  // field the way the public one does — reusing the existing
+  // ?translation_group= list filter here instead of adding a duplicate
+  // field/round-trip shape just for this editor.
+  const [translationSiblings, setTranslationSiblings] = useState([]);
+  const [duplicatingTranslation, setDuplicatingTranslation] = useState(false);
+  useEffect(() => {
+    if (!post?.translation_group) { setTranslationSiblings([]); return; }
+    let cancelled = false;
+    getContentBlogs({ translation_group: post.translation_group }).then((d) => {
+      if (cancelled) return;
+      const list = Array.isArray(d) ? d : d.results || [];
+      setTranslationSiblings(list.filter((r) => r.id !== post.id));
+    });
+    return () => { cancelled = true; };
+  }, [post?.translation_group, post?.id]);
+
+  const addHindiTranslation = async () => {
+    if (!post || duplicatingTranslation) return;
+    setDuplicatingTranslation(true);
+    try {
+      const created = await duplicateTranslationContentBlog(post.id, "hi");
+      navigate(`/content/blogs/${created.id}`);
+    } catch (e) {
+      setSaveError(errText(e));
+    } finally {
+      setDuplicatingTranslation(false);
+    }
+  };
+
   const [rawMode, setRawMode] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  // Container max-width for the preview iframe — "100%" fills the writing
+  // column (already ~1480px wide with the sidebar hidden), the other two
+  // approximate common breakpoints. The iframe's own content (blogBodyStyles.js,
+  // e.g. the feature-grid's @media max-width:620px rule) already reacts
+  // correctly to a narrower iframe — this is purely a container-width toggle,
+  // no content-side changes needed.
+  const [previewWidth, setPreviewWidth] = useState("100%");
 
   // Focus mode is a momentary writing preference, not a durable setting —
   // it always resets to off on load rather than persisting like the card
@@ -533,6 +589,43 @@ const BlogEditor = () => {
             <span className="blog-editor-title-text">{form.title.trim() || "New Blog Post"}</span>
             <span className={`mod-badge ${STATUS_PAL[status] || "pal-gray"}`}>{status}</span>
           </div>
+          {id && post && (
+            translationSiblings.length > 0 ? (
+              <div className="blog-editor-locale-tabs">
+                <button
+                  type="button"
+                  className={`blog-editor-locale-tab${post.locale === "en" ? " active" : ""}`}
+                  disabled={post.locale === "en"}
+                  onClick={() => {
+                    const en = post.locale === "en" ? post : translationSiblings.find((s) => s.locale === "en");
+                    if (en && en.id !== post.id) navigate(`/content/blogs/${en.id}`);
+                  }}
+                >
+                  English
+                </button>
+                <button
+                  type="button"
+                  className={`blog-editor-locale-tab${post.locale === "hi" ? " active" : ""}`}
+                  disabled={post.locale === "hi"}
+                  onClick={() => {
+                    const hi = post.locale === "hi" ? post : translationSiblings.find((s) => s.locale === "hi");
+                    if (hi && hi.id !== post.id) navigate(`/content/blogs/${hi.id}`);
+                  }}
+                >
+                  हिंदी
+                </button>
+              </div>
+            ) : post.locale === "en" && (
+              <button
+                type="button"
+                className="mod-btn ghost small"
+                onClick={addHindiTranslation}
+                disabled={duplicatingTranslation}
+              >
+                <Languages size={13} /> {duplicatingTranslation ? "Adding…" : "Add Hindi translation"}
+              </button>
+            )
+          )}
           <span className="blog-editor-save-state">
             {status === "published" && !saveIndicator ? "Autosave off (live post)" : saveIndicator}
           </span>
@@ -595,7 +688,37 @@ const BlogEditor = () => {
       <div className={`blog-editor-body${focusMode ? " focus-mode" : ""}`}>
         <div className="blog-editor-main">
           {showPreview ? (
-            <BlogBodyPreview html={form.body_html} />
+            <>
+              <div className="blog-editor-preview-devicebar">
+                <button
+                  type="button"
+                  className={`mod-btn ghost small${previewWidth === "100%" ? " active" : ""}`}
+                  onClick={() => setPreviewWidth("100%")}
+                  title="Desktop width"
+                >
+                  <Monitor size={14} /> Desktop
+                </button>
+                <button
+                  type="button"
+                  className={`mod-btn ghost small${previewWidth === "768px" ? " active" : ""}`}
+                  onClick={() => setPreviewWidth("768px")}
+                  title="Tablet width"
+                >
+                  <Tablet size={14} /> Tablet
+                </button>
+                <button
+                  type="button"
+                  className={`mod-btn ghost small${previewWidth === "375px" ? " active" : ""}`}
+                  onClick={() => setPreviewWidth("375px")}
+                  title="Mobile width"
+                >
+                  <Smartphone size={14} /> Mobile
+                </button>
+              </div>
+              <div className="blog-editor-preview-frame-wrap" style={{ maxWidth: previewWidth }}>
+                <BlogBodyPreview html={form.body_html} />
+              </div>
+            </>
           ) : (
             <>
               <input
@@ -759,7 +882,7 @@ const BlogEditor = () => {
             <CardHead icon={Tag} label="Tags" cardKey="tags" collapsed={collapsed} onToggle={toggleCard} />
             {!collapsed.tags && (
               <>
-                <TagChipInput value={form.tags} onChange={(v) => setForm((f) => ({ ...f, tags: v }))} placeholder="Type a tag, press Enter…" />
+                <TagChipInput value={form.tags} onChange={(v) => setForm((f) => ({ ...f, tags: v }))} placeholder="Type a tag, press Enter…" suggestions={tagSuggestions} />
                 <label className="cm-check" style={{ marginTop: 10 }}>
                   <input type="checkbox" checked={form.is_featured} onChange={set("is_featured")} />
                   <span>Feature this post</span>

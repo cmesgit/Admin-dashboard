@@ -424,6 +424,12 @@ export const publishContentBlog   = async (id) =>
   (await api.post(`/content/admin/blogs/${id}/publish/`, {})).data;
 export const unpublishContentBlog = async (id) =>
   (await api.post(`/content/admin/blogs/${id}/unpublish/`, {})).data;
+// Server assigns translation_group/slug/etc from the source post itself
+// (see BlogPostAdminViewSet.duplicate_translation) — this just names the
+// target locale. Rejects with 409 if that locale's translation already
+// exists in the group; caller surfaces the error, doesn't retry.
+export const duplicateTranslationContentBlog = async (id, locale) =>
+  (await api.post(`/content/admin/blogs/${id}/duplicate-translation/`, { locale })).data;
 
 /* ── Content: rich-text editor image uploads (blog/homepage body content —
    distinct from the single `cover`/`image` fields above; a body can embed
@@ -433,6 +439,20 @@ export const uploadContentEditorImage = async (file) => {
   fd.append("file", file);
   return (await api.post("/content/admin/editor-images/", fd, multipartConfig)).data;
 };
+// Media-library browse/edit/delete for the same editor-images ViewSet. The
+// list is `safe()`-wrapped (like getContentTags) so a transient failure just
+// renders an empty grid instead of throwing inside the picker modal; the
+// paginated envelope ({count, next, previous, results}) is passed through
+// untouched for the caller's Prev/Next controls. update/delete deliberately
+// aren't wrapped — the modal needs the real error to keep the image visible
+// rather than silently swallowing a failed alt-text save.
+export const listContentImages  = async (params) =>
+  safe(async () => (await api.get("/content/admin/editor-images/", { params })).data,
+       { count: 0, next: null, previous: null, results: [] });
+export const updateContentImage = async (id, data) =>
+  (await api.patch(`/content/admin/editor-images/${id}/`, data)).data;
+export const deleteContentImage = async (id) =>
+  (await api.delete(`/content/admin/editor-images/${id}/`)).data;
 
 /* ── Content: Current Affairs (same CRUD + publish/unpublish shape as Blog
    Posts; the backend contract given to us didn't spell out the URL segment
