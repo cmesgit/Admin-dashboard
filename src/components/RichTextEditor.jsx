@@ -30,6 +30,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, ArrowUpToLine, ArrowDownToLine,
   ArrowLeftToLine, ArrowRightToLine, Rows, Columns, TableProperties,
   TableCellsMerge, TableCellsSplit, Trash2, Loader2, Info, ListCollapse,
+  PanelTop, LayoutGrid,
 } from "lucide-react";
 import { uploadContentEditorImage } from "../api/admin";
 
@@ -100,6 +101,7 @@ const Callout = Node.create({
           const cls = element.getAttribute("class") || "";
           if (cls.includes("callout-warning")) return "warning";
           if (cls.includes("callout-success")) return "success";
+          if (cls.includes("callout-highlight")) return "highlight";
           return "info";
         },
         renderHTML: () => ({}),
@@ -153,10 +155,122 @@ const Details = Node.create({
   },
 });
 
+// Section header — a small pill "badge" label above a bold title with a
+// short colored underline rule, mirroring the legacy chapters' section-header
+// pattern (see shiksha-frontend/public/blog-content/**, the `.t6-sec-badge` /
+// `.t6-sec-title` / `.t6-sec-rule` cluster). Rendered as a bare
+// `<div class="section-header"><span class="section-header-badge">…</span>
+// <h2>…</h2></div>` — div/span/h2 + class are all on the backend sanitizer
+// allowlist (backend/content/sanitize.py), so no `<style>` block or
+// sanitization bypass is needed.
+//
+// The editable region is ONLY the title (parsed via `contentElement: "h2"`,
+// so ProseMirror parses the h2's inner text as this node's inline content and
+// never mistakes the h2 itself for a StarterKit heading, nor the badge span's
+// text for editable content). The badge text is a per-instance NODE ATTRIBUTE
+// (like Callout's `variant`), not editable content.
+//
+// LIMITATION (v1): freshly-inserted section headers always get the default
+// badge string "Section"; there is no toolbar UI to change it yet (a badge-
+// editing popover was deliberately skipped to avoid over-engineering this
+// first pass). An existing section header loaded from saved HTML DOES keep
+// whatever badge it already had — `badge`'s parseHTML reads it back from the
+// span — so this only limits *new* inserts, and adding an edit affordance
+// later is purely additive.
+const SectionHeader = Node.create({
+  name: "sectionHeader",
+  group: "block",
+  content: "inline*",
+  defining: true,
+  addAttributes() {
+    return {
+      badge: {
+        default: "Section",
+        parseHTML: (element) =>
+          element.querySelector(".section-header-badge")?.textContent?.trim() || "Section",
+        // Emitted as the span's text content in renderHTML, never as a DOM
+        // attribute (nh3 would strip a bare `badge=""` attr on a div anyway).
+        renderHTML: () => ({}),
+      },
+    };
+  },
+  parseHTML() {
+    // `contentElement` points ProseMirror at the <h2> so its inner text is
+    // parsed as this node's inline content; the badge <span> is left for the
+    // `badge` attribute's own parseHTML above.
+    return [{ tag: "div.section-header", contentElement: "h2" }];
+  },
+  renderHTML({ HTMLAttributes, node }) {
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, { class: "section-header" }),
+      ["span", { class: "section-header-badge" }, node.attrs.badge],
+      ["h2", {}, 0],
+    ];
+  },
+});
+
+// Feature card — a single card inside a feature grid. Not in the `block`
+// group (mirrors `detailsSummary`), so the schema itself prevents it from
+// being inserted anywhere except as a child of `featureGrid`. Content is
+// `paragraph+`: the first paragraph renders as a bold colored card title via
+// CSS `:first-child`, the rest as smaller body lines. `color` (1-4) is
+// assigned automatically by child index at insert time and stored only as
+// the `color-N` class (nh3 would strip a bare `color` attr on a div).
+const FeatureCard = Node.create({
+  name: "featureCard",
+  content: "paragraph+",
+  defining: true,
+  addAttributes() {
+    return {
+      color: {
+        default: 1,
+        parseHTML: (element) => {
+          const m = (element.getAttribute("class") || "").match(/color-(\d)/);
+          return m ? Number(m[1]) : 1;
+        },
+        renderHTML: () => ({}),
+      },
+    };
+  },
+  parseHTML() {
+    return [{ tag: "div.feature-card" }];
+  },
+  renderHTML({ HTMLAttributes, node }) {
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, { class: `feature-card color-${node.attrs.color}` }),
+      0,
+    ];
+  },
+});
+
+// Feature grid — a responsive 2-4 column card grid, mirroring the legacy
+// chapters' colored-card-grid pattern. `content: "featureCard{2,4}"` is a
+// ProseMirror count expression: the schema itself enforces between 2 and 4
+// cards, so an author can't delete down to 1 or paste in a 5th. Rendered as a
+// bare `<div class="feature-grid">` (div + class, both allowlisted).
+const FeatureGrid = Node.create({
+  name: "featureGrid",
+  group: "block",
+  content: "featureCard{2,4}",
+  defining: true,
+  parseHTML() {
+    return [{ tag: "div.feature-grid" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["div", mergeAttributes(HTMLAttributes, { class: "feature-grid" }), 0];
+  },
+});
+
 const CALLOUT_VARIANTS = [
   { key: "info", label: "Info" },
   { key: "warning", label: "Warning" },
   { key: "success", label: "Success" },
+  // Bigger/bolder dark-gradient variant for an intro/pull-quote paragraph at
+  // the top of a post — styled by `.blog-body .callout-highlight` in both
+  // blogBodyStyles.js files.
+  { key: "highlight", label: "Highlight" },
 ];
 
 // One TipTap image node occupies exactly 1 position in the document, so
@@ -220,6 +334,9 @@ const RichTextEditor = ({
             Callout,
             Details,
             DetailsSummary,
+            SectionHeader,
+            FeatureGrid,
+            FeatureCard,
           ]
         : []),
     ],
@@ -417,6 +534,44 @@ const RichTextEditor = ({
       .run();
   };
 
+  // Section header — inserted with placeholder title text and the default
+  // "Section" badge (see SectionHeader's LIMITATION note; the badge isn't
+  // UI-editable in v1). Author overwrites the title after insertion.
+  const insertSectionHeader = () => {
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "sectionHeader",
+        attrs: { badge: "Section" },
+        content: [{ type: "text", text: "Section Title" }],
+      })
+      .run();
+  };
+
+  // Feature grid — always inserted with exactly 3 pre-filled cards; the author
+  // edits/duplicates cards afterward with normal ProseMirror editing (the
+  // schema's `featureCard{2,4}` bound keeps that within 2-4). Each card's
+  // `color` is assigned by index so the header stripes cycle 1/2/3.
+  const insertFeatureGrid = () => {
+    const titles = ["Point A", "Point B", "Point C"];
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: "featureGrid",
+        content: titles.map((title, i) => ({
+          type: "featureCard",
+          attrs: { color: i + 1 },
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: title }] },
+            { type: "paragraph", content: [{ type: "text", text: "Add a short supporting detail." }] },
+          ],
+        })),
+      })
+      .run();
+  };
+
   const pickImage = () => fileInputRef.current?.click();
 
   const onImageChosen = (e) => {
@@ -541,6 +696,12 @@ const RichTextEditor = ({
             </div>
             <ToolbarButton title="Insert collapsible section" onClick={insertDetails}>
               <ListCollapse size={15} />
+            </ToolbarButton>
+            <ToolbarButton title="Insert section header" onClick={insertSectionHeader}>
+              <PanelTop size={15} />
+            </ToolbarButton>
+            <ToolbarButton title="Insert feature grid" onClick={insertFeatureGrid}>
+              <LayoutGrid size={15} />
             </ToolbarButton>
           </>
         )}

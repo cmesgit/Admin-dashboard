@@ -43,10 +43,16 @@ export const BLOG_BODY_PREVIEW_CSS = `
 .blog-body img { max-width: 100%; border-radius: 8px; margin: 12px 0; }
 .blog-body figure { margin: 20px 0; }
 .blog-body figcaption { font-size: 0.85rem; color: #6b7280; text-align: center; margin-top: 6px; }
-.blog-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
-.blog-body table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+/* Divider — a short centered colored bar rather than a full-width gray line
+   (a simplified take on the legacy chapters' centered divider mark). */
+.blog-body hr { border: none; height: 4px; width: 48px; margin: 28px auto; border-radius: 2px; background: linear-gradient(90deg, #0d7c6e, #2dd4bf); }
+/* Table polish — rounded outer corners (overflow-clipped, with a box-shadow
+   ring standing in for the outer border since there's no wrapper div),
+   alternating row background, and a solid brand-green header row. */
+.blog-body table { border-collapse: collapse; width: 100%; margin: 16px 0; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px #d1d5db; }
 .blog-body td, .blog-body th { border: 1px solid #d1d5db; padding: 8px 10px; }
-.blog-body th { background: #f8fafc; font-weight: 700; }
+.blog-body tr:nth-child(even) td { background: #f8fafc; }
+.blog-body th { background: #0F9D6B; color: #fff; font-weight: 700; border-color: #0d8a5d; }
 /* Callout / info box block (added alongside the RichTextEditor toolbar's
    Info button) — same 3-variant palette as Admin-dashboard's
    src/css/Content.css .rte-content .callout-* rules, itself reused
@@ -65,4 +71,40 @@ export const BLOG_BODY_PREVIEW_CSS = `
 .blog-body details summary { cursor: pointer; font-weight: 700; }
 .blog-body details[open] summary { margin-bottom: 10px; }
 .blog-body details p { margin: 0; }
+/* Highlight callout — bigger/bolder dark-gradient intro/pull-quote variant
+   (4th CALLOUT_VARIANTS entry in RichTextEditor.jsx). Deep indigo/navy
+   gradient + off-white text + a light indigo accent left border; overrides
+   the base .callout padding so it reads as a lead paragraph. Mirrored into
+   shiksha-frontend/src/css/blogBodyStyles.js — keep both in sync. */
+.blog-body .callout-highlight { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); border: 1px solid #312e81; border-left: 4px solid #818cf8; color: #eef2ff; padding: 18px 22px; font-size: 1.05rem; }
+.blog-body .callout-highlight strong { color: #fff; }
+.blog-body .callout-highlight a { color: #c7d2fe; }
+/* Section header — pill badge + bold title + short colored underline bar (the
+   sectionHeader TipTap node). Palette matches the legacy chapters' teal accent
+   (--accent #0d7c6e / --accent2 #09635a / --accent-lt #ccf5ee). */
+.blog-body .section-header { margin: 32px 0 20px; }
+.blog-body .section-header-badge { display: inline-block; background: #ccf5ee; color: #09635a; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 5px 14px; border-radius: 100px; margin-bottom: 10px; }
+.blog-body .section-header h2 { margin: 0; font-size: 1.6rem; font-weight: 800; line-height: 1.2; position: relative; padding-bottom: 12px; }
+.blog-body .section-header h2::after { content: ""; position: absolute; left: 0; bottom: 0; width: 48px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, #0d7c6e, #2dd4bf); }
+/* Feature grid — responsive 2-4 column colored-card grid (the featureGrid /
+   featureCard nodes). Each card gets a colored top stripe cycling 1-4; the
+   first paragraph is the bold colored title, the rest are smaller body lines. */
+.blog-body .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 24px 0; }
+.blog-body .feature-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; border-top: 4px solid #0d7c6e; padding: 16px 18px; }
+.blog-body .feature-card.color-1 { border-top-color: #0d7c6e; }
+.blog-body .feature-card.color-2 { border-top-color: #e05a2b; }
+.blog-body .feature-card.color-3 { border-top-color: #6d28d9; }
+.blog-body .feature-card.color-4 { border-top-color: #b45309; }
+.blog-body .feature-card > p { font-size: 0.92rem; color: #4b5563; margin: 0 0 8px; }
+.blog-body .feature-card > p:first-child { font-size: 1.05rem; font-weight: 700; color: #0f1c1a; margin: 0 0 8px; }
+.blog-body .feature-card.color-1 > p:first-child { color: #09635a; }
+.blog-body .feature-card.color-2 > p:first-child { color: #c2410c; }
+.blog-body .feature-card.color-3 > p:first-child { color: #6d28d9; }
+.blog-body .feature-card.color-4 > p:first-child { color: #b45309; }
+.blog-body .feature-card > p:last-child { margin-bottom: 0; }
+/* First (and so far only) @media rule in this ruleset — collapse the feature
+   grid to one column on narrow screens. */
+@media (max-width: 620px) {
+  .blog-body .feature-grid { grid-template-columns: 1fr; }
+}
 `;

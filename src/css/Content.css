@@ -372,7 +372,9 @@
 .rte-callout-option--info    { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
 .rte-callout-option--warning { background: #fff8e8; border-color: #ecd080; color: #7a4c00; }
 .rte-callout-option--success { background: #e4f3e8; border-color: #b8d8bc; color: #125027; }
+.rte-callout-option--highlight { background: linear-gradient(135deg, #1e1b4b, #312e81); border-color: #312e81; color: #e0e7ff; }
 .rte-callout-option:hover { filter: brightness(0.97); }
+.rte-callout-option--highlight:hover { filter: brightness(1.15); }
 
 /* ── Link popover (replaces window.prompt for setting/editing a link) ── */
 .rte-link-group { position: relative; display: inline-flex; align-items: center; }
