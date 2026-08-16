@@ -32,6 +32,7 @@ import EnrollmentManagement from "./pages/EnrollmentManagement";
 import CounselorApprovals from "./pages/CounselorApprovals";
 import CounselingSessions from "./pages/CounselingSessions";
 import LiveStreams from "./pages/LiveStreams";
+import LiveSessionRules from "./pages/LiveSessionRules";
 import LivestreamMonitor from "./pages/LivestreamMonitor";
 import Recordings from "./pages/Recordings";
 import Teachers from "./pages/Teachers";
@@ -92,6 +93,7 @@ const App = () => {
           <Route path="moderator-activity" element={<ModeratorActivity />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="live-streams" element={<LiveStreams />} />
+          <Route path="live-session-rules" element={<LiveSessionRules />} />
           <Route path="live-streams/monitor" element={<LivestreamMonitor />} />
           <Route path="live-streams/monitor/:id" element={<LivestreamMonitor />} />
           <Route path="recordings" element={<Recordings />} />

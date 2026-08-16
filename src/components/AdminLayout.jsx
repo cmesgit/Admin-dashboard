@@ -70,6 +70,7 @@ const navGroups = [
       { to: "/students", icon: School, label: "Students", isNew: true },
       { to: "/teacher-activity", icon: Activity, label: "Teacher Activity", isNew: true },
       { to: "/live-streams", icon: Radio, label: "Live Streams", isNew: true },
+      { to: "/live-session-rules", icon: Settings, label: "Live Session Rules", isNew: true },
       { to: "/recordings", icon: Video, label: "Recordings", isNew: true },
       { to: "/group-session-attendance", icon: Users, label: "Group Session Attendance", isNew: true },
       { to: "/enrollment-requests", icon: FileCheck, label: "Enrollments", badgeKey: "enroll" },
