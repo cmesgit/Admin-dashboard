@@ -19,6 +19,7 @@ function BlockCard({ block, onSaved, notify }) {
     body: block.body || "",
     cta_label: block.cta_label || "",
     cta_url: block.cta_url || "",
+    stat_label: block.stat_label || "",
     is_active: block.is_active,
   });
   const [file, setFile] = useState(null);
@@ -37,6 +38,7 @@ function BlockCard({ block, onSaved, notify }) {
     form.body !== (block.body || "") ||
     form.cta_label !== (block.cta_label || "") ||
     form.cta_url !== (block.cta_url || "") ||
+    form.stat_label !== (block.stat_label || "") ||
     form.is_active !== block.is_active ||
     !!file;
 
@@ -80,6 +82,13 @@ function BlockCard({ block, onSaved, notify }) {
         <span>Body</span>
         <textarea rows={2} value={form.body} onChange={set("body")} />
       </label>
+
+      {block.key === "browse_hero" && (
+        <label className="cm-field">
+          <span>Directory stat line (next to the live expert count, e.g. "listed across Mizoram")</span>
+          <input value={form.stat_label} onChange={set("stat_label")} placeholder="listed across Mizoram" />
+        </label>
+      )}
 
       <div className="cm-row">
         <label className="cm-field">

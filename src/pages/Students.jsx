@@ -18,6 +18,7 @@ import {
   getAcademicCourses,
   getCourseBatches,
   bulkAssignBatch,
+  enrollStudentInCourse,
 } from "../api/admin";
 import StatusBadge from "../components/StatusBadge";
 import Toast from "../components/Toast";
@@ -70,6 +71,7 @@ const Students = () => {
   const [err, setErr] = useState("");
   const [toast, setToast] = useState("");
   const toastTimer = useRef(null);
+  const [enrollingId, setEnrollingId] = useState(null);
 
   const fireToast = (m) => {
     setToast(m);
@@ -197,6 +199,25 @@ const Students = () => {
     }
   };
 
+  /* Admin-initiated enrollment — the gap Free mode's self-serve-only path
+     left open. Places a not-yet-enrolled student into the selected course
+     directly (offline/cash payment, bulk cohort setup, reinstating someone),
+     then refreshes so the row becomes a normal placement (batch-assignable,
+     selectable) exactly like a self-enrolled student. */
+  const enrollNow = async (student) => {
+    setErr("");
+    setEnrollingId(student.id);
+    try {
+      await enrollStudentInCourse(student.id, courseFilter, null);
+      fireToast(`Enrolled ${student.full_name || student.display_name || "student"} in this course.`);
+      await fetchStudents(page, search);
+    } catch (e) {
+      setErr(e?.response?.data?.detail || "Could not enroll this student.");
+    } finally {
+      setEnrollingId(null);
+    }
+  };
+
   return (
     <div className="dashboard-wrapper">
       <h1 className="dashboard-title">Students</h1>
@@ -245,7 +266,12 @@ const Students = () => {
           <option value="false">Inactive</option>
         </select>
 
-        <select value={enrolledFilter} onChange={onFilter(setEnrolledFilter)}>
+        <select value={enrolledFilter} onChange={onFilter(setEnrolledFilter)}
+          title={
+            "Enrolled only: students with at least one course enrolment (default).\n" +
+            "All profiles: every learner profile, incl. staff/expert default profiles.\n" +
+            "Not enrolled: learner profiles with no course enrolment yet."
+          }>
           <option value="">Enrolment: enrolled only</option>
           <option value="all">Enrolment: all profiles</option>
           <option value="false">Enrolment: not enrolled</option>
@@ -257,6 +283,11 @@ const Students = () => {
           <option value="false">Complete</option>
         </select>
       </div>
+      <p className="stu-filter-hint">
+        <b>Enrolment: enrolled only</b> (the default) hides accounts with no course
+        enrolment yet — so a genuinely not-yet-enrolled student won't appear here.
+        Choose <b>all profiles</b> or <b>not enrolled</b> to find them.
+      </p>
 
       {/* Course/batch row — the axis academy admins actually work along */}
       <div className="users-controls-label">Course &amp; batch placement</div>
@@ -344,7 +375,21 @@ const Students = () => {
         {loading ? (
           <div className="dashboard-loading">Loading students...</div>
         ) : students.length === 0 ? (
-          <div className="users-empty">No students found.</div>
+          <div className="users-empty">
+            {enrolledFilter === "" ? (
+              <>
+                No enrolled students match this filter. Only students{" "}
+                <b>enrolled in a course</b> are shown by default — switch{" "}
+                <i>Enrolment</i> to <b>all profiles</b> to also see not-yet-enrolled
+                and Skill&nbsp;Dev-only accounts.
+              </>
+            ) : (
+              <>
+                No students match this filter — try switching <i>Enrolment</i> back
+                to <b>all profiles</b>, or clearing the other filters.
+              </>
+            )}
+          </div>
         ) : (
           <>
             <div className="users-count">
@@ -379,13 +424,23 @@ const Students = () => {
                         className="stu-check-col"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <input
-                          type="checkbox"
-                          checked={selected.has(s.id)}
-                          onChange={() => toggleRow(s.id)}
-                          disabled={!placement}
-                          title={placement ? "" : "Not enrolled in the selected course"}
-                        />
+                        {placement ? (
+                          <input
+                            type="checkbox"
+                            checked={selected.has(s.id)}
+                            onChange={() => toggleRow(s.id)}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            className="stu-enroll-btn"
+                            disabled={enrollingId === s.id}
+                            onClick={() => enrollNow(s)}
+                            title="Enroll this student directly into the selected course"
+                          >
+                            {enrollingId === s.id ? "Enrolling…" : "Enroll"}
+                          </button>
+                        )}
                       </td>
                     )}
                     <td>
