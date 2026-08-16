@@ -309,6 +309,13 @@ export const bulkAssignBatch = async (enrollmentIds, batch) =>
   (await api.post("/enrollments/admin/enrollments/bulk-batch/",
     { enrollment_ids: enrollmentIds, batch })).data;
 
+// Admin-initiated enrollment — places a not-yet-enrolled student into a
+// course directly (offline/cash payment, bulk cohort setup, reinstating a
+// student), bypassing the self-serve/payment-mode path entirely.
+export const enrollStudentInCourse = async (learnerProfileId, courseId, batch) =>
+  (await api.post("/enrollments/admin/enroll/",
+    { learner_profile: learnerProfileId, course: courseId, batch })).data;
+
 /* ── Agreement letters (admin editor + immutable version history) ── */
 export const getAgreement         = async (key)        => (await api.get(`/accounts/admin/agreements/${key}/`)).data;
 export const saveAgreement        = async (key, d)     => (await api.post(`/accounts/admin/agreements/${key}/save/`, d)).data;

@@ -9,6 +9,16 @@
   max-width: 720px;
 }
 
+/* Caption under the filter row explaining the (confusing) enrolled-only default. */
+.stu-filter-hint {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #6b7280;
+  max-width: 720px;
+}
+.stu-filter-hint b { color: #4b5563; }
+
 .stu-name {
   display: flex;
   align-items: center;
@@ -92,6 +102,11 @@
   text-align: center;
 }
 
+.stu-check-col:has(.stu-enroll-btn) {
+  width: auto;
+  white-space: nowrap;
+}
+
 .stu-check-col input[type="checkbox"] {
   width: 15px;
   height: 15px;
@@ -101,6 +116,27 @@
 .stu-check-col input[type="checkbox"]:disabled {
   cursor: not-allowed;
   opacity: 0.4;
+}
+
+.stu-enroll-btn {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #2c4a70;
+  background: #fff;
+  color: #2c4a70;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.stu-enroll-btn:hover:not(:disabled) {
+  background: #e8f0fb;
+}
+
+.stu-enroll-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .stu-muted {
