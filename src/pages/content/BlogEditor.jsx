@@ -4,7 +4,7 @@ import {
   ArrowLeft, Code2, Pencil, Sparkles, Send, Undo2, ExternalLink,
   ChevronDown, ChevronRight, Maximize2, Minimize2, Layers, Link2,
   Image as ImageIcon, FileText as ExcerptIcon, Tag, CalendarClock, List, Search, Info,
-  Monitor, Tablet, Smartphone, Languages,
+  Monitor, Tablet, Smartphone, Languages, Blocks, Palette,
 } from "lucide-react";
 import customDesignTemplate from "./blogTemplates/customDesignTemplate.html?raw";
 import {
@@ -21,6 +21,13 @@ import BlogCardPreview from "./preview/BlogCardPreview";
 import BlogBodyPreview from "./preview/BlogBodyPreview";
 import PlacementBadge from "./preview/PlacementBadge";
 import SeoPreview from "./preview/SeoPreview";
+import BlockCanvas from "./blocks/BlockCanvas";
+import BlockInspector from "./blocks/BlockInspector";
+import ThemePanel from "./blocks/ThemePanel";
+import ImportPreview from "./blocks/ImportPreview";
+import { createBlock, newBlockId, THEME_TOKENS } from "../../blogBlocks/schema";
+import { renderDocument } from "../../blogBlocks/render";
+import { importLegacyHtml } from "../../blogBlocks/importer";
 import { errText } from "../../utils/errText";
 import { formatDate } from "../../utils/formatDate";
 import { buildBody } from "../../utils/buildBody";
@@ -32,6 +39,7 @@ import "../../css/Moderator.css";
 import "../../css/Courses.css";
 import "../../css/Content.css";
 import "../../css/BlogEditor.css";
+import "../../css/BlockEditor.css";
 
 const CLASS_LEVELS = ["8", "9", "10", "11", "12", "general"];
 const SUBJECTS = [
@@ -49,12 +57,14 @@ const SEO_DESC_MAX = 170;
 // autosave succeeds (see AUTOSAVE section below).
 const AUTOSAVE_FIELDS = [
   "title", "slug", "class_level", "subject", "chapter_number", "excerpt",
-  "body_html", "trusted_html", "tags", "is_featured", "seo_title", "seo_description",
+  "body_html", "body_blocks", "body_theme", "trusted_html",
+  "tags", "is_featured", "seo_title", "seo_description",
 ];
 
 const emptyForm = () => ({
   title: "", slug: "", class_level: "general", subject: "general",
-  chapter_number: "", excerpt: "", body_html: "", trusted_html: false,
+  chapter_number: "", excerpt: "", body_html: "", body_blocks: [], body_theme: {},
+  trusted_html: false,
   tags: [], is_featured: false, seo_title: "", seo_description: "", publish_at: "",
 });
 
@@ -66,6 +76,8 @@ const formFromServer = (data) => ({
   chapter_number: data.chapter_number ?? "",
   excerpt: data.excerpt || "",
   body_html: data.body_html || "",
+  body_blocks: data.body_blocks || [],
+  body_theme: data.body_theme || {},
   trusted_html: data.trusted_html ?? false,
   tags: data.tags || [],
   is_featured: data.is_featured ?? false,
@@ -78,20 +90,38 @@ const pick = (obj, keys) => keys.reduce((acc, k) => ({ ...acc, [k]: obj[k] }), {
 
 // The exact payload shape the API expects. `full` also includes publish_at
 // (manual Save only — autosave must never touch it, see AUTOSAVE_FIELDS).
-const toApiFields = (f) => ({
-  title: f.title.trim(),
-  slug: f.slug.trim(),
-  class_level: f.class_level,
-  subject: f.subject,
-  chapter_number: f.chapter_number === "" ? null : parseInt(f.chapter_number, 10),
-  excerpt: f.excerpt,
-  body_html: f.body_html,
-  trusted_html: f.trusted_html,
-  tags: f.tags,
-  is_featured: f.is_featured,
-  seo_title: f.seo_title,
-  seo_description: f.seo_description,
-});
+//
+// `bodyMode` decides which body is authoritative for THIS save:
+//   - "blocks": body_blocks/body_theme are sent as authored, body_html is
+//     COMPUTED here via the same shared renderer the live preview uses (see
+//     shared/src/blogBlocks/render.js's header for why body_html is only a
+//     derived fallback for a block post, never re-derived server-side), and
+//     trusted_html is forced false — block-rendered markup never needs the
+//     sanitizer bypass.
+//   - "rich"/"raw": unchanged from before blocks existed. body_blocks is
+//     sent as [] explicitly, so switching a post OUT of blocks mode and
+//     saving really does hand authority back to body_html (the destructive
+//     side of that switch is confirmed with the user before this ever runs
+//     — see switchBodyMode below).
+const toApiFields = (f, bodyMode) => {
+  const useBlocks = bodyMode === "blocks";
+  return {
+    title: f.title.trim(),
+    slug: f.slug.trim(),
+    class_level: f.class_level,
+    subject: f.subject,
+    chapter_number: f.chapter_number === "" ? null : parseInt(f.chapter_number, 10),
+    excerpt: f.excerpt,
+    body_html: useBlocks ? renderDocument(f.body_blocks) : f.body_html,
+    body_blocks: useBlocks ? f.body_blocks : [],
+    body_theme: useBlocks ? f.body_theme : {},
+    trusted_html: useBlocks ? false : f.trusted_html,
+    tags: f.tags,
+    is_featured: f.is_featured,
+    seo_title: f.seo_title,
+    seo_description: f.seo_description,
+  };
+};
 
 // Matches the backend's `max(1, round(wordcount/200))` computed over
 // tag-stripped text (content/models.py BlogPost.save) — kept in sync by hand
@@ -202,7 +232,50 @@ const BlogEditor = () => {
     }
   };
 
-  const [rawMode, setRawMode] = useState(false);
+  // "blocks" | "rich" | "raw". A brand-new post starts in "blocks" — this
+  // redesign's whole point is that new chapters shouldn't be hand-typed
+  // HTML. An existing post starts wherever its content actually lives (see
+  // the load effect below), never a mode that would silently discard it.
+  const [bodyMode, setBodyMode] = useState("blocks");
+  const [selectedBlockId, setSelectedBlockId] = useState(null);
+
+  // Legacy-post importer (Phase 6). `importPreview` is a SEPARATE state slot
+  // from `form` — it holds the proposed { blocks, theme, report } until the
+  // author explicitly clicks "Use these blocks" in ImportPreview, which is
+  // the only place that ever copies it into `form`/`bodyMode`. Autosave and
+  // the dirty-tracking below only ever read `form`, so a proposal sitting
+  // here unconfirmed can never be silently saved.
+  const [importPreview, setImportPreview] = useState(null);
+  const runImport = () => {
+    const result = importLegacyHtml(form.body_html, THEME_TOKENS);
+    setImportPreview(result);
+  };
+  const useImportedBlocks = () => {
+    if (!importPreview) return;
+    setForm((f) => ({ ...f, body_blocks: importPreview.blocks, body_theme: importPreview.theme }));
+    setBodyMode("blocks");
+    setSelectedBlockId(null);
+    setImportPreview(null);
+  };
+  const discardImportPreview = () => setImportPreview(null);
+
+  // Switching OUT of blocks mode is destructive at save time (toApiFields
+  // sends body_blocks: [] once bodyMode !== "blocks") — confirm first if
+  // there's actually something to lose. Switching between rich/raw, or into
+  // blocks mode, is always safe (rich/raw both operate on body_html; a
+  // reversed decision before the next Save loses nothing, since form state
+  // itself is untouched by the mode switch).
+  const switchBodyMode = (next) => {
+    if (next === bodyMode) return;
+    if (bodyMode === "blocks" && form.body_blocks.length > 0 && next !== "blocks") {
+      const ok = window.confirm(
+        "Switching away from Blocks will clear this post's block content the next time you save. Continue?"
+      );
+      if (!ok) return;
+    }
+    setBodyMode(next);
+  };
+
   const [showPreview, setShowPreview] = useState(false);
   // Container max-width for the preview iframe — "100%" fills the writing
   // column (already ~1480px wide with the sidebar hidden), the other two
@@ -244,6 +317,7 @@ const BlogEditor = () => {
 
   const bodyRef = useRef(null);
   const formRef = useRef(form);
+  const bodyModeRef = useRef(bodyMode); // same reasoning as formRef — see the effect below
   const lastSavedRef = useRef(emptyForm()); // per-field "known persisted" snapshot
   const skipNextLoadRef = useRef(null);
   const recoveryCheckedRef = useRef(false);
@@ -266,6 +340,7 @@ const BlogEditor = () => {
   };
 
   useEffect(() => { formRef.current = form; }, [form]);
+  useEffect(() => { bodyModeRef.current = bodyMode; }, [bodyMode]);
 
   /* ───────────────────────── Load (edit mode) ───────────────────────── */
   useEffect(() => {
@@ -303,6 +378,8 @@ const BlogEditor = () => {
       setForm(f);
       markSaved(f);
       setFile(null);
+      setBodyMode("blocks");
+      setSelectedBlockId(null);
       setLoading(false);
       finishRecoveryCheck(null);
       return () => { cancelled = true; };
@@ -319,6 +396,11 @@ const BlogEditor = () => {
         setForm(f);
         markSaved(f);
         setFile(null);
+        // An existing post opens in whichever mode its content actually
+        // lives in — never defaults to "blocks" out from under a rich-text
+        // or raw-HTML post that has no body_blocks to show.
+        setBodyMode(f.body_blocks.length > 0 ? "blocks" : "rich");
+        setSelectedBlockId(null);
         finishRecoveryCheck(data.updated_at);
       })
       .catch((e) => { if (!cancelled) setLoadError(errText(e)); })
@@ -332,6 +414,43 @@ const BlogEditor = () => {
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
+
+  /* ───────────────────────── Block editing ───────────────────────── */
+  const patchBlocks = (updater) => setForm((f) => ({ ...f, body_blocks: updater(f.body_blocks) }));
+
+  const addBlock = (type) => {
+    const block = createBlock(type);
+    patchBlocks((blocks) => [...blocks, block]);
+    setSelectedBlockId(block.id);
+  };
+  const updateBlockFields = (blockId, fields) => {
+    patchBlocks((blocks) => blocks.map((b) => (b.id === blockId ? { ...b, ...fields } : b)));
+  };
+  const updateBlockSettings = (blockId, fields) => {
+    patchBlocks((blocks) => blocks.map((b) => (b.id === blockId ? { ...b, s: { ...b.s, ...fields } } : b)));
+  };
+  const removeBlock = (blockId) => {
+    patchBlocks((blocks) => blocks.filter((b) => b.id !== blockId));
+    setSelectedBlockId((cur) => (cur === blockId ? null : cur));
+  };
+  const duplicateBlock = (blockId) => {
+    patchBlocks((blocks) => {
+      const index = blocks.findIndex((b) => b.id === blockId);
+      if (index === -1) return blocks;
+      const copy = { ...blocks[index], id: newBlockId() };
+      return [...blocks.slice(0, index + 1), copy, ...blocks.slice(index + 1)];
+    });
+  };
+  const moveBlock = (blockId, dir) => {
+    patchBlocks((blocks) => {
+      const index = blocks.findIndex((b) => b.id === blockId);
+      const swapIndex = index + dir;
+      if (index === -1 || swapIndex < 0 || swapIndex >= blocks.length) return blocks;
+      const next = [...blocks];
+      [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+      return next;
+    });
+  };
 
   /* ───────────────────────── Dirty tracking ───────────────────────── */
   // "Dirty" = current form differs from the last state we know is actually
@@ -373,7 +492,7 @@ const BlogEditor = () => {
     const timer = setTimeout(async () => {
       if (busy || autosavingRef.current) return; // never overlap manual save or another autosave
       const snapshot = formRef.current;
-      const payload = toApiFields(snapshot); // JSON only — no cover, no status, no publish_at
+      const payload = toApiFields(snapshot, bodyModeRef.current); // JSON only — no cover, no status, no publish_at
       autosavingRef.current = true;
       setAutosaveState("saving");
       try {
@@ -395,7 +514,7 @@ const BlogEditor = () => {
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, loading, id, status, busy]);
+  }, [form, loading, id, status, busy, bodyMode]);
 
   /* ── localStorage backup — always on, regardless of mode/status ── */
   useEffect(() => {
@@ -417,7 +536,12 @@ const BlogEditor = () => {
 
   const restoreDraft = () => {
     if (!recoveredDraft?.form) return;
-    setForm(recoveredDraft.form);
+    // Backfill body_blocks/body_theme for a draft saved before this editor
+    // mode existed — an older localStorage entry has neither key at all.
+    const restored = { body_blocks: [], body_theme: {}, ...recoveredDraft.form };
+    setForm(restored);
+    setBodyMode(restored.body_blocks.length > 0 ? "blocks" : "rich");
+    setSelectedBlockId(null);
     setRecoveredDraft(null);
   };
   const discardDraft = () => {
@@ -439,7 +563,7 @@ const BlogEditor = () => {
       // touches keys it doesn't receive), which is the only sane behavior
       // for "the scheduling field was left blank" — there's no supported
       // way to explicitly clear an already-set publish_at back to "none".
-      const payload = toApiFields(form);
+      const payload = toApiFields(form, bodyMode);
       if (form.publish_at) payload.publish_at = localInputToIso(form.publish_at);
       const { data, isMultipart } = buildBody(payload, file, "cover");
       const savedId = id;
@@ -506,14 +630,28 @@ const BlogEditor = () => {
   };
 
   /* ───────────────────────── Table of contents ───────────────────────── */
-  // Read-only extraction over already-trusted-by-this-session content (this
-  // is the same body the author is currently editing, not third-party HTML),
-  // so a detached-DOM parse is fine here even though it'd be wrong for
-  // sanitizing untrusted input. Headings are indexed in document order across
-  // h1/h2/h3 combined — the click handler below re-queries the live RTE DOM
-  // with the same combined selector and jumps by that same index, since
-  // there's no id to key on inside TipTap's generated markup.
+  // In blocks mode, "headings" are Hero titles (h1-equivalent) and Section
+  // Header titles (h2-equivalent) — keyed by block id (stable across
+  // reorders) rather than array index, since the block list can be
+  // reordered between a render and a click. In rich/raw mode, this is the
+  // original read-only DOM-parse extraction over the author's own
+  // in-session content (never third-party HTML, so a detached-DOM parse is
+  // fine here even though it'd be wrong for sanitizing untrusted input).
   const tocHeadings = useMemo(() => {
+    if (bodyMode === "blocks") {
+      return form.body_blocks
+        .map((b) => {
+          if (b.t === "hero") {
+            return { blockId: b.id, level: "h1", text: [b.title, b.titleAccent].filter(Boolean).join(" ") };
+          }
+          if (b.t === "section_header") {
+            return { blockId: b.id, level: "h2", text: [b.title, b.titleAccent].filter(Boolean).join(" ") };
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .filter((h) => h.text);
+    }
     const html = form.body_html || "";
     if (!html.trim()) return [];
     const scratch = document.createElement("div");
@@ -521,12 +659,19 @@ const BlogEditor = () => {
     return Array.from(scratch.querySelectorAll("h1, h2, h3"))
       .map((el, index) => ({ index, level: el.tagName.toLowerCase(), text: el.textContent.trim() }))
       .filter((h) => h.text);
-  }, [form.body_html]);
+  }, [form.body_html, form.body_blocks, bodyMode]);
 
   const jumpToHeading = (heading) => {
+    if (bodyMode === "blocks") {
+      if (!heading.blockId) return;
+      setSelectedBlockId(heading.blockId);
+      const row = document.querySelector(`.blk-row[data-block-id="${heading.blockId}"]`);
+      if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     // Raw-HTML-source mode has no contenteditable heading to scroll to —
     // the textarea has no per-heading DOM nodes — so clicks are a no-op there.
-    if (rawMode || showPreview) return;
+    if (bodyMode === "raw" || showPreview) return;
     const root = document.querySelector(".blog-editor-main .rte-content");
     const target = root && root.querySelectorAll("h1, h2, h3")[heading.index];
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -534,7 +679,13 @@ const BlogEditor = () => {
 
   const derivedSlug = form.slug.trim() || deriveBlogSlug(form);
   const publicUrl = derivedSlug ? `${HOME_URL}/blogs/${derivedSlug}` : `${HOME_URL}/blogs/…`;
-  const { words, minutes } = wordsAndReadingMinutes(form.body_html);
+  // In blocks mode, the live word count/reading-time hint reads the RENDERED
+  // output (same renderDocument() call site as toApiFields), so it tracks
+  // what the backend will actually compute reading_minutes from, rather than
+  // just the raw block JSON.
+  const { words, minutes } = wordsAndReadingMinutes(
+    bodyMode === "blocks" ? renderDocument(form.body_blocks) : form.body_html
+  );
 
   const previewCoverUrl = filePreviewUrl || post?.cover || null;
   const previewPublishedLabel = status === "published"
@@ -716,7 +867,11 @@ const BlogEditor = () => {
                 </button>
               </div>
               <div className="blog-editor-preview-frame-wrap" style={{ maxWidth: previewWidth }}>
-                <BlogBodyPreview html={form.body_html} />
+                {bodyMode === "blocks" ? (
+                  <BlogBodyPreview blocks={form.body_blocks} theme={form.body_theme} />
+                ) : (
+                  <BlogBodyPreview html={form.body_html} />
+                )}
               </div>
             </>
           ) : (
@@ -736,10 +891,10 @@ const BlogEditor = () => {
                     {tocHeadings.map((h) => (
                       <button
                         type="button"
-                        key={h.index}
+                        key={h.blockId ?? h.index}
                         className={`blog-editor-toc-item lvl-${h.level}`}
                         onClick={() => jumpToHeading(h)}
-                        title={rawMode ? "Switch to rich text to jump to this heading" : "Scroll to this heading"}
+                        title={bodyMode === "raw" ? "Switch to rich text to jump to this heading" : "Scroll to this heading"}
                       >
                         {h.text}
                       </button>
@@ -748,39 +903,99 @@ const BlogEditor = () => {
                 </div>
               )}
 
-              <label className="cm-field">
-                <div className="cm-field-label-row">
-                  <span>Body</span>
+              <div className="cm-field-label-row">
+                <span>Body</span>
+                <div className="blk-mode-tabs" role="tablist">
                   <button
                     type="button"
-                    className="cm-inline-toggle"
-                    onClick={() => setRawMode((v) => !v)}
-                    title={rawMode ? "Back to rich text editor" : "Edit raw HTML source"}
+                    role="tab"
+                    aria-selected={bodyMode === "blocks"}
+                    className={`blk-mode-tab${bodyMode === "blocks" ? " active" : ""}`}
+                    onClick={() => switchBodyMode("blocks")}
                   >
-                    {rawMode ? <Pencil size={13} /> : <Code2 size={13} />}
-                    {rawMode ? "Rich text" : "HTML source"}
+                    <Blocks size={13} /> Blocks
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={bodyMode === "rich"}
+                    className={`blk-mode-tab${bodyMode === "rich" ? " active" : ""}`}
+                    onClick={() => switchBodyMode("rich")}
+                  >
+                    <Pencil size={13} /> Rich text
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={bodyMode === "raw"}
+                    className={`blk-mode-tab${bodyMode === "raw" ? " active" : ""}`}
+                    onClick={() => switchBodyMode("raw")}
+                  >
+                    <Code2 size={13} /> HTML source
                   </button>
                 </div>
-                {rawMode ? (
-                  <>
-                    <div className="cm-field-label-row">
-                      <button
-                        type="button"
-                        className="cm-inline-toggle"
-                        title="Replace the body with a self-contained, hand-designed starter template (like the legacy chapter pages) — includes its own <style> block, so this also turns on 'Skip HTML sanitization' below"
-                        onClick={() => {
-                          if (form.body_html.trim() && !window.confirm("This replaces the current body content with the custom-design template. Continue?")) return;
-                          setForm((f) => ({ ...f, body_html: customDesignTemplate, trusted_html: true }));
-                        }}
-                      >
-                        <Sparkles size={13} />
-                        Load custom-design template
-                      </button>
-                    </div>
-                    <HtmlToolbar textareaRef={bodyRef} value={form.body_html} onChange={(v) => setForm((f) => ({ ...f, body_html: v }))} />
-                    <textarea ref={bodyRef} rows={16} className="blog-editor-html-textarea" value={form.body_html} onChange={set("body_html")} placeholder="<p>Post body as plain HTML…</p>" />
-                  </>
-                ) : (
+                {/* Only offered for an existing legacy post — a brand-new
+                    post already starts in Blocks mode with nothing to
+                    convert, and a post that already has blocks has nothing
+                    left to import. */}
+                {id && bodyMode !== "blocks" && form.body_blocks.length === 0 && form.body_html.trim() && (
+                  <button type="button" className="mod-btn ghost small" onClick={runImport}>
+                    <Sparkles size={13} /> Convert to blocks
+                  </button>
+                )}
+              </div>
+
+              {importPreview && (
+                <ImportPreview
+                  html={form.body_html}
+                  proposal={importPreview}
+                  onUse={useImportedBlocks}
+                  onDiscard={discardImportPreview}
+                />
+              )}
+
+              {bodyMode === "blocks" && (
+                <div className="blk-editor-shell">
+                  <BlockCanvas
+                    blocks={form.body_blocks}
+                    selectedId={selectedBlockId}
+                    onSelect={setSelectedBlockId}
+                    onAdd={addBlock}
+                    onMove={moveBlock}
+                    onDuplicate={duplicateBlock}
+                    onRemove={removeBlock}
+                  />
+                  <BlockInspector
+                    block={form.body_blocks.find((b) => b.id === selectedBlockId) || null}
+                    onChange={updateBlockFields}
+                    onSettingsChange={updateBlockSettings}
+                  />
+                </div>
+              )}
+
+              {bodyMode === "raw" && (
+                <label className="cm-field">
+                  <div className="cm-field-label-row">
+                    <button
+                      type="button"
+                      className="cm-inline-toggle"
+                      title="Replace the body with a self-contained, hand-designed starter template (like the legacy chapter pages) — includes its own <style> block, so this also turns on 'Skip HTML sanitization' below"
+                      onClick={() => {
+                        if (form.body_html.trim() && !window.confirm("This replaces the current body content with the custom-design template. Continue?")) return;
+                        setForm((f) => ({ ...f, body_html: customDesignTemplate, trusted_html: true }));
+                      }}
+                    >
+                      <Sparkles size={13} />
+                      Load custom-design template
+                    </button>
+                  </div>
+                  <HtmlToolbar textareaRef={bodyRef} value={form.body_html} onChange={(v) => setForm((f) => ({ ...f, body_html: v }))} />
+                  <textarea ref={bodyRef} rows={16} className="blog-editor-html-textarea" value={form.body_html} onChange={set("body_html")} placeholder="<p>Post body as plain HTML…</p>" />
+                </label>
+              )}
+
+              {bodyMode === "rich" && (
+                <label className="cm-field">
                   <RichTextEditor
                     mode="full"
                     value={form.body_html}
@@ -788,14 +1003,19 @@ const BlogEditor = () => {
                     placeholder="Write the post body…"
                     tall
                   />
-                )}
-              </label>
+                </label>
+              )}
+
               <p className="cm-hint blog-editor-wordcount">{words} words · ~{minutes} min read</p>
 
-              <label className="cm-check">
-                <input type="checkbox" checked={form.trusted_html} onChange={set("trusted_html")} />
-                <span>Skip HTML sanitization (only for trusted imported content)</span>
-              </label>
+              {bodyMode === "blocks" ? (
+                <p className="cm-hint">Rendered from blocks — sanitized automatically, no HTML bypass needed.</p>
+              ) : (
+                <label className="cm-check">
+                  <input type="checkbox" checked={form.trusted_html} onChange={set("trusted_html")} />
+                  <span>Skip HTML sanitization (only for trusted imported content)</span>
+                </label>
+              )}
             </>
           )}
         </div>
@@ -815,6 +1035,15 @@ const BlogEditor = () => {
                 <div><span>Created</span><b>{formatDate(post.created_at)}</b></div>
                 <div><span>Updated</span><b>{formatDate(post.updated_at)}</b></div>
               </div>
+            </div>
+          )}
+
+          {bodyMode === "blocks" && (
+            <div className="blog-editor-card">
+              <CardHead icon={Palette} label="Theme" cardKey="theme" collapsed={collapsed} onToggle={toggleCard} />
+              {!collapsed.theme && (
+                <ThemePanel theme={form.body_theme} onChange={(theme) => setForm((f) => ({ ...f, body_theme: theme }))} />
+              )}
             </div>
           )}
 

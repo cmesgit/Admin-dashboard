@@ -8,7 +8,9 @@
     "prebuild": "node scripts/check-api-url.cjs",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:shared": "node ../shared/sync.mjs",
+    "check:shared": "node ../shared/sync.mjs --check"
   },
   "dependencies": {
     "@tiptap/extension-image": "^3.30.0",
