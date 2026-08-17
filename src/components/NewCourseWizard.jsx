@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { X, Plus, Trash2, Check } from "lucide-react";
 import {
   getBoards,
+  getCourseCategories,
   createCourse,
   createSubject,
   createBatch,
@@ -11,15 +12,24 @@ import "../css/NewCourseWizard.css";
 
 /*
  * New Course wizard — the header "New course" action.
- * Step 1  Course basics (board, class/title, description, price, access days)
+ * Step 1  Course basics (board or competitive-exam category, title,
+ *         description, price, access days)
  * Step 2  Subjects (planned chapters optional)
  * Step 3  First batch (name, code, year, capacity)
  * On finish: createCourse → createSubject(×n) → createBatch. Subjects/batch are
  * best-effort after the course exists, so a course is never lost to a later
  * failing sub-step.
+ *
+ * Board-linked (default, kind=ACADEMIC) courses require a board. Competitive
+ * / Coaching (kind=COACHING) courses have no board/stream/class_level
+ * (Course model leaves those NULL for coaching — see courses/models.py) and
+ * are tagged instead with a CourseCategory from the "competitive" group
+ * (NEET/JEE/UPSC/... — courses/admin/categories/, filtered client-side since
+ * the endpoint has no ?group= support).
  */
 const emptyCourse = {
   board_id: "",
+  category_id: "",
   title: "",
   description: "",
   price_rupees: "",
@@ -28,7 +38,9 @@ const emptyCourse = {
 
 const NewCourseWizard = ({ onClose, onCreated }) => {
   const [step, setStep] = useState(1);
+  const [courseType, setCourseType] = useState("board"); // "board" | "competitive"
   const [boards, setBoards] = useState([]);
+  const [competitiveCategories, setCompetitiveCategories] = useState([]);
   const [course, setCourse] = useState(emptyCourse);
   const [subjects, setSubjects] = useState([{ name: "", ch: "" }]);
   const [batch, setBatch] = useState({ name: "", code: "", year: "", capacity: "" });
@@ -40,12 +52,21 @@ const NewCourseWizard = ({ onClose, onCreated }) => {
       setBoards(b || []);
       if (b && b.length) setCourse((c) => ({ ...c, board_id: String(b[0].id) }));
     });
+    getCourseCategories().then((cats) => {
+      const competitive = (cats || []).filter((c) => c.group === "competitive");
+      setCompetitiveCategories(competitive);
+      if (competitive.length) {
+        setCourse((c) => ({ ...c, category_id: String(competitive[0].id) }));
+      }
+    });
   }, []);
 
   const setC = (k, v) => setCourse((c) => ({ ...c, [k]: v }));
   const setB = (k, v) => setBatch((b) => ({ ...b, [k]: v }));
 
-  const canNext1 = course.board_id && course.title.trim();
+  const canNext1 =
+    course.title.trim() &&
+    (courseType === "board" ? !!course.board_id : !!course.category_id);
   const canFinish = batch.name.trim() && batch.code.trim();
 
   const addSubject = () => setSubjects((s) => [...s, { name: "", ch: "" }]);
@@ -67,7 +88,9 @@ const NewCourseWizard = ({ onClose, onCreated }) => {
           1,
           parseInt(course.subscription_duration_days, 10) || 30
         ),
-        board_id: course.board_id,
+        ...(courseType === "competitive"
+          ? { kind: "COACHING", categories: [Number(course.category_id)] }
+          : { kind: "ACADEMIC", board_id: course.board_id }),
       });
 
       const courseId = created?.id;
@@ -126,17 +149,53 @@ const NewCourseWizard = ({ onClose, onCreated }) => {
         <div className="ncw-body">
           {step === 1 && (
             <>
-              <label className="ncw-field">
-                <span>Board</span>
-                <select value={course.board_id} onChange={(e) => setC("board_id", e.target.value)}>
-                  {boards.length === 0 && <option value="">No boards — create one in Courses first</option>}
-                  {boards.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="ncw-row ncw-type-toggle" role="radiogroup" aria-label="Course type">
+                <label className={`ncw-type-opt${courseType === "board" ? " active" : ""}`}>
+                  <input
+                    type="radio"
+                    name="ncw-course-type"
+                    checked={courseType === "board"}
+                    onChange={() => setCourseType("board")}
+                  />
+                  Board-linked
+                </label>
+                <label className={`ncw-type-opt${courseType === "competitive" ? " active" : ""}`}>
+                  <input
+                    type="radio"
+                    name="ncw-course-type"
+                    checked={courseType === "competitive"}
+                    onChange={() => setCourseType("competitive")}
+                  />
+                  Competitive / Coaching
+                </label>
+              </div>
+              {courseType === "board" ? (
+                <label className="ncw-field">
+                  <span>Board</span>
+                  <select value={course.board_id} onChange={(e) => setC("board_id", e.target.value)}>
+                    {boards.length === 0 && <option value="">No boards — create one in Courses first</option>}
+                    {boards.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <label className="ncw-field">
+                  <span>Exam category</span>
+                  <select value={course.category_id} onChange={(e) => setC("category_id", e.target.value)}>
+                    {competitiveCategories.length === 0 && (
+                      <option value="">No competitive categories — add one in Content → Categories first</option>
+                    )}
+                    {competitiveCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="ncw-field">
                 <span>Course title</span>
                 <input
