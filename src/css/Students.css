@@ -11,7 +11,13 @@
 
 /* Caption under the filter row explaining the (confusing) enrolled-only default. */
 .stu-filter-hint {
-  margin: 10px 0 0;
+  /* Bottom margin is load-bearing. The element that follows is
+     .users-controls-label, which carries a NEGATIVE top margin (-8px, in
+     Users.css) tuned for sitting directly under .users-controls' 20px
+     bottom margin. With this hint in between, that -8px pulled the
+     "Course & batch placement" label up into the hint's last line, so the
+     two paragraphs overlapped. Reproduce the 20px the label expects. */
+  margin: 10px 0 20px;
   font-size: 12.5px;
   line-height: 1.5;
   color: #6b7280;
@@ -426,3 +432,7 @@
   border-radius: 8px;
   margin-bottom: 12px;
 }
+
+/* Belt and braces: whatever the surrounding spacing, the section label must
+   never be dragged up into the paragraph above it. */
+.stu-filter-hint + .users-controls-label { margin-top: 0; }

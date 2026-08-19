@@ -1277,8 +1277,25 @@ const Courses = () => {
   // crumb and "back up to this board's course list" (goCourses) keep
   // working exactly as if the admin had drilled down via Boards.
   const openCourseFromAllCourses = (course, level = "subjects") => {
-    setNav({ level, board: { id: course.board_id, name: course.board_name }, course });
+    // A board-less course (every competitive course is one) must leave
+    // nav.board NULL, not {id: undefined}. The latter is truthy, so
+    // goCourses' `if (nav.board)` guard passed and it called
+    // loadCourses(undefined) → 404 → swallowed to [] → "No courses in this
+    // board yet."
+    const board = course.board_id ? { id: course.board_id, name: course.board_name } : null;
+    setNav({ level, board, course });
     if (level === "batches") loadBatches(course.id); else loadSubjects(course.id);
+  };
+
+  // Refresh whichever course list the admin is actually looking at. The
+  // save handler used to hardcode loadCourses(nav.board.id), which threw a
+  // TypeError at the all-courses level — AFTER setModal(null) had already
+  // run, so the error landed in `formError` inside the now-unmounted modal.
+  // The save had succeeded server-side, but the row still showed the old
+  // status and nothing was reported: "publish didn't work".
+  const refreshCourseList = async () => {
+    if (nav.level === "all-courses") await loadAllCourses();
+    else if (nav.board?.id) await loadCourses(nav.board.id);
   };
 
   const openCreate = (type, initial = {}) => { setFormError(""); setModal({ type, mode: "create", initial }); };
@@ -1371,13 +1388,17 @@ const Courses = () => {
           ...basePayload,
           details: detailsPayload,
           categories: categoriesPayload,
-          ...(modal.mode !== "edit" ? { board_id: nav.board.id } : {}),
+          // `nav.board?.id`, not `nav.board.id`. At the all-courses level
+          // nav.board is null, so the bare deref threw a TypeError — and
+          // because it fired before the request, creating a board-less
+          // (competitive) course from that view was impossible.
+          ...(modal.mode !== "edit" && nav.board?.id ? { board_id: nav.board.id } : {}),
         };
         const { data, isMultipart } = buildBody(fields, file, "thumbnail");
         if (modal.mode === "edit") await updateCourse(modal.initial.id, data, isMultipart);
         else await createCourse(data, isMultipart);
         setModal(null);
-        await loadCourses(nav.board.id);
+        await refreshCourseList();
       } else if (modal.type === "subject") {
         // Always multipart, even without a new file (matches the previous
         // inline FormData build — createSubject/updateSubject expect
@@ -1664,6 +1685,15 @@ const Courses = () => {
                   <td className="cm-actions">
                     <button className="cm-icon-btn" onClick={() => openCourseFromAllCourses(c)}>Subjects</button>
                     <button className="cm-icon-btn" onClick={() => openCourseFromAllCourses(c, "batches")}>Batches</button>
+                    {/* Edit — and therefore the Status dropdown, which is the
+                        ONLY publish control in this app — used to exist only
+                        in the board drill-down. Competitive courses have
+                        board = NULL (see create_competitive_courses.py), so
+                        they appear in no board's list and were unreachable
+                        from that Edit button: an admin could see one sitting
+                        at "Coming Soon" and had no way to publish it. This
+                        flat list is the only place they're reachable. */}
+                    <button className="cm-icon-btn" onClick={() => openEditCourse(c)}>Edit</button>
                   </td>
                 </tr>
               );

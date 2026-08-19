@@ -1,11 +1,17 @@
 // Recordings — library of past session recordings. Data: GET
-// /livestream/admin/recordings/. View/playback actions are descriptive toasts
-// (real playback opens the Bunny player in production).
+// /livestream/admin/recordings/.
+//
+// "View" used to be a toast reading "playback opens the Bunny player in
+// production" — there was no production branch anywhere, no player route,
+// and the admin endpoint didn't even return bunny_video_id. All three are
+// fixed now: the endpoint returns the id, and View opens the same Bunny
+// iframe embed the student and teacher apps use.
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Video, PlayCircle, Search } from "lucide-react";
+import { Video, PlayCircle, Search, X } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import Toast from "../components/Toast";
 import { getAdminRecordings } from "../api/livestream";
+import { BUNNY_LIBRARY_ID } from "../config/urls";
 import "../css/LiveStreams.css";
 
 const STATUS_BADGE = {
@@ -29,6 +35,7 @@ const Recordings = () => {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [toast, setToast] = useState(null);
+  const [playing, setPlaying] = useState(null);
   const toastTimer = useRef(null);
 
   const fireToast = useCallback((m) => {
@@ -36,6 +43,27 @@ const Recordings = () => {
     setToast(m);
     toastTimer.current = setTimeout(() => setToast(null), 3000);
   }, []);
+
+  // Two distinct "can't play" reasons, reported distinctly — conflating them
+  // is what made this page's failure mode impossible to diagnose.
+  const openPlayer = useCallback((r) => {
+    if (!BUNNY_LIBRARY_ID) {
+      fireToast("Playback is not configured: VITE_BUNNY_LIBRARY_ID is unset in this build.");
+      return;
+    }
+    if (!r.bunny_video_id) {
+      fireToast(`“${r.title}” has no uploaded video yet (status: ${r.status}).`);
+      return;
+    }
+    setPlaying(r);
+  }, [fireToast]);
+
+  useEffect(() => {
+    if (!playing) return;
+    const onKey = (e) => { if (e.key === "Escape") setPlaying(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [playing]);
 
   useEffect(() => {
     setLoading(true);
@@ -82,10 +110,7 @@ const Recordings = () => {
                   <td>{fmtDur(r.duration_seconds)}</td>
                   <td><StatusBadge color={STATUS_BADGE[r.status] || "gray"}>{r.status}</StatusBadge></td>
                   <td>
-                    <button
-                      className="ls-row-monitor"
-                      onClick={() => fireToast(`Opening “${r.title}” — playback opens the Bunny player in production.`)}
-                    >
+                    <button className="ls-row-monitor" onClick={() => openPlayer(r)}>
                       <PlayCircle size={13} /> View
                     </button>
                   </td>
@@ -95,6 +120,33 @@ const Recordings = () => {
           </table>
         )}
       </div>
+      {playing && (
+        <div className="rec-playerOverlay" onClick={() => setPlaying(null)}>
+          <div className="rec-player" onClick={(e) => e.stopPropagation()}>
+            <div className="rec-playerHead">
+              <span className="ls-title"><Video size={14} /> {playing.title}</span>
+              <button className="rec-playerClose" onClick={() => setPlaying(null)} aria-label="Close player">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="rec-playerFrame">
+              <iframe
+                title={playing.title}
+                src={`https://iframe.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${playing.bunny_video_id}?autoplay=false`}
+                loading="lazy"
+                allow="accelerometer; gyroscope; encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen
+              />
+            </div>
+            <div className="rec-playerMeta">
+              {playing.course_name}
+              {playing.subject_name ? ` · ${playing.subject_name}` : ""}
+              {playing.batch_name ? ` · ${playing.batch_name}` : " · Course-wide"}
+            </div>
+          </div>
+        </div>
+      )}
+
       <Toast message={toast} />
     </div>
   );

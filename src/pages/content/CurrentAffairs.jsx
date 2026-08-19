@@ -45,7 +45,13 @@ function AffairFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
       source_name: form.source_name.trim(),
       source_url: form.source_url.trim(),
       tags: form.tags,
-      publish_at: form.publish_at ? localInputToIso(form.publish_at) : null,
+      // OMIT the key when the admin left "Publish at" blank — do not send
+      // null. CurrentAffair.publish_at is DateTimeField(default=timezone.now)
+      // with no null=True, so DRF builds it allow_null=False and an explicit
+      // null 400s with "This field may not be null." On create the field
+      // starts blank, so every create that didn't manually set a date failed.
+      // Omitting it lets the model default apply.
+      ...(form.publish_at ? { publish_at: localInputToIso(form.publish_at) } : {}),
     });
   };
 

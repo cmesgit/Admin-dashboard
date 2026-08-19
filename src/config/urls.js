@@ -34,3 +34,12 @@ export const HOME_URL = clean(import.meta.env.VITE_HOME_URL || ENV.HOME);
 export const APP_URL = clean(import.meta.env.VITE_APP_URL || ENV.APP);
 export const TEACHER_URL = clean(import.meta.env.VITE_TEACHER_URL || ENV.TEACHER);
 export const API_URL = clean(import.meta.env.VITE_API_URL || ENV.API);
+
+// Bunny Stream library ID, for embedding recording playback. Genuinely
+// different per real environment, so unlike the URLs above there is no
+// hostname-based default and deliberately no hardcoded fallback — call
+// sites must treat "" as "playback not configured" rather than silently
+// embedding from the wrong library. Identical declaration to the student
+// and teacher apps' config/urls.js; it must be set in this app's BUILD
+// environment too, or the Recordings page can list but not play.
+export const BUNNY_LIBRARY_ID = import.meta.env.VITE_BUNNY_LIBRARY_ID || "";
