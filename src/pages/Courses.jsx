@@ -28,6 +28,16 @@ import { buildBody } from "../utils/buildBody";
 import "../css/Courses.css";
 import "../css/Content.css"; // for the collapsible SEO section (cms-details) + live preview panel
 
+// Board types, by value. A lookup rather than a ternary: the table read
+// `board_type === "STATE" ? "State" : "Central"`, so every value that was not
+// STATE rendered as "Central" — meaning the moment a third type existed it
+// would have been silently mislabelled rather than shown as unknown.
+const BOARD_TYPE_LABELS = {
+  CENTRAL: "Central",
+  STATE: "State",
+  COMPETITIVE: "Competitive exam",
+};
+
 const rupees = (paise) =>
   paise === null || paise === undefined ? "—" : `₹${(paise / 100).toLocaleString("en-IN")}`;
 const roleLabel = (r) => (r === "ASSISTANT" ? "Assistant" : "Primary");
@@ -148,6 +158,11 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
               <select value={form.board_type || "CENTRAL"} onChange={set("board_type")}>
                 <option value="CENTRAL">Central</option>
                 <option value="STATE">State</option>
+                {/* A competitive exam is a syllabus authority a course hangs
+                    off, same as a board — but it is neither central nor
+                    state, and labelling MPSC or NEET as a "Central board" on
+                    a public catalog page is simply wrong. */}
+                <option value="COMPETITIVE">Competitive exam</option>
               </select>
             </label>
             <label className="cm-field">
@@ -1489,7 +1504,7 @@ const Courses = () => {
                 <td className="courses-title">
                   <button className="cm-link" onClick={() => openBoard(b)}>{b.name}</button>
                 </td>
-                <td>{b.board_type === "STATE" ? "State" : "Central"}</td>
+                <td>{BOARD_TYPE_LABELS[b.board_type] || b.board_type}</td>
                 <td>{b.course_count ?? 0}</td>
                 <td>
                   <StatusBadge color={b.is_active ? "green" : "gray"}>
