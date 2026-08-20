@@ -13,6 +13,7 @@ import {
   getAdminStream,
   postAdminStreamChat,
   endAdminStream,
+  spectateAdminStream,
 } from "../api/livestream";
 import { errText } from "../utils/errText";
 import "../css/LiveStreams.css";
@@ -155,6 +156,48 @@ function MonitorSingle({ id }) {
   const [sending, setSending] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // Live observation. The video area used to be a literal placeholder — an
+  // icon in a grey box — so the Monitor could show viewer counts and stream
+  // health but never the class itself.
+  const [watching, setWatching] = useState(false);
+  const [watchErr, setWatchErr] = useState("");
+  const roomRef = useRef(null);
+  const videoRef = useRef(null);
+  const audioRef = useRef(null);
+
+  const stopWatching = useCallback(() => {
+    try { roomRef.current?.disconnect(); } catch { /* already gone */ }
+    roomRef.current = null;
+    setWatching(false);
+  }, []);
+
+  // Leaving the page must drop the connection. Without this the admin stays
+  // silently subscribed to a live classroom after navigating away — still
+  // consuming media, and still counted against LiveKit.
+  useEffect(() => () => stopWatching(), [stopWatching]);
+
+  const startWatching = useCallback(async () => {
+    setWatchErr("");
+    try {
+      const { Room, RoomEvent } = await import("livekit-client");
+      const info = await spectateAdminStream(id);
+      const room = new Room();
+      roomRef.current = room;
+
+      room.on(RoomEvent.TrackSubscribed, (track) => {
+        if (track.kind === "video" && videoRef.current) track.attach(videoRef.current);
+        if (track.kind === "audio" && audioRef.current) track.attach(audioRef.current);
+      });
+      room.on(RoomEvent.Disconnected, () => setWatching(false));
+
+      await room.connect(info.livekit_url, info.token);
+      setWatching(true);
+    } catch (err) {
+      stopWatching();
+      setWatchErr(errText(err) || "Could not join the class.");
+    }
+  }, [id, stopWatching]);
   const toastTimer = useRef(null);
   const chatEndRef = useRef(null);
 
@@ -242,10 +285,37 @@ function MonitorSingle({ id }) {
         {/* Left: video placeholder + health + viewer trend */}
         <div className="lm-left">
           <div className="lm-video">
-            <Radio size={40} />
+            {/* Hidden until connected so the poster state is not a black box */}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted={false}
+              style={{
+                width: "100%", height: "100%", objectFit: "contain",
+                display: watching ? "block" : "none",
+              }}
+            />
+            <audio ref={audioRef} autoPlay />
+
+            {!watching && <Radio size={40} />}
+
             {isLive(stream) && <span className="lm-tile-live"><span className="ls-live-dot sm" /> LIVE</span>}
             <span className="lm-tile-watch"><Eye size={13} /> {stream.watching ?? 0} watching</span>
+
+            {isLive(stream) && (
+              <button
+                className="lm-watch-btn"
+                onClick={watching ? stopWatching : startWatching}
+                title={watching
+                  ? "Stop watching"
+                  : "Watch this class. You join silently — the teacher and students are not shown that you are here. Every observation is recorded against your account."}
+              >
+                {watching ? "Stop watching" : "Watch class"}
+              </button>
+            )}
           </div>
+          {watchErr && <div className="lm-watch-err">{watchErr}</div>}
 
           <div className="lm-stats-row">
             <div className="lm-stat">

@@ -27,6 +27,15 @@ export const postAdminStreamChat = async (id, text) =>
 export const endAdminStream = async (id) =>
   (await api.post(`/livestream/admin/streams/${id}/end/`, {})).data;
 
+/* Watch a class live. Returns a SUBSCRIBE-ONLY LiveKit token: the admin can
+   see and hear but cannot publish, and is hidden from the participant list —
+   the class is not told it is being observed. Deliberately not wrapped in
+   safe(): a silent fallback here would leave the player showing an empty
+   room, which reads as "the class isn't running" rather than "this failed".
+   Every call is recorded server-side against the admin's account. */
+export const spectateAdminStream = async (id, reason = "") =>
+  (await api.post(`/livestream/admin/streams/${id}/spectate/`, { reason })).data;
+
 export const getLiveNow = async () =>
   safe(async () => (await api.get("/livestream/admin/live-now/")).data, { data: [] });
 
