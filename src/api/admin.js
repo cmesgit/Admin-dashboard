@@ -318,7 +318,10 @@ export const enrollStudentInCourse = async (learnerProfileId, courseId, batch) =
 
 /* ── Agreement letters (admin editor + immutable version history) ── */
 export const getAgreement         = async (key)        => (await api.get(`/accounts/admin/agreements/${key}/`)).data;
+// save = stage a DRAFT (nothing an applicant sees changes); publish = go live.
 export const saveAgreement        = async (key, d)     => (await api.post(`/accounts/admin/agreements/${key}/save/`, d)).data;
+export const publishAgreement     = async (key)        => (await api.post(`/accounts/admin/agreements/${key}/publish/`, {})).data;
+export const discardAgreementDraft= async (key)        => (await api.post(`/accounts/admin/agreements/${key}/discard-draft/`, {})).data;
 export const getAgreementVersions = async (key)        => safe(async () => (await api.get(`/accounts/admin/agreements/${key}/versions/`)).data, []);
 export const getAgreementVersion  = async (versionId)  => (await api.get(`/accounts/admin/agreements/versions/${versionId}/`)).data;
 export const restoreAgreement     = async (versionId)  => (await api.post(`/accounts/admin/agreements/versions/${versionId}/restore/`, {})).data;

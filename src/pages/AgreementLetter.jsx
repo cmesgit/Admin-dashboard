@@ -16,6 +16,7 @@ import DOMPurify from "dompurify";
 import {
   getAgreement, saveAgreement, getAgreementVersions,
   getAgreementVersion, restoreAgreement,
+  publishAgreement, discardAgreementDraft,
 } from "../api/admin";
 import ConfirmModal from "../components/ConfirmModal";
 import renderMarkdown from "../utils/miniMarkdown";
@@ -42,6 +43,11 @@ const AgreementLetter = () => {
   // attached to the current version (so the admin can see/download it).
   const [docFile, setDocFile] = useState(null);
   const [currentDoc, setCurrentDoc] = useState(null);
+  // What is LIVE right now, and whether an unpublished draft exists. Kept
+  // apart so the editor never implies a saved draft is what applicants see.
+  const [liveNum, setLiveNum] = useState(null);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -94,11 +100,21 @@ const AgreementLetter = () => {
     setLoading(true);
     try {
       const cur = await getAgreement(KEY);
-      const v = cur.current_version;
-      setTitle(v?.title || cur.title || "Faculty Agreement");
-      setBody(v?.body || "");
-      setCurrentNum(v?.version_number ?? null);
-      setCurrentDoc(v?.document_url ? { url: v.document_url, name: v.document_name } : null);
+      const live = cur.current_version;
+      const draft = cur.draft;
+      // Edit the DRAFT when one exists — that's the work in progress. Fall
+      // back to the live text so a first edit starts from what's published.
+      const editing = draft || live;
+      setTitle(editing?.title || cur.title || "Faculty Agreement");
+      setBody(editing?.body || "");
+      setCurrentNum(live?.version_number ?? null);
+      setLiveNum(live?.version_number ?? null);
+      setHasDraft(!!draft);
+      setCurrentDoc(
+        editing?.document_url
+          ? { url: editing.document_url, name: editing.document_name }
+          : null,
+      );
       setDocFile(null);
       setVersions(await getAgreementVersions(KEY));
     } catch {
@@ -119,12 +135,53 @@ const AgreementLetter = () => {
       );
       await saveAgreement(KEY, data);
       setNote("");
-      setMsg(docFile ? "Saved as a new version with the imported file." : "Saved as a new version.");
+      setMsg(docFile
+        ? "Draft saved with the imported file — not live until you publish."
+        : "Draft saved — not live until you publish.");
       await loadAll();
     } catch (e) {
       const d = e?.response?.data;
       setErr(d?.document || d?.body || d?.title || d?.detail || "Save failed.");
     } finally { setSaving(false); }
+  };
+
+  const publish = async () => {
+    setConfirm({
+      title: hasDraft && liveNum ? `Publish over v${liveNum}?` : "Publish this agreement?",
+      message: liveNum
+        ? `Every applicant from now on reads and signs this instead of v${liveNum}. `
+          + `v${liveNum} stays in history, and anyone who already signed it stays bound to it.`
+        : "This becomes the first live version — every applicant will read and sign it.",
+      onConfirm: async () => {
+        setConfirm(null); setMsg(""); setErr(""); setPublishing(true);
+        try {
+          const r = await publishAgreement(KEY);
+          setMsg(`Published as v${r.published_version} — now live for all new applicants.`);
+          await loadAll();
+        } catch (e) {
+          setErr(e?.response?.data?.detail || "Publish failed.");
+        } finally { setPublishing(false); }
+      },
+    });
+  };
+
+  const discardDraft = async () => {
+    setConfirm({
+      title: "Discard the draft?",
+      message: liveNum
+        ? `Your unpublished changes are thrown away. The live v${liveNum} is untouched.`
+        : "Your unpublished changes are thrown away. Nothing is live yet.",
+      onConfirm: async () => {
+        setConfirm(null); setMsg(""); setErr("");
+        try {
+          await discardAgreementDraft(KEY);
+          setMsg("Draft discarded.");
+          await loadAll();
+        } catch (e) {
+          setErr(e?.response?.data?.detail || "Could not discard the draft.");
+        }
+      },
+    });
   };
 
   const viewVersion = async (id) => {
@@ -160,8 +217,31 @@ const AgreementLetter = () => {
           {loading ? <div className="dashboard-loading">Loading...</div> : (
             <>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h3 style={{ margin: 0 }}>Editing {currentNum ? `(current: v${currentNum})` : "(new)"}</h3>
+                <h3 style={{ margin: 0 }}>
+                  {hasDraft ? "Editing draft" : liveNum ? `Editing (live: v${liveNum})` : "Editing (new)"}
+                </h3>
+                {/* Never leave "is this live?" ambiguous — that ambiguity is
+                    the whole reason drafts exist. */}
+                <span style={{
+                  fontSize: 11, fontWeight: 700, letterSpacing: .5, textTransform: "uppercase",
+                  padding: "4px 10px", borderRadius: 999,
+                  background: hasDraft ? "#fff4e5" : liveNum ? "#e8f5e9" : "#f1f3f4",
+                  color: hasDraft ? "#8a5a00" : liveNum ? "#1b6e3c" : "#6b7280",
+                  border: `1px solid ${hasDraft ? "#f5c842" : liveNum ? "#a5d6a7" : "#dfe3e6"}`,
+                }}>
+                  {hasDraft ? "Unpublished draft" : liveNum ? `Live · v${liveNum}` : "Nothing published"}
+                </span>
               </div>
+              {hasDraft && (
+                <p style={{ fontSize: 12.5, color: "#8a5a00", background: "#fff4e5",
+                            border: "1px solid #f5c842", borderRadius: 8,
+                            padding: "9px 12px", margin: "10px 0 0" }}>
+                  These changes are <strong>not live</strong>.{" "}
+                  {liveNum
+                    ? `Applicants still see v${liveNum} until you press Publish.`
+                    : "No agreement is published yet, so the signup screen has none to show."}
+                </p>
+              )}
               <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginTop: 14, display: "block" }}>Title</label>
               <input value={title} onChange={(e) => setTitle(e.target.value)}
                 style={{ width: "100%", padding: "9px 12px", border: "1px solid #d7dbe0", borderRadius: 8, marginTop: 4 }} />
@@ -241,11 +321,11 @@ const AgreementLetter = () => {
               )}
               {!docFile && currentDoc && (
                 <div style={{ marginTop: 6, fontSize: 12.5, color: "#6b7280" }}>
-                  v{currentNum} has an imported file:{" "}
+                  {hasDraft ? "This draft" : liveNum ? `Live v${liveNum}` : "This letter"} has an imported file:{" "}
                   <a href={currentDoc.url} target="_blank" rel="noreferrer" style={{ color: "#4f6df5", fontWeight: 600 }}>
                     {currentDoc.name || "download"}
                   </a>
-                  . Saving without picking a new file keeps the text only — re-attach to carry it forward.
+                  . It stays attached when you save — pick a new file only to replace it.
                 </div>
               )}
 
@@ -254,12 +334,26 @@ const AgreementLetter = () => {
                 placeholder="e.g. Updated Section 5 — added data retention clause, revised compensation terms for 2025–26…"
                 style={{ width: "100%", padding: "10px 12px", border: "1px solid #d7dbe0", borderRadius: 8, marginTop: 4, fontFamily: "inherit", resize: "vertical" }} />
 
-              <div style={{ marginTop: 16 }}>
-                <button onClick={save} disabled={saving}
-                  style={{ padding: "11px 22px", background: "#4f6df5", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>
-                  {saving ? "Saving…" : "Save new version"}
+              <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <button onClick={save} disabled={saving || publishing}
+                  style={{ padding: "11px 22px", background: "#fff", color: "#4f6df5", border: "1.5px solid #4f6df5", borderRadius: 8, fontWeight: 700, cursor: "pointer", opacity: (saving || publishing) ? 0.6 : 1 }}>
+                  {saving ? "Saving…" : "Save draft"}
                 </button>
-                <span style={{ marginLeft: 12, fontSize: 12, color: "#9ca3af" }}>Each save creates an immutable version.</span>
+                <button onClick={publish} disabled={saving || publishing || !hasDraft}
+                  title={hasDraft ? "Make this the version every new applicant signs" : "Save a draft first"}
+                  style={{ padding: "11px 22px", background: hasDraft ? "#0f9d58" : "#c7cdd4", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: hasDraft ? "pointer" : "not-allowed", opacity: publishing ? 0.6 : 1 }}>
+                  {publishing ? "Publishing…" : "Publish"}
+                </button>
+                {hasDraft && (
+                  <button onClick={discardDraft} disabled={saving || publishing}
+                    style={{ background: "none", border: "none", color: "#c0392b", fontWeight: 600, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>
+                    Discard draft
+                  </button>
+                )}
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>
+                  Saving only stages a draft. Publishing freezes it as an immutable version
+                  and is the only step applicants ever see.
+                </span>
               </div>
             </>
           )}
