@@ -19,9 +19,13 @@ import {
 } from "../api/admin";
 import ConfirmModal from "../components/ConfirmModal";
 import renderMarkdown from "../utils/miniMarkdown";
+import { buildBody } from "../utils/buildBody";
 import "../css/Approvals.css"; // reuse .ap-modal
 
 const KEY = "faculty"; // the Faculty Agreement (extendable to other keys later)
+/* Matches the server-side allowlist in AdminAgreementSaveView. */
+const DOC_ACCEPT = ".pdf,.doc,.docx";
+const DOC_MAX_MB = 10;
 
 const fmt = (iso) => {
   if (!iso) return "—";
@@ -34,6 +38,10 @@ const AgreementLetter = () => {
   const [body, setBody] = useState("");
   const [note, setNote] = useState("");
   const [currentNum, setCurrentNum] = useState(null);
+  // An imported file for the version being written, and the one already
+  // attached to the current version (so the admin can see/download it).
+  const [docFile, setDocFile] = useState(null);
+  const [currentDoc, setCurrentDoc] = useState(null);
   const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -90,6 +98,8 @@ const AgreementLetter = () => {
       setTitle(v?.title || cur.title || "Faculty Agreement");
       setBody(v?.body || "");
       setCurrentNum(v?.version_number ?? null);
+      setCurrentDoc(v?.document_url ? { url: v.document_url, name: v.document_name } : null);
+      setDocFile(null);
       setVersions(await getAgreementVersions(KEY));
     } catch {
       setErr("Failed to load the agreement.");
@@ -100,12 +110,20 @@ const AgreementLetter = () => {
   const save = async () => {
     setSaving(true); setMsg(""); setErr("");
     try {
-      await saveAgreement(KEY, { title: title.trim(), body, change_note: note.trim() });
+      // A picked file makes this multipart (buildBody's convention, shared with
+      // every other admin form that accepts an upload). Either authoring route
+      // is valid: type the text, import a ready-made PDF/DOCX, or both.
+      const { data } = buildBody(
+        { title: title.trim(), body, change_note: note.trim() },
+        docFile, "document",
+      );
+      await saveAgreement(KEY, data);
       setNote("");
-      setMsg("Saved as a new version.");
+      setMsg(docFile ? "Saved as a new version with the imported file." : "Saved as a new version.");
       await loadAll();
     } catch (e) {
-      setErr(e?.response?.data?.body || e?.response?.data?.title || e?.response?.data?.detail || "Save failed.");
+      const d = e?.response?.data;
+      setErr(d?.document || d?.body || d?.title || d?.detail || "Save failed.");
     } finally { setSaving(false); }
   };
 
@@ -184,6 +202,51 @@ const AgreementLetter = () => {
                     placeholder="Full agreement text. Use section numbers (1. Engagement, 2. Responsibilities…)."
                     style={{ width: "100%", padding: "12px", border: "1px solid #d7dbe0", borderRadius: 8, fontFamily: "inherit", lineHeight: 1.6, resize: "vertical" }} />
                 </>
+              )}
+
+              {/* Import route — for a letter drafted outside the CMS (e.g. by
+                  a lawyer). When a version carries a file, THAT is what the
+                  applicant downloads and signs; the body above still renders
+                  on screen. Replaces the old hardcoded public/faculty-agreement.pdf
+                  in the frontend, which was one frozen file shared by every
+                  version and disconnected from anything the CMS said. */}
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginTop: 18, display: "block" }}>
+                Or import a signed-ready file <span style={{ fontWeight: 400, color: "#9ca3af" }}>(optional)</span>
+              </label>
+              <p style={{ fontSize: 12, color: "#9ca3af", margin: "4px 0 8px" }}>
+                PDF or Word · up to {DOC_MAX_MB} MB. Attach one and applicants download it
+                instead of printing the text above — still pinned to this version.
+              </p>
+              <input type="file" accept={DOC_ACCEPT}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  e.target.value = "";
+                  setErr("");
+                  if (!file) return;
+                  if (file.size > DOC_MAX_MB * 1024 * 1024) {
+                    setErr(`That file is larger than the ${DOC_MAX_MB} MB limit.`);
+                    return;
+                  }
+                  setDocFile(file);
+                }}
+                style={{ fontSize: 13 }} />
+              {docFile && (
+                <div style={{ marginTop: 6, fontSize: 12.5 }}>
+                  <strong>{docFile.name}</strong> will be attached to the next version.{" "}
+                  <button type="button" onClick={() => setDocFile(null)}
+                    style={{ background: "none", border: "none", color: "#4f6df5", fontWeight: 600, cursor: "pointer", padding: 0, fontFamily: "inherit" }}>
+                    Remove
+                  </button>
+                </div>
+              )}
+              {!docFile && currentDoc && (
+                <div style={{ marginTop: 6, fontSize: 12.5, color: "#6b7280" }}>
+                  v{currentNum} has an imported file:{" "}
+                  <a href={currentDoc.url} target="_blank" rel="noreferrer" style={{ color: "#4f6df5", fontWeight: 600 }}>
+                    {currentDoc.name || "download"}
+                  </a>
+                  . Saving without picking a new file keeps the text only — re-attach to carry it forward.
+                </div>
               )}
 
               <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginTop: 14, display: "block" }}>Version notes</label>

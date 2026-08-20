@@ -18,11 +18,14 @@ export function renderMarkdown(src = "") {
   const lines = escapeHtml(src).replace(/\r\n/g, "\n").split("\n");
   const html = [];
   let listType = null; // "ol" | "ul" | null
-  let para = [];
+  let para = []; // [{ text, hardBreak }]
 
   const flushPara = () => {
     if (para.length) {
-      html.push(`<p>${inline(para.join(" "))}</p>`);
+      const joined = para
+        .map((p, i) => (i === 0 ? inline(p.text) : (para[i - 1].hardBreak ? "<br>" : " ") + inline(p.text)))
+        .join("");
+      html.push(`<p>${joined}</p>`);
       para = [];
     }
   };
@@ -31,9 +34,20 @@ export function renderMarkdown(src = "") {
   };
 
   for (const raw of lines) {
-    const line = raw.trimEnd();
+    // A blank line only ends the CURRENT PARAGRAPH, not the current list —
+    // numbered clauses separated by blank lines (a normal, expected way to
+    // author a legal letter) used to each open a fresh <ol> and restart the
+    // browser's counter at 1, so every clause after the first rendered as
+    // "1." A list only actually closes when a heading/paragraph/different
+    // list type interrupts it below.
+    if (!raw.trim()) { flushPara(); continue; }
 
-    if (!line.trim()) { flushPara(); closeList(); continue; }
+    // Two-or-more trailing spaces = an explicit hard line break (the GFM
+    // convention), checked before trimEnd() below discards them — otherwise
+    // every single-newline in the source collapsed into one run-on sentence
+    // with no way for an admin to force a break (e.g. an address block).
+    const hardBreak = /[ \t]{2,}$/.test(raw);
+    const line = raw.trimEnd();
 
     const h = line.match(/^(#{1,3})\s+(.*)$/);
     if (h) {
@@ -43,11 +57,11 @@ export function renderMarkdown(src = "") {
       continue;
     }
 
-    const ol = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    const ol = line.match(/^\s*(\d+)[.)]\s+(.*)$/);
     if (ol) {
       flushPara();
-      if (listType !== "ol") { closeList(); html.push("<ol>"); listType = "ol"; }
-      html.push(`<li>${inline(ol[1])}</li>`);
+      if (listType !== "ol") { closeList(); html.push(`<ol start="${ol[1]}">`); listType = "ol"; }
+      html.push(`<li>${inline(ol[2])}</li>`);
       continue;
     }
 
@@ -60,7 +74,7 @@ export function renderMarkdown(src = "") {
     }
 
     closeList();
-    para.push(line);
+    para.push({ text: line, hardBreak });
   }
   flushPara(); closeList();
   return html.join("\n");
