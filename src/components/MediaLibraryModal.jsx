@@ -17,11 +17,12 @@
 // exact URL/dimensions), then patches only the new row's alt/focal metadata.
 import { useEffect, useRef, useState } from "react";
 import Cropper from "react-easy-crop";
-import { Loader2, Search, Upload, X, Crop as CropIcon } from "lucide-react";
+import { Loader2, Search, Upload, X, Crop as CropIcon, Trash2 } from "lucide-react";
 import {
   uploadContentEditorImage,
   listContentImages,
   updateContentImage,
+  deleteContentImage,
 } from "../api/admin";
 // Import the confirm-dialog chrome explicitly so this modal's overlay/card
 // shell (.confirm-overlay/.confirm-card) is styled even on a host page that
@@ -29,6 +30,7 @@ import {
 // the card size, it doesn't redefine the overlay/positioning.
 import "../css/ConfirmModal.css";
 import "../css/MediaLibrary.css";
+import ConfirmModal from "./ConfirmModal";
 
 // Draw the chosen pixel region of an image onto an offscreen canvas and hand
 // back a Blob. `crossOrigin="anonymous"` is set defensively: uploaded images
@@ -103,6 +105,10 @@ const MediaLibraryModal = ({ onInsert, onClose }) => {
   const [page, setPage] = useState(1);
   const [listData, setListData] = useState({ count: 0, next: null, previous: null, results: [] });
   const [listLoading, setListLoading] = useState(false);
+  // Delete confirmation for a library thumbnail — { item } while open, plus
+  // an `error` field if the delete call itself fails (same shape/idiom this
+  // app's other confirm-then-delete screens use, e.g. Faqs.jsx).
+  const [confirm, setConfirm] = useState(null);
 
   // ── crop state ──
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -143,6 +149,29 @@ const MediaLibraryModal = ({ onInsert, onClose }) => {
       cancelled = true;
     };
   }, [step, tab, debouncedQuery, page]);
+
+  // Removes a library row outright — unlike everything else in this modal,
+  // this doesn't just stop referencing an image, it deletes the underlying
+  // ContentImage row. If a published post still embeds this image's URL in
+  // its body, that <img> breaks; we don't check for that (no reference
+  // tracking exists), the confirm copy just warns about it plainly.
+  const handleDeleteImage = async () => {
+    if (!confirm) return;
+    setBusy(true);
+    try {
+      await deleteContentImage(confirm.item.id);
+      setListData((d) => ({
+        ...d,
+        results: d.results.filter((r) => r.id !== confirm.item.id),
+        count: Math.max(0, d.count - 1),
+      }));
+      setConfirm(null);
+    } catch (e) {
+      setConfirm((c) => ({ ...c, error: e?.message || "Could not delete this image. Please try again." }));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const goReview = (img, source) => {
     setImage(img);
@@ -271,6 +300,7 @@ const MediaLibraryModal = ({ onInsert, onClose }) => {
   const totalPages = Math.max(1, Math.ceil((listData.count || 0) / PAGE_SIZE));
 
   return (
+    <>
     <div className="confirm-overlay" onClick={onClose}>
       <div
         className="confirm-card media-lib-card"
@@ -359,15 +389,29 @@ const MediaLibraryModal = ({ onInsert, onClose }) => {
                 ) : (
                   <div className="media-lib-grid">
                     {listData.results.map((img) => (
-                      <button
-                        key={img.id}
-                        type="button"
-                        className="media-lib-thumb"
-                        title={img.title || img.alt_text || ""}
-                        onClick={() => goReview(img, "library")}
-                      >
-                        <img src={img.file} alt={img.alt_text || ""} loading="lazy" />
-                      </button>
+                      <div className="media-lib-thumb-wrap" key={img.id}>
+                        <button
+                          type="button"
+                          className="media-lib-thumb"
+                          title={img.title || img.alt_text || ""}
+                          onClick={() => goReview(img, "library")}
+                        >
+                          <img src={img.file} alt={img.alt_text || ""} loading="lazy" />
+                        </button>
+                        <button
+                          type="button"
+                          className="media-lib-thumb-delete"
+                          title="Delete image"
+                          aria-label="Delete image"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setError("");
+                            setConfirm({ item: img });
+                          }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -507,6 +551,20 @@ const MediaLibraryModal = ({ onInsert, onClose }) => {
         )}
       </div>
     </div>
+
+    {/* Rendered outside the overlay above (not nested inside it) so a click
+        on this dialog's own backdrop doesn't bubble up into that overlay's
+        onClick and close the whole Insert Image modal underneath it. */}
+    {confirm && (
+      <ConfirmModal
+        title="Delete image"
+        message="Delete this image from the library? If it's still used in a published post, it will disappear from that post too — this can't be undone."
+        extra={confirm.error ? <div className="cm-form-error">{confirm.error}</div> : null}
+        onConfirm={handleDeleteImage}
+        onCancel={() => setConfirm(null)}
+      />
+    )}
+    </>
   );
 };
 
