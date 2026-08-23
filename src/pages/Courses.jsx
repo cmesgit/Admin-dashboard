@@ -802,6 +802,10 @@ function ChapterModal({ subject, onClose, onChanged }) {
   const [draft, setDraft] = useState({ title: "", content_html: "", trusted_html: false });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  // Every other delete on this screen routes through ConfirmModal; this one
+  // used to fire straight from the button, sitting right next to Edit and the
+  // reorder arrows, so a misclick destroyed a chapter's content_html for good.
+  const [confirmDel, setConfirmDel] = useState(null);
 
   const startNew = () => {
     setDraft({ title: "", content_html: "", trusted_html: false });
@@ -838,6 +842,7 @@ function ChapterModal({ subject, onClose, onChanged }) {
     try {
       await deleteChapter(ch.id);
       setChapters((cs) => cs.filter((c) => c.id !== ch.id));
+      setConfirmDel(null);
       onChanged?.();
     } catch (e) {
       setErr(errText(e));
@@ -932,7 +937,7 @@ function ChapterModal({ subject, onClose, onChanged }) {
                     <button className="cm-icon-btn" disabled={busy || idx === 0} onClick={() => move(idx, -1)} aria-label="Move up">↑</button>
                     <button className="cm-icon-btn" disabled={busy || idx === sortedChapters.length - 1} onClick={() => move(idx, 1)} aria-label="Move down">↓</button>
                     <button className="cm-icon-btn" disabled={busy} onClick={() => startEdit(ch)}>Edit</button>
-                    <button className="cm-icon-btn cm-icon-btn--danger" disabled={busy} onClick={() => remove(ch)}>Delete</button>
+                    <button className="cm-icon-btn cm-icon-btn--danger" disabled={busy} onClick={() => setConfirmDel(ch)}>Delete</button>
                   </div>
                 </div>
               )
@@ -966,6 +971,22 @@ function ChapterModal({ subject, onClose, onChanged }) {
           <button className="confirm-ok" onClick={onClose}>Done</button>
         </div>
       </div>
+
+      {/* Wrapped in a stopPropagation layer on purpose: ConfirmModal's own
+          backdrop calls onCancel but doesn't stop the click, so without this
+          dismissing the confirm would bubble to the overlay above and close
+          the whole chapter editor with it. */}
+      {confirmDel && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <ConfirmModal
+            title="Delete chapter"
+            message={`Delete "${confirmDel.title}"? Its content is removed with it. This can't be undone.`}
+            extra={err ? <div className="cm-form-error">{err}</div> : null}
+            onConfirm={() => remove(confirmDel)}
+            onCancel={() => setConfirmDel(null)}
+          />
+        </div>
+      )}
     </div>
   );
 }
