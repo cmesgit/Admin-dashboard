@@ -5,11 +5,21 @@ import api from "./apiClient";
    empty state either way), but a 404 ("this endpoint/resource genuinely
    doesn't exist yet") is silently expected, while anything else (500,
    network failure, timeout) is a real outage — log those so they don't
-   look identical to "no data" in the UI. */
+   look identical to "no data" in the UI.
+
+   On a real failure the fallback is also tagged with a non-enumerable
+   `__failed` flag, so a caller that cares (a page rendering "No X yet")
+   can tell "the request actually failed" apart from "this is genuinely
+   empty" — without changing what gets returned. Non-enumerable so it's
+   invisible to JSON.stringify/spread/Object.keys/.map and every other
+   existing call site that just uses the array/object as-is. */
 const safe = async (fn, fallback) => {
   try { return await fn(); } catch (err) {
     if (err?.response?.status !== 404) {
       console.error("[admin api] request failed, falling back to empty state:", err);
+      if (fallback && typeof fallback === "object") {
+        Object.defineProperty(fallback, "__failed", { value: true, enumerable: false, configurable: true });
+      }
     }
     return fallback;
   }
