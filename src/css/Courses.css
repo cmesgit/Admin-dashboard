@@ -28,6 +28,11 @@
 }
 
 .courses-table td {
+  /* .dashboard-card used to carry `text-align: center`, which leaked into
+     every data cell here and left them centred under left-aligned headers.
+     That default is now scoped to Overview's stat tiles, but stating it
+     explicitly keeps this table correct regardless of what wraps it. */
+  text-align: left;
   padding: 14px 20px;
   font-size: 0.9rem;
   color: #1f2937;
