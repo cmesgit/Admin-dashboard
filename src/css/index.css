@@ -81,3 +81,48 @@ button {
     transform: translateY(0);
   }
 }
+
+/* ── Shared dashboard layout primitives ─────────────────────────────────
+   These lived only in Overview.css, which only Overview.jsx imports. Every
+   route is lazy-loaded with its own CSS chunk, so deep-linking or hard-
+   refreshing any of the other 37 pages that use these classes rendered them
+   with no page gutter, no max-width and no card chrome — while reaching the
+   same page *via* Overview looked correct, because that chunk had already
+   loaded. That intermittency is what "the page doesn't show properly" was.
+   They are shared vocabulary, so they load once, globally, here. */
+.dashboard-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.dashboard-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #111827;
+}
+
+.dashboard-loading {
+  text-align: center;
+  margin: 80px 0;
+  font-size: 18px;
+  color: #555;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+/* Deliberately NOT `text-align: center` here. Centring belongs to Overview's
+   stat tiles, and as a shared default it leaked into every table cell on the
+   pages that reuse this class as a generic panel — which is why Courses.css
+   carries hand-patched `text-align: left` on .cm-link and .cm-linkish. */
+.dashboard-card {
+  background: #ffffff;
+  border: 1px solid #e8ebf1;
+  border-radius: 9px;
+  padding: 20px;
+}
