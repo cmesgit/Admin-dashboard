@@ -8,12 +8,20 @@ import {
   getAcademicCourses, getBoards,
 } from "../../api/admin";
 import ConfirmModal from "../../components/ConfirmModal";
-import TagChipInput from "../../components/TagChipInput";
 import ImageUploadField from "../../components/ImageUploadField";
 import FeaturedCardPreview from "./preview/FeaturedCardPreview";
 import PlacementBadge from "./preview/PlacementBadge";
 import { errText } from "../../utils/errText";
 import { buildBody } from "../../utils/buildBody";
+
+// Keys must match shiksha-frontend's homeData.js COURSE_TABS ids. "all" is
+// deliberately excluded — it's a reserved sentinel meaning "no filter applied"
+// (see FeaturedCourses.jsx), not a real category a card can be tagged with.
+const CATEGORY_CHOICES = [
+  ["boards", "Boards"],
+  ["class8-12", "Class 8–12"],
+  ["competitive", "Competitive"],
+];
 
 // Keys must match shiksha-frontend's FeaturedCourses.jsx CAT_ICON_PATHS —
 // the public site renders its own SVGs, keyed the same way, for these values.
@@ -52,7 +60,10 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     price_label: initial?.price_label || "",
     tutor_name: initial?.tutor_name || "",
     is_explore_card: initial?.is_explore_card ?? false,
-    categories: initial?.categories || [],
+    // Drop any stray/legacy value (old free-text typos, or the "all" sentinel)
+    // that doesn't match a real category — the checkbox group below can only
+    // ever write back known ids, so this also self-heals older rows on save.
+    categories: (initial?.categories || []).filter((c) => CATEGORY_CHOICES.some(([id]) => id === c)),
     gradient_css: initial?.gradient_css || "rgba(79,109,245,0.15), rgba(109,140,255,0.05)",
     image_url: initial?.image_url || "",
     icon: initial?.icon || "book",
@@ -211,14 +222,28 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
           </label>
         </div>
 
-        <label className="cm-field">
+        <div className="cm-field">
           <span>Categories</span>
-          <TagChipInput
-            value={form.categories}
-            onChange={(v) => setForm((f) => ({ ...f, categories: v }))}
-            placeholder="Type a category, press Enter…"
-          />
-        </label>
+          <div className="cm-checkbox-group">
+            {CATEGORY_CHOICES.map(([id, label]) => (
+              <label className="cm-check cm-check--inline" key={id}>
+                <input
+                  type="checkbox"
+                  checked={form.categories.includes(id)}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      categories: e.target.checked
+                        ? [...f.categories, id]
+                        : f.categories.filter((c) => c !== id),
+                    }))
+                  }
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
 
         <div className="cm-row">
           <label className="cm-field">
