@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  getHomeContentBlocks, createHomeContentBlock, updateHomeContentBlock,
+  getHomeContentBlocks, createHomeContentBlock, updateHomeContentBlock, deleteHomeContentBlock,
   getHomeListItems, createHomeListItem, updateHomeListItem, deleteHomeListItem,
-  getHomeFloaters, createHomeFloater, updateHomeFloater,
+  getHomeFloaters, createHomeFloater, updateHomeFloater, deleteHomeFloater,
   getHomeSectionOrder, updateHomeSectionOrder, reorderHomeSections,
 } from "../../api/admin";
 import ConfirmModal from "../../components/ConfirmModal";
@@ -76,7 +76,7 @@ const sectionLabel = (v) => (HOME_SECTIONS.find((s) => s[0] === v) || [v, v])[1]
 
 /* ═══════════════════════ Content block (singleton per section) ═══════════════════════ */
 
-function ContentBlockForm({ section, row, busy, error, onSubmit }) {
+function ContentBlockForm({ section, row, busy, error, onSubmit, onDeleteClick }) {
   const [form, setForm] = useState({
     eyebrow: row?.eyebrow || "",
     heading: row?.heading || "",
@@ -192,7 +192,12 @@ function ContentBlockForm({ section, row, busy, error, onSubmit }) {
 
       {error && <div className="cm-form-error">{error}</div>}
 
-      <div className="confirm-actions" style={{ justifyContent: "flex-end" }}>
+      <div className="confirm-actions" style={{ justifyContent: row ? "space-between" : "flex-end" }}>
+        {row && (
+          <button className="cm-icon-btn cm-icon-btn--danger" onClick={onDeleteClick} disabled={busy}>
+            Delete
+          </button>
+        )}
         <button className="confirm-ok" onClick={submit} disabled={busy}>
           {busy ? "Saving…" : row ? "Save" : "Create"}
         </button>
@@ -206,6 +211,7 @@ function ContentBlockPanel({ section, notify }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [confirm, setConfirm] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -235,8 +241,44 @@ function ContentBlockPanel({ section, notify }) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm || !row) return;
+    setBusy(true);
+    try {
+      await deleteHomeContentBlock(row.id);
+      setRow(null);
+      notify(`${sectionLabel(section)} content block deleted — the section now shows its built-in default text.`);
+      setConfirm(null);
+    } catch (e) {
+      setConfirm((c) => ({ ...c, error: errText(e) }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (loading) return <div className="dashboard-loading">Loading…</div>;
-  return <ContentBlockForm section={section} row={row} busy={busy} error={error} onSubmit={handleSubmit} />;
+  return (
+    <>
+      <ContentBlockForm
+        section={section}
+        row={row}
+        busy={busy}
+        error={error}
+        onSubmit={handleSubmit}
+        onDeleteClick={() => setConfirm({})}
+      />
+
+      {confirm && (
+        <ConfirmModal
+          title="Delete content block"
+          message={`Delete the ${sectionLabel(section)} content block? This section will fall back to its built-in default heading and copy — this can't be undone.`}
+          extra={confirm.error ? <div className="cm-form-error">{confirm.error}</div> : null}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+    </>
+  );
 }
 
 /* ═══════════════════════ List items (repeatable cards/chips) ═══════════════════════ */
@@ -562,6 +604,7 @@ function FloatersPanel({ section, notify }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
+  const [confirm, setConfirm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -590,6 +633,21 @@ function FloatersPanel({ section, notify }) {
       setModal(null);
     } catch (e) {
       setFormError(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm) return;
+    setBusy(true);
+    try {
+      await deleteHomeFloater(confirm.item.id);
+      setRows((prev) => prev.filter((r) => r.id !== confirm.item.id));
+      notify("Badge deleted");
+      setConfirm(null);
+    } catch (e) {
+      setConfirm((c) => ({ ...c, error: errText(e) }));
     } finally {
       setBusy(false);
     }
@@ -625,6 +683,11 @@ function FloatersPanel({ section, notify }) {
                   <button className="mod-btn ghost small" onClick={() => { setFormError(""); setModal({ slot: slotKey, slotLabel, initial: r || null }); }}>
                     {r ? "Edit" : "Add"}
                   </button>
+                  {r && (
+                    <button className="mod-btn danger small" onClick={() => setConfirm({ item: r, slotLabel })}>
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -642,6 +705,16 @@ function FloatersPanel({ section, notify }) {
           error={formError}
           onSubmit={handleSubmit}
           onCancel={() => setModal(null)}
+        />
+      )}
+
+      {confirm && (
+        <ConfirmModal
+          title="Delete badge"
+          message={`Delete the "${confirm.slotLabel}" badge? This can't be undone.`}
+          extra={confirm.error ? <div className="cm-form-error">{confirm.error}</div> : null}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirm(null)}
         />
       )}
     </div>
