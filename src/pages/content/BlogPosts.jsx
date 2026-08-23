@@ -22,6 +22,7 @@ const BlogPosts = ({ onAction }) => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   const [confirm, setConfirm] = useState(null);
   const [selectMode, setSelectMode] = useState(false);
@@ -34,6 +35,7 @@ const BlogPosts = ({ onAction }) => {
   const load = async () => {
     setLoading(true);
     const d = await getContentBlogs();
+    setLoadError(!!d?.__failed);
     setRows(Array.isArray(d) ? d : d.results || []);
     setLoading(false);
   };
@@ -259,6 +261,10 @@ const BlogPosts = ({ onAction }) => {
 
       {loading ? (
         <div className="dashboard-loading">Loading…</div>
+      ) : loadError ? (
+        <div className="dashboard-card">
+          <div className="dashboard-loading">Couldn't load blog posts. <button className="cm-icon-btn" onClick={load}>Retry</button></div>
+        </div>
       ) : visible.length === 0 ? (
         <div className="dashboard-card">
           <div className="dashboard-loading">{rows.length === 0 ? "No blog posts yet." : "No posts match this search."}</div>

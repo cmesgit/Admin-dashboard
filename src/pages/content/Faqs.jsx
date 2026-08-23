@@ -89,6 +89,7 @@ function FaqFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
 const Faqs = ({ onAction }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [page, setPage] = useState("");
   const [modal, setModal] = useState(null);
   const [confirm, setConfirm] = useState(null);
@@ -102,6 +103,7 @@ const Faqs = ({ onAction }) => {
     // Filter param is page_key, not page — "page" collides with DRF's own
     // pagination query param on this list endpoint.
     const d = await getContentFaqs({ page_key: page || undefined });
+    setLoadError(!!d?.__failed);
     setRows(Array.isArray(d) ? d : d.results || []);
     setLoading(false);
   };
@@ -161,6 +163,8 @@ const Faqs = ({ onAction }) => {
         <div className="courses-count">{rows.length} FAQ{rows.length !== 1 ? "s" : ""}</div>
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
+        ) : loadError ? (
+          <div className="dashboard-loading">Couldn't load FAQs. <button className="cm-icon-btn" onClick={load}>Retry</button></div>
         ) : rows.length === 0 ? (
           <div className="dashboard-loading">No FAQs yet for this filter.</div>
         ) : (

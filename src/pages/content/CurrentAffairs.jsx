@@ -140,6 +140,7 @@ function AffairFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
 const CurrentAffairs = ({ onAction }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState(null);
@@ -152,6 +153,7 @@ const CurrentAffairs = ({ onAction }) => {
   const load = async () => {
     setLoading(true);
     const d = await getContentAffairs();
+    setLoadError(!!d?.__failed);
     setRows(Array.isArray(d) ? d : d.results || []);
     setLoading(false);
   };
@@ -236,6 +238,8 @@ const CurrentAffairs = ({ onAction }) => {
         <div className="courses-count">{visible.length} entr{visible.length !== 1 ? "ies" : "y"}</div>
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
+        ) : loadError ? (
+          <div className="dashboard-loading">Couldn't load current affairs. <button className="cm-icon-btn" onClick={load}>Retry</button></div>
         ) : visible.length === 0 ? (
           <div className="dashboard-loading">No current affairs entries match this filter.</div>
         ) : (
