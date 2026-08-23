@@ -147,6 +147,26 @@
   display: block;
 }
 
+/* Positions the per-image Delete button over the top-right corner of its
+   thumbnail — same danger palette as .cm-icon-btn--danger (Courses.css)
+   used elsewhere in the app, kept local here since this file is guaranteed
+   loaded wherever this modal renders. */
+.media-lib-thumb-wrap { position: relative; }
+.media-lib-thumb-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  border: 1px solid #f0c9c9;
+  background: rgba(255, 255, 255, 0.92);
+  color: #b91c1c;
+  border-radius: 6px;
+  padding: 3px;
+  cursor: pointer;
+  line-height: 0;
+}
+.media-lib-thumb-delete:hover { background: #fdecec; }
+
 .media-lib-grid-empty {
   display: flex;
   align-items: center;
