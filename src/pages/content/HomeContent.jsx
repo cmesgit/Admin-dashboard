@@ -22,11 +22,12 @@ const HOME_SECTIONS = [
   ["why_shiksha", "Why Shiksha"],
   ["teachers_students", "Teachers & Students"],
   ["browse_categories", "Browse Categories"],
-  // featured_courses/faq have no HomeContentBlock content of their own
-  // (ShowcaseCourse-backed / FAQItem-backed respectively) — kept out of
-  // this chip list since there'd be nothing to edit here, but they DO
-  // appear in SectionOrderPanel since they're still real, reorderable/
-  // hideable homepage sections.
+  // featured_courses/faq get their LIST content from ShowcaseCourse and
+  // FAQItem (edit those on the Showcase / FAQs tabs). Their section heading
+  // is a normal content block though, so both belong here — until the
+  // frontend was wired up those headings were hardcoded and uneditable.
+  ["featured_courses", "Featured Courses (heading only)"],
+  ["faq", "FAQ (heading only)"],
   ["why_choose", "Why Choose ShikshaCom"],
   ["resources", "Resources & Support"],
   ["collaborate", "Collaborate"],
