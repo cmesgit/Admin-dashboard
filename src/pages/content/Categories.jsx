@@ -98,6 +98,7 @@ function CategoryFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
 const Categories = ({ onAction }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [modal, setModal] = useState(null); // { mode, initial }
   const [confirm, setConfirm] = useState(null); // { item, error? }
   const [busy, setBusy] = useState(false);
@@ -108,6 +109,7 @@ const Categories = ({ onAction }) => {
   const load = async () => {
     setLoading(true);
     const d = await getCourseCategories();
+    setLoadError(!!d?.__failed);
     setRows(Array.isArray(d) ? d : d.results || []);
     setLoading(false);
   };
@@ -162,6 +164,8 @@ const Categories = ({ onAction }) => {
       <div className="dashboard-card courses-table-card">
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
+        ) : loadError ? (
+          <div className="dashboard-loading">Couldn't load categories. <button className="cm-icon-btn" onClick={load}>Retry</button></div>
         ) : rows.length === 0 ? (
           <div className="dashboard-loading">No categories yet. Create one to power the course multi-select and catalog filters.</div>
         ) : (

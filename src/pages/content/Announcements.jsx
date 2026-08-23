@@ -108,6 +108,7 @@ function AnnouncementFormModal({ mode, initial, busy, error, onSubmit, onCancel 
 const Announcements = ({ onAction }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [modal, setModal] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -118,6 +119,7 @@ const Announcements = ({ onAction }) => {
   const load = async () => {
     setLoading(true);
     const d = await getContentAnnouncements();
+    setLoadError(!!d?.__failed);
     setRows(Array.isArray(d) ? d : d.results || []);
     setLoading(false);
   };
@@ -172,6 +174,8 @@ const Announcements = ({ onAction }) => {
         <div className="courses-count">{rows.length} announcement{rows.length !== 1 ? "s" : ""}</div>
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
+        ) : loadError ? (
+          <div className="dashboard-loading">Couldn't load announcements. <button className="cm-icon-btn" onClick={load}>Retry</button></div>
         ) : rows.length === 0 ? (
           <div className="dashboard-loading">No announcements yet.</div>
         ) : (

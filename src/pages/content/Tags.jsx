@@ -37,6 +37,7 @@ function TagFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
 const Tags = ({ onAction }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [q, setQ] = useState("");
   const [modal, setModal] = useState(null); // { mode, initial }
   const [confirm, setConfirm] = useState(null); // { item, error? }
@@ -48,6 +49,7 @@ const Tags = ({ onAction }) => {
   const load = async () => {
     setLoading(true);
     const d = await getContentTags({ q: q || undefined });
+    setLoadError(!!d?.__failed);
     setRows(Array.isArray(d) ? d : d.results || []);
     setLoading(false);
   };
@@ -116,6 +118,8 @@ const Tags = ({ onAction }) => {
         <div className="courses-count">{rows.length} tag{rows.length !== 1 ? "s" : ""}</div>
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
+        ) : loadError ? (
+          <div className="dashboard-loading">Couldn't load tags. <button className="cm-icon-btn" onClick={load}>Retry</button></div>
         ) : rows.length === 0 ? (
           <div className="dashboard-loading">No tags yet. Create one to start tagging blog posts and current affairs.</div>
         ) : (

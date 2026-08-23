@@ -376,6 +376,7 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
 const Showcase = ({ onAction }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [modal, setModal] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -386,6 +387,7 @@ const Showcase = ({ onAction }) => {
   const load = async () => {
     setLoading(true);
     const d = await getContentShowcase();
+    setLoadError(!!d?.__failed);
     setRows(Array.isArray(d) ? d : d.results || []);
     setLoading(false);
   };
@@ -440,6 +442,10 @@ const Showcase = ({ onAction }) => {
 
       {loading ? (
         <div className="dashboard-loading">Loading…</div>
+      ) : loadError ? (
+        <div className="dashboard-card">
+          <div className="dashboard-loading">Couldn't load showcase cards. <button className="cm-icon-btn" onClick={load}>Retry</button></div>
+        </div>
       ) : rows.length === 0 ? (
         <div className="dashboard-card">
           <div className="dashboard-loading">No showcase cards yet. Add one to populate the homepage "Featured courses" grid.</div>

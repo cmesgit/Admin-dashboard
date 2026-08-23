@@ -209,21 +209,25 @@ function ContentBlockForm({ section, row, busy, error, onSubmit, onDeleteClick }
 function ContentBlockPanel({ section, notify }) {
   const [row, setRow] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState(null);
 
-  useEffect(() => {
+  const load = () => {
     let alive = true;
     setLoading(true);
     getHomeContentBlocks({ section }).then((rows) => {
       if (!alive) return;
       const list = Array.isArray(rows) ? rows : rows.results || [];
+      setLoadError(!!rows?.__failed);
       setRow(list[0] || null);
       setLoading(false);
     });
     return () => { alive = false; };
-  }, [section]);
+  };
+
+  useEffect(load, [section]);
 
   const handleSubmit = async (payload, file) => {
     setBusy(true); setError("");
@@ -257,6 +261,13 @@ function ContentBlockPanel({ section, notify }) {
   };
 
   if (loading) return <div className="dashboard-loading">Loading…</div>;
+  if (loadError) {
+    return (
+      <div className="dashboard-loading">
+        Couldn't load this content block. <button className="cm-icon-btn" onClick={load}>Retry</button>
+      </div>
+    );
+  }
   return (
     <>
       <ContentBlockForm
@@ -416,6 +427,7 @@ function ListItemFormModal({ section, showVariant, initial, busy, error, onSubmi
 function ListItemsPanel({ section, notify }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [variantFilter, setVariantFilter] = useState("");
   const [modal, setModal] = useState(null);
   const [confirm, setConfirm] = useState(null);
@@ -427,6 +439,7 @@ function ListItemsPanel({ section, notify }) {
   const load = async () => {
     setLoading(true);
     const d = await getHomeListItems({ section, variant: showVariant ? (variantFilter || undefined) : undefined });
+    setLoadError(!!d?.__failed);
     setRows(Array.isArray(d) ? d : d.results || []);
     setLoading(false);
   };
@@ -486,6 +499,8 @@ function ListItemsPanel({ section, notify }) {
         <div className="courses-count">{rows.length} item{rows.length !== 1 ? "s" : ""}</div>
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
+        ) : loadError ? (
+          <div className="dashboard-loading">Couldn't load items. <button className="cm-icon-btn" onClick={load}>Retry</button></div>
         ) : rows.length === 0 ? (
           <div className="dashboard-loading">No items yet for this section.</div>
         ) : (
@@ -603,21 +618,25 @@ function FloatersPanel({ section, notify }) {
   const slots = FLOATER_SLOTS_BY_SECTION[section] || [];
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [modal, setModal] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState("");
 
-  useEffect(() => {
+  const load = () => {
     let alive = true;
     setLoading(true);
     getHomeFloaters({ section }).then((d) => {
       if (!alive) return;
+      setLoadError(!!d?.__failed);
       setRows(Array.isArray(d) ? d : d.results || []);
       setLoading(false);
     });
     return () => { alive = false; };
-  }, [section]);
+  };
+
+  useEffect(load, [section]);
 
   const bySlot = useMemo(() => Object.fromEntries(rows.map((r) => [r.slot, r])), [rows]);
 
@@ -659,6 +678,8 @@ function FloatersPanel({ section, notify }) {
     <div>
       {loading ? (
         <div className="dashboard-loading">Loading…</div>
+      ) : loadError ? (
+        <div className="dashboard-loading">Couldn't load badges. <button className="cm-icon-btn" onClick={load}>Retry</button></div>
       ) : (
         <div className="cms-card-grid">
           {slots.map(([slotKey, slotLabel]) => {
@@ -726,12 +747,14 @@ function FloatersPanel({ section, notify }) {
 function SectionOrderPanel({ notify }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   const load = () => {
     setLoading(true);
     getHomeSectionOrder().then((data) => {
+      setLoadError(!!data?.__failed);
       setRows(data || []);
       setLoading(false);
     });
@@ -782,6 +805,11 @@ function SectionOrderPanel({ notify }) {
         it from the live site without deleting its content. Changes apply
         immediately.
       </p>
+      {loadError && (
+        <div className="cm-form-error">
+          Couldn't load section order. <button className="cm-icon-btn" onClick={load}>Retry</button>
+        </div>
+      )}
       {error && <div className="cm-form-error">{error}</div>}
       <ol className="section-order-list">
         {rows.map((row, i) => (
