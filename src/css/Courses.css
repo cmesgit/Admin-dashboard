@@ -153,7 +153,9 @@
 
 /* Create/Edit form modal — reuses .confirm-overlay backdrop */
 .cm-form-card {
-  width: min(92%, 460px);
+  /* 460px was tight for a form that puts two fields on a row; the extra
+     100px is what stops those pairs wrapping on an ordinary desktop. */
+  width: min(94%, 560px);
   max-height: 90vh;
   overflow-y: auto;
   background: #fff;
@@ -199,8 +201,13 @@
 }
 .cm-field textarea { resize: vertical; }
 
-.cm-row { display: flex; gap: 12px; }
-.cm-row .cm-field { flex: 1; }
+/* Paired fields inside the edit modal. These used to be a plain flex row that
+   could neither wrap nor shrink: `flex: 1` still floors a flex item at its
+   content width, because the default `min-width: auto` applies. Two fields
+   therefore fought over ~400px inside a 460px card and just got crushed.
+   They now wrap to their own line once they'd drop below a readable width. */
+.cm-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.cm-row .cm-field { flex: 1 1 200px; min-width: 0; }
 
 .cm-check {
   display: flex;
@@ -418,3 +425,38 @@
   text-align: left;
 }
 .cm-linkish:hover { text-decoration: underline; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────
+   This file had no breakpoints at all (the only @media below is a
+   reduced-motion guard), so the page kept full desktop metrics at every
+   width. The courses table is `width: 100%` inside a card that is
+   `overflow-x: auto`, with 20px cell padding and a description column
+   pinned at 320px — so on a smaller window the columns outgrew the card and
+   the table scrolled sideways *inside* it, pushing the rightmost column
+   (the Edit/Delete actions) out of sight behind a scrollbar most people
+   never look for. Tightening the cells and letting the description give way
+   keeps the actions on screen instead. */
+@media (max-width: 1180px) {
+  .courses-table th,
+  .courses-table td { padding: 12px 12px; }
+  .courses-desc { max-width: 200px; }
+}
+
+@media (max-width: 900px) {
+  .courses-table th,
+  .courses-table td { padding: 10px 10px; font-size: 0.85rem; }
+  .courses-desc { max-width: 130px; }
+  /* Actions stop being pinned right once the row is this tight — they read
+     better next to the content they act on than floating at a far edge. */
+  .cm-actions { justify-content: flex-start; }
+}
+
+@media (max-width: 640px) {
+  .courses-tabs,
+  .cm-subnav { overflow-x: auto; padding-bottom: 4px; }
+  .courses-tabs > *,
+  .cm-subnav > * { flex: none; }
+  .cm-form-card { padding: 20px 16px; }
+  .cm-assign-row,
+  .cm-pool-row { flex-wrap: wrap; }
+}
