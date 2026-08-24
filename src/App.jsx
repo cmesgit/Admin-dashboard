@@ -18,6 +18,8 @@ const BlogEditor = lazy(() => import("./pages/content/BlogEditor"));
 const SkillCMSPanel = lazy(() => import("./pages/skillcms/SkillCMSPanel"));
 const ScholarshipPanel = lazy(() => import("./pages/scholarship/ScholarshipPanel"));
 const AcademyQuizzes = lazy(() => import("./pages/AcademyQuizzes"));
+// A1 · admin question-bank review queue (Phase 7).
+const QuestionReviewQueue = lazy(() => import("./pages/QuestionReviewQueue"));
 const CommunicationReports = lazy(() => import("./pages/CommunicationReports"));
 const CommunicationBroadcast = lazy(() => import("./pages/CommunicationBroadcast"));
 const CommunicationSupport = lazy(() => import("./pages/CommunicationSupport"));
@@ -91,6 +93,7 @@ const App = () => {
             <Route path="users/:id" element={<UserDetail />} />
             <Route path="courses" element={<Courses />} />
             <Route path="quizzes" element={<AcademyQuizzes />} />
+            <Route path="question-bank/review" element={<QuestionReviewQueue />} />
             <Route path="teachers" element={<Teachers />} />
             <Route path="students" element={<Students />} />
             <Route path="students/:id" element={<StudentDetail />} />
