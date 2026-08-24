@@ -26,7 +26,9 @@ const HOME_SECTIONS = [
   // FAQItem (edit those on the Showcase / FAQs tabs). Their section heading
   // is a normal content block though, so both belong here — until the
   // frontend was wired up those headings were hardcoded and uneditable.
-  ["featured_courses", "Featured Courses (heading only)"],
+  // featured_courses additionally owns how many of those showcase cards the
+  // homepage grid actually renders (see CAP_SECTION).
+  ["featured_courses", "Featured Courses (heading + card count)"],
   ["faq", "FAQ (heading only)"],
   ["why_choose", "Why Choose ShikshaCom"],
   ["resources", "Resources & Support"],
@@ -35,10 +37,25 @@ const HOME_SECTIONS = [
   // Not a homepage section — the /courses page's own hero, reusing this
   // same screen/model since it's the identical heading/copy/CTA/image shape.
   ["courses_hero", "Courses Hero"],
+  // Same again for the /about page. Its five sections were hardcoded in the
+  // frontend until now, so none of this copy could be corrected without a
+  // deploy. The repeatable bullets/pillars/cards under each live in the
+  // List items panel below, keyed by the same section.
+  ["about_hero", "About — Hero"],
+  ["about_vision", "About — Our Vision"],
+  ["about_mission", "About — Our Mission"],
+  ["about_values", "About — Our Values"],
+  ["about_why", "About — Why Choose ShikshaCom"],
 ];
 
-// Human labels for SectionOrderPanel, covering the 2 sections above that
-// have no content-block chip (featured_courses/faq) plus everything else.
+// The one section whose content block also carries a card-count cap, stored as
+// `extra.max_cards` and read by the frontend's home/FeaturedCourses.jsx. Every
+// active ShowcaseCourse row used to render, so the homepage grew a card at a
+// time as rows were added.
+const CAP_SECTION = "featured_courses";
+
+// Human labels for SectionOrderPanel, covering sections whose list content is
+// edited on another tab (featured_courses/faq) plus everything else.
 const SECTION_ORDER_LABELS = {
   hero: "Hero", why_shiksha: "Why Shiksha",
   teachers_students: "Teachers & Students", browse_categories: "Browse Categories",
@@ -65,10 +82,16 @@ const ICON_KEYS = [
 
 const TINT_KEYS = ["", "violet", "green", "blue", "red", "gold", "pink", "teal"];
 
+// Mirrors content.models.HomeListVariant exactly. A section can hold more
+// than one list — About's Values section has both "Our Core Values" and
+// "Digital Mode of Learning" — and the variant is what separates them.
 const VARIANT_CHOICES = [
   ["default", "Default card"],
   ["marquee_chip", "Marquee chip (Collaborate)"],
   ["stat_chip", "Stat chip (Collaborate)"],
+  ["bullet", "Bullet (About — secondary list)"],
+  ["pillar", "Pillar (About — Mission icon row)"],
+  ["numbered", "Numbered card (About — Why Choose)"],
 ];
 const VARIANT_LABEL = Object.fromEntries(VARIANT_CHOICES);
 
@@ -88,6 +111,7 @@ function ContentBlockForm({ section, row, busy, error, onSubmit, onDeleteClick }
     cta_secondary_label: row?.cta_secondary_label || "",
     cta_secondary_href: row?.cta_secondary_href || "",
     image_url: row?.image_url || "",
+    max_cards: row?.extra?.max_cards ?? "",
     is_active: row?.is_active ?? true,
   });
   const [file, setFile] = useState(null);
@@ -105,6 +129,7 @@ function ContentBlockForm({ section, row, busy, error, onSubmit, onDeleteClick }
       cta_secondary_label: row?.cta_secondary_label || "",
       cta_secondary_href: row?.cta_secondary_href || "",
       image_url: row?.image_url || "",
+      max_cards: row?.extra?.max_cards ?? "",
       is_active: row?.is_active ?? true,
     });
     setFile(null);
@@ -114,7 +139,22 @@ function ContentBlockForm({ section, row, busy, error, onSubmit, onDeleteClick }
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
 
   const submit = () => {
-    const payload = { ...form, section };
+    // `max_cards` is not a model field — it lives inside the block's `extra`
+    // JSON, so keep it out of the flat payload and fold it in below.
+    const { max_cards, ...rest } = form;
+    const payload = { ...rest, section };
+
+    if (section === CAP_SECTION) {
+      // Merge, never replace: `extra` also carries keys this form doesn't
+      // show (About's list_label, for one), and a PATCH that sent a bare
+      // object would drop them.
+      const next = { ...(row?.extra || {}) };
+      const trimmed = String(max_cards ?? "").trim();
+      if (trimmed === "") delete next.max_cards;
+      else next.max_cards = Number(trimmed);
+      payload.extra = next;
+    }
+
     onSubmit(payload, file);
   };
 
@@ -189,6 +229,26 @@ function ContentBlockForm({ section, row, busy, error, onSubmit, onDeleteClick }
           <input value={form.image_url} onChange={set("image_url")} placeholder="https://…" />
         </label>
       </div>
+
+      {section === CAP_SECTION && (
+        <div className="cm-row">
+          <label className="cm-field">
+            <span>Cards shown on the homepage</span>
+            <input
+              type="number"
+              min="0"
+              value={form.max_cards}
+              onChange={set("max_cards")}
+              placeholder="6"
+            />
+            <span className="cm-hint">
+              The homepage grid is 3 cards wide, so 6 fills two rows. Leave blank
+              for 6. Set 0 to show every active showcase course — visitors can
+              always reach the rest through the “All courses” link below the grid.
+            </span>
+          </label>
+        </div>
+      )}
 
       {error && <div className="cm-form-error">{error}</div>}
 
