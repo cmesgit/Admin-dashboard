@@ -411,10 +411,10 @@ export const deleteHomeContentBlock  = async (id) =>
 /* ── Content: Homepage List Items (repeatable cards/chips within a section) ── */
 export const getHomeListItems    = async (params) =>
   safe(async () => (await api.get("/content/admin/home-list-items/", { params })).data, []);
-export const createHomeListItem  = async (data) =>
-  (await api.post("/content/admin/home-list-items/", data)).data;
-export const updateHomeListItem  = async (id, data) =>
-  (await api.patch(`/content/admin/home-list-items/${id}/`, data)).data;
+export const createHomeListItem  = async (data, isMultipart = false) =>
+  (await api.post("/content/admin/home-list-items/", data, isMultipart ? multipartConfig : undefined)).data;
+export const updateHomeListItem  = async (id, data, isMultipart = false) =>
+  (await api.patch(`/content/admin/home-list-items/${id}/`, data, isMultipart ? multipartConfig : undefined)).data;
 export const deleteHomeListItem  = async (id) =>
   (await api.delete(`/content/admin/home-list-items/${id}/`)).data;
 
