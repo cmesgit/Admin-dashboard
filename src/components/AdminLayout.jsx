@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { getEnrollmentRequests } from "../api/admin";
 import { getAdminSupportTickets } from "../api/admin_communication";
+import { getReviewQueue } from "../api/admin_question_bank";
 import { getScholarshipStats } from "../api/admin_scholarship";
 import NewCourseWizard from "./NewCourseWizard";
 import "../css/AdminLayout.css";
@@ -77,6 +78,12 @@ const navGroups = [
       { to: "/enrollments", icon: ClipboardList, label: "Enrollment Mgmt" },
       { to: "/quizzes", icon: ListChecks, label: "Academy Quizzes" },
       { to: "/analytics", icon: BarChart3, label: "Analytics", isNew: true },
+    ],
+  },
+  {
+    header: "Question Bank",
+    items: [
+      { to: "/question-bank/review", icon: ListChecks, label: "Question Review", badgeKey: "questionBank", isNew: true },
     ],
   },
   {
@@ -127,7 +134,7 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [badges, setBadges] = useState({ enroll: 0, support: 0, scholarship: 0 });
+  const [badges, setBadges] = useState({ enroll: 0, support: 0, scholarship: 0, questionBank: 0 });
   // Below the tablet breakpoint (see AdminLayout.css) the sidebar becomes a
   // slide-in overlay instead of a permanent 238px column — this just tracks
   // whether it's open. Irrelevant above that breakpoint (CSS keeps the
@@ -148,13 +155,17 @@ const AdminLayout = () => {
       getEnrollmentRequests(),
       getAdminSupportTickets("open"),
       getScholarshipStats(),
-    ]).then(([enr, sup, sch]) => {
+      getReviewQueue({ state: "suggested" }),
+    ]).then(([enr, sup, sch, qbk]) => {
       if (!alive) return;
       const schVal = sch.status === "fulfilled" ? sch.value : null;
+      const qbkVal = qbk.status === "fulfilled" ? qbk.value : null;
       setBadges({
         enroll: enr.status === "fulfilled" ? len(enr.value) : 0,
         support: sup.status === "fulfilled" ? len(sup.value) : 0,
         scholarship: schVal ? (schVal.flagged_for_review_open || 0) + (schVal.pending_verifications || 0) : 0,
+        // What is actually waiting on an admin — not the whole bank.
+        questionBank: qbkVal ? (qbkVal.counts?.suggested || 0) : 0,
       });
     });
     return () => {
