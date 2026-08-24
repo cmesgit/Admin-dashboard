@@ -92,6 +92,7 @@ const VARIANT_CHOICES = [
   ["bullet", "Bullet (About — secondary list)"],
   ["pillar", "Pillar (About — Mission icon row)"],
   ["numbered", "Numbered card (About — Why Choose)"],
+  ["sticker", "Sticker (About — hero image row)"],
 ];
 const VARIANT_LABEL = Object.fromEntries(VARIANT_CHOICES);
 
@@ -366,12 +367,24 @@ function ListItemFormModal({ section, showVariant, initial, busy, error, onSubmi
     cta_label: initial?.cta_label || "",
     cta_href: initial?.cta_href || "",
     tint: initial?.tint || "",
+    image_url: initial?.image_url || "",
     order: initial?.order ?? 0,
     is_active: initial?.is_active ?? true,
   });
+  const [file, setFile] = useState(null);
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
+
+  // A sticker is pure artwork — the About hero row has no copy at all — so the
+  // usual "needs a title or a stat" gate would leave Save permanently
+  // disabled. For those rows an image (uploaded now, already saved, or a URL)
+  // is what counts as content instead.
+  const isSticker = form.variant === "sticker";
+  const hasImage = Boolean(file || form.image_url.trim() || initial?.img);
+  const canSave = isSticker
+    ? hasImage
+    : Boolean(form.title.trim() || form.stat_text.trim());
 
   return (
     <div className="confirm-overlay" onClick={busy ? undefined : onCancel}>
@@ -433,6 +446,26 @@ function ListItemFormModal({ section, showVariant, initial, busy, error, onSubmi
 
         <div className="cm-row">
           <label className="cm-field">
+            <span>
+              {isSticker
+                ? "Image (required — a sticker is artwork only)"
+                : "Image (optional — overrides this card's default illustration)"}
+            </span>
+            <ImageUploadField
+              value={file}
+              onChange={setFile}
+              previewUrl={initial?.img}
+              previewClassName="cms-image-preview"
+            />
+          </label>
+          <label className="cm-field">
+            <span>Image URL (fallback if no upload)</span>
+            <input value={form.image_url} onChange={set("image_url")} placeholder="https://…" />
+          </label>
+        </div>
+
+        <div className="cm-row">
+          <label className="cm-field">
             <span>CTA label</span>
             <input value={form.cta_label} onChange={set("cta_label")} placeholder="e.g. Explore School Courses" />
           </label>
@@ -459,7 +492,7 @@ function ListItemFormModal({ section, showVariant, initial, busy, error, onSubmi
           <button className="confirm-cancel" onClick={onCancel} disabled={busy}>Cancel</button>
           <button
             className="confirm-ok"
-            disabled={busy || !form.title.trim() && !form.stat_text.trim()}
+            disabled={busy || !canSave}
             onClick={() => onSubmit({
               section,
               variant: form.variant,
@@ -472,9 +505,10 @@ function ListItemFormModal({ section, showVariant, initial, busy, error, onSubmi
               cta_label: form.cta_label.trim(),
               cta_href: form.cta_href.trim(),
               tint: form.tint,
+              image_url: form.image_url.trim(),
               order: parseInt(form.order, 10) || 0,
               is_active: form.is_active,
-            })}
+            }, file)}
           >
             {busy ? "Saving…" : initial ? "Save" : "Create"}
           </button>
@@ -506,15 +540,16 @@ function ListItemsPanel({ section, notify }) {
 
   useEffect(() => { load(); }, [section, variantFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSubmit = async (payload) => {
+  const handleSubmit = async (payload, file) => {
     setBusy(true); setFormError("");
     try {
+      const { data, isMultipart } = buildBody(payload, file);
       if (modal.initial) {
-        const updated = await updateHomeListItem(modal.initial.id, payload);
+        const updated = await updateHomeListItem(modal.initial.id, data, isMultipart);
         setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
         notify("Item updated");
       } else {
-        const created = await createHomeListItem(payload);
+        const created = await createHomeListItem(data, isMultipart);
         setRows((prev) => [...prev, created]);
         notify("Item created");
       }
@@ -568,14 +603,19 @@ function ListItemsPanel({ section, notify }) {
             <thead>
               <tr>
                 {showVariant && <th>Type</th>}
-                <th>Title</th><th>Order</th><th>Status</th><th aria-label="actions" />
+                <th aria-label="image" /><th>Title</th><th>Order</th><th>Status</th><th aria-label="actions" />
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
                   {showVariant && <td><span className="mod-badge pal-blue">{VARIANT_LABEL[r.variant] || r.variant}</span></td>}
-                  <td className="courses-title courses-desc" style={{ maxWidth: 420 }}>{r.title || r.stat_text}</td>
+                  <td>{r.img ? <img src={r.img} alt="" className="cm-thumb" /> : "—"}</td>
+                  {/* Sticker rows carry no copy at all, so without a fallback
+                      label they'd render as an untellable blank line. */}
+                  <td className="courses-title courses-desc" style={{ maxWidth: 420 }}>
+                    {r.title || r.stat_text || <em className="cm-hint">Image only</em>}
+                  </td>
                   <td>{r.order}</td>
                   <td>
                     <span className={`mod-badge ${r.is_active ? "pal-green" : "pal-gray"}`}>
