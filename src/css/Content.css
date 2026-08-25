@@ -150,8 +150,6 @@
   gap: 6px;
   flex-wrap: wrap;
 }
-.cms-card-stars { display: inline-flex; align-items: center; gap: 1px; color: #f59e0b; }
-.cms-card-stars .empty { color: #e5e7eb; }
 
 .cms-card-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
 .cms-card-chip {

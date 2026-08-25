@@ -1,4 +1,4 @@
-import { Star, Heart, ArrowRight, BookOpen } from "lucide-react";
+import { Heart, ArrowRight, BookOpen } from "lucide-react";
 import "./preview.css";
 
 // Mirrors the markup FeaturedCourses() renders per-card in
@@ -13,13 +13,9 @@ const FeaturedCardPreview = ({
   discountLabel,
   thumbnailUrl,
   ribbon,
-  stars = 0,
-  reviewCount = 0,
   tutorName,
   isComingSoon,
 }) => {
-  const starCount = Math.max(0, Math.min(5, Math.round(Number(stars) || 0)));
-
   return (
     <div className="cms-preview">
       <article className="hm-fc-card">
@@ -40,16 +36,6 @@ const FeaturedCardPreview = ({
           </button>
         </div>
         <div className="hm-fc-body">
-          <div className="hm-fc-rate">
-            {[0, 1, 2, 3, 4].map((s) => (
-              <Star
-                key={s}
-                fill={s < starCount ? "currentColor" : "none"}
-                style={{ color: s < starCount ? "var(--gold)" : "#D4E2D8" }}
-              />
-            ))}
-            <span>({reviewCount ?? 0})</span>
-          </div>
           <h3>{title || "Untitled course"}</h3>
           <div className="hm-fc-foot">
             {isComingSoon ? (
