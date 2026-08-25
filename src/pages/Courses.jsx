@@ -1310,6 +1310,38 @@ const Courses = () => {
     setCourses(Array.isArray(c) ? c : []);
     setLoading(false);
   }, []);
+  // Reorder within a board. Assigns each course the position it is moving TO
+  // (index * STEP) rather than swapping the two display_order values, because
+  // every course starts at 0 on an un-numbered install and swapping two zeros
+  // is a silent no-op — the same trap the chapter reorder above documents.
+  //
+  // STEP matches courses/management/commands/number_course_display_order.py, so
+  // arrow-clicks and the type-a-number path stay on the same scale.
+  //
+  // Offered only in the board-scoped list: "All Courses" spans boards, where a
+  // single position has no meaning.
+  const ORDER_STEP = 10;
+  const moveCourse = async (idx, direction) => {
+    const otherIdx = idx + direction;
+    if (otherIdx < 0 || otherIdx >= courses.length) return;
+    const a = courses[idx];
+    const b = courses[otherIdx];
+    setLoading(true);
+    try {
+      await updateCourse(a.id, { display_order: (otherIdx + 1) * ORDER_STEP });
+      try {
+        await updateCourse(b.id, { display_order: (idx + 1) * ORDER_STEP });
+      } catch (inner) {
+        // Don't leave one half applied with nothing on screen to explain it.
+        await updateCourse(a.id, { display_order: a.display_order ?? 0 });
+        throw inner;
+      }
+      await loadCourses(nav.board?.id);
+    } catch (e) {
+      setLoading(false);
+      alert(errText(e));
+    }
+  };
   const loadAllCourses = useCallback(async (params = {}) => {
     setLoading(true);
     const c = await getAllCourses(params);
@@ -1669,6 +1701,13 @@ const Courses = () => {
           + New Course
         </button>
       </div>
+      {/* Says out loud what the # column and the arrows actually do. Editors
+          had no way to know the number was visitor-facing. */}
+      {!loading && !loadFailed && courses.length > 1 && (
+        <div className="cm-hint" style={{ padding: "10px 20px", borderBottom: "1px solid #f0f0f0" }}>
+          Use ↑ ↓ to reorder. The order here is the order visitors see.
+        </div>
+      )}
       {loading ? (
         <div className="dashboard-loading">Loading…</div>
       ) : loadFailed ? (
@@ -1688,13 +1727,13 @@ const Courses = () => {
               {/* Display order was editable in the course modal but shown
                   nowhere, so there was no way to see the current sequence you
                   were editing against. Same `#` idiom as the subjects table. */}
-              <th>#</th>
+              <th title="The order here is the order visitors see.">#</th>
               <th>Course</th><th>Status</th><th>Content complete</th><th>Shows up on</th>
               <th>Fee</th><th>Access</th><th>Subjects</th><th>Enrolled</th><th aria-label="actions" />
             </tr>
           </thead>
           <tbody>
-            {courses.map((c) => {
+            {courses.map((c, idx) => {
               const { pct, missing } = completeness(c);
               const incomplete = pct < 100;
               const publishedIncomplete = c.status === "PUBLISHED" && incomplete;
@@ -1740,6 +1779,12 @@ const Courses = () => {
                   <td>{c.subject_count ?? 0}</td>
                   <td>{c.enrollment_count ?? 0}</td>
                   <td className="cm-actions">
+                    {/* Same arrow idiom as the chapter and homepage-section
+                        reorder controls already on this screen. */}
+                    <button className="cm-icon-btn" disabled={loading || idx === 0}
+                            onClick={() => moveCourse(idx, -1)} aria-label="Move up">↑</button>
+                    <button className="cm-icon-btn" disabled={loading || idx === courses.length - 1}
+                            onClick={() => moveCourse(idx, 1)} aria-label="Move down">↓</button>
                     <button className="cm-icon-btn" onClick={() => openCourse(c)}>Subjects</button>
                     <button className="cm-icon-btn" onClick={() => openBatches(c)}>Batches</button>
                     <button className="cm-icon-btn" onClick={() => openEditCourse(c)}>Edit</button>
