@@ -250,8 +250,19 @@ const AdminLayout = () => {
           <div className="admin-header-spacer" />
           {/* Only relevant on the pages courses actually live on — showing a
               course-creation shortcut on e.g. Roles or Analytics read as a
-              stray, unexplained button. */}
-          {(location.pathname === "/" || location.pathname.startsWith("/courses")) && (
+              stray, unexplained button.
+
+              Also hidden on the Courses page's Skill Dev tab. This wizard is
+              Academy-only: it asks board-linked vs competitive and always
+              writes an Academy course. Skill Dev courses are submitted by
+              teachers and only reviewed here (/skill/admin/courses/<id>/review/),
+              so there is no admin create path at all — leaving the button up
+              made it look like a Skill Dev flow that inexplicably wanted a
+              board. The tab is read from the URL, which is why Courses.jsx
+              keeps it in a search param. */}
+          {(location.pathname === "/"
+            || (location.pathname.startsWith("/courses")
+                && new URLSearchParams(location.search).get("tab") !== "skill")) && (
             <button className="admin-new-btn" onClick={() => setWizardOpen(true)}>
               <Plus size={16} />
               New course
