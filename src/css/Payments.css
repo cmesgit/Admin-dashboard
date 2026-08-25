@@ -1,3 +1,9 @@
+/* Payments-only styling. The `.payments-table*` / `.payments-count` /
+   `.payments-user|email|amount` rules that used to live here are now in
+   index.css: EnrollmentManagement.jsx renders the same class vocabulary, and
+   with per-route CSS chunks it was getting them only when Payments had already
+   been visited. See the note above them in index.css. */
+
 .payments-controls {
   margin-bottom: 16px;
 }
@@ -10,56 +16,6 @@
   background: #fff;
   color: #333;
   cursor: pointer;
-}
-
-.payments-table-card {
-  padding: 0;
-  overflow-x: auto;
-}
-
-.payments-count {
-  padding: 14px 20px;
-  font-size: 0.85rem;
-  color: #6b7280;
-  border-bottom: 1px solid #e8ebf1;
-}
-
-.payments-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.payments-table th {
-  text-align: left;
-  padding: 12px 20px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid #e8ebf1;
-  background: #fafafa;
-}
-
-.payments-table td {
-  padding: 14px 20px;
-  font-size: 0.9rem;
-  color: #1f2937;
-  border-bottom: 1px solid #e8ebf1;
-}
-
-.payments-user {
-  font-weight: 500;
-}
-
-.payments-email {
-  font-size: 0.8rem;
-  color: #888;
-}
-
-.payments-amount {
-  font-weight: 600;
-  color: #222;
 }
 
 /* Payment mode card */

@@ -27,6 +27,11 @@
 
 .er-table {
   width: 100%;
+  /* Eight columns (Student, Course, Amount, UTR, Paid On, Receipt, Status,
+     Actions) sharing width:100% with no floor meant they compressed and
+     wrapped instead of ever overflowing, so .er-table-card's overflow-x
+     never engaged. Give the table a width to defend and let the card scroll. */
+  min-width: 980px;
   border-collapse: collapse;
 }
 
@@ -40,6 +45,7 @@
   letter-spacing: 0.04em;
   border-bottom: 1px solid #e8ebf1;
   background: #fafafa;
+  white-space: nowrap;
 }
 
 .er-table td {

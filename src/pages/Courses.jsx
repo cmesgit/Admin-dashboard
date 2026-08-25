@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getBoards, createBoard, updateBoard, deleteBoard,
   getBoardCourses, getAllCourses, createCourse, getCourse, updateCourse, deleteCourse,
@@ -837,7 +837,11 @@ function BulkAssignModal({ course, subjects, teachersBySubject, onClose, onAssig
 function ChapterModal({ subject, onClose, onChanged }) {
   const [chapters, setChapters] = useState(subject.chapters || []);
   const [editingId, setEditingId] = useState(null); // chapter id being edited, or "new"
-  const [draft, setDraft] = useState({ title: "", content_html: "", trusted_html: false });
+  // `order` is part of the draft so a chapter can be positioned by typing a
+  // number. Before this the only control was the ↑/↓ arrows, which cost two
+  // PATCHes per step — moving chapter 20 to the top meant 19 clicks and 38
+  // requests. Blank means "leave where it is" (or append, for a new chapter).
+  const [draft, setDraft] = useState({ title: "", content_html: "", trusted_html: false, order: "" });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   // Every other delete on this screen routes through ConfirmModal; this one
@@ -846,12 +850,15 @@ function ChapterModal({ subject, onClose, onChanged }) {
   const [confirmDel, setConfirmDel] = useState(null);
 
   const startNew = () => {
-    setDraft({ title: "", content_html: "", trusted_html: false });
+    setDraft({ title: "", content_html: "", trusted_html: false, order: "" });
     setEditingId("new");
     setErr("");
   };
   const startEdit = (ch) => {
-    setDraft({ title: ch.title, content_html: ch.content_html || "", trusted_html: !!ch.trusted_html });
+    setDraft({
+      title: ch.title, content_html: ch.content_html || "",
+      trusted_html: !!ch.trusted_html, order: ch.order ?? "",
+    });
     setEditingId(ch.id);
     setErr("");
   };
@@ -859,11 +866,17 @@ function ChapterModal({ subject, onClose, onChanged }) {
   const save = async () => {
     setBusy(true); setErr("");
     try {
+      // Blank order is omitted rather than sent as "" or 0, so an untouched
+      // field keeps the server's own sequencing instead of silently jumping
+      // the chapter to position 0.
+      const { order, ...rest } = draft;
+      const parsed = parseInt(order, 10);
+      const payload = Number.isNaN(parsed) ? rest : { ...rest, order: parsed };
       if (editingId === "new") {
-        const created = await createChapter(subject.id, draft);
+        const created = await createChapter(subject.id, payload);
         setChapters((cs) => [...cs, created]);
       } else {
-        const updated = await updateChapter(editingId, draft);
+        const updated = await updateChapter(editingId, payload);
         setChapters((cs) => cs.map((c) => (c.id === editingId ? updated : c)));
       }
       setEditingId(null);
@@ -952,6 +965,12 @@ function ChapterModal({ subject, onClose, onChanged }) {
                     <input value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
                   </label>
                   <label className="cm-field">
+                    <span>Order</span>
+                    <input type="number" min="0" value={draft.order}
+                      onChange={(e) => setDraft((d) => ({ ...d, order: e.target.value }))}
+                      placeholder="Leave blank to keep the current position" />
+                  </label>
+                  <label className="cm-field">
                     <span>Content</span>
                     <textarea rows={5} value={draft.content_html}
                       onChange={(e) => setDraft((d) => ({ ...d, content_html: e.target.value }))}
@@ -988,6 +1007,12 @@ function ChapterModal({ subject, onClose, onChanged }) {
             <label className="cm-field">
               <span>Title</span>
               <input value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} autoFocus />
+            </label>
+            <label className="cm-field">
+              <span>Order</span>
+              <input type="number" min="0" value={draft.order}
+                onChange={(e) => setDraft((d) => ({ ...d, order: e.target.value }))}
+                placeholder="Auto (added to end)" />
             </label>
             <label className="cm-field">
               <span>Content</span>
@@ -1219,7 +1244,21 @@ function BatchRosterModal({ batch, siblingBatches = [], onClose, onChanged }) {
 
 /* ───────────────────────────── Page ───────────────────────────── */
 const Courses = () => {
-  const [tab, setTab] = useState("academy");
+  // The tab lives in the URL, not just component state, for two reasons:
+  // refreshing or deep-linking used to silently drop you back on Academy, and
+  // AdminLayout's "New course" button needs to know which tab you are on. That
+  // button is Academy-only (its wizard writes an Academy course and offers
+  // board-linked / competitive options), but it was gated on pathname alone,
+  // so it stayed visible over the read-only Skill Dev tab and looked like a
+  // Skill Dev course-creation flow that asked for a board.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") === "skill" ? "skill" : "academy";
+  const setTab = (next) => {
+    const sp = new URLSearchParams(searchParams);
+    if (next === "academy") sp.delete("tab");
+    else sp.set("tab", next);
+    setSearchParams(sp, { replace: true });
+  };
 
   // Academy drill-down: boards → courses (per board) → subjects|batches (per course)
   // "all-courses" is a sibling entry point (flat, cross-board list) that
@@ -1489,8 +1528,17 @@ const Courses = () => {
         // Always multipart, even without a new file (matches the previous
         // inline FormData build — createSubject/updateSubject expect
         // multipart regardless).
+        // `form.order || undefined` dropped 0 and any cleared value, because
+        // both are falsy — so typing 0, or emptying the field to re-sequence,
+        // sent no `order` at all and the save looked like it did nothing.
+        // Blank still means "let the server append"; 0 is a real position.
+        const orderRaw = form.order;
+        const orderNum =
+          orderRaw === "" || orderRaw === null || orderRaw === undefined
+            ? undefined
+            : Number.isNaN(parseInt(orderRaw, 10)) ? undefined : parseInt(orderRaw, 10);
         const { data } = buildBody(
-          { name: (form.name || "").trim(), order: form.order || undefined, textbook: form.textbook || "" },
+          { name: (form.name || "").trim(), order: orderNum, textbook: form.textbook || "" },
           file, "image", true,
         );
         if (modal.mode === "edit") await updateSubject(modal.initial.id, data);
@@ -1619,6 +1667,10 @@ const Courses = () => {
         <table className="courses-table">
           <thead>
             <tr>
+              {/* Display order was editable in the course modal but shown
+                  nowhere, so there was no way to see the current sequence you
+                  were editing against. Same `#` idiom as the subjects table. */}
+              <th>#</th>
               <th>Course</th><th>Status</th><th>Content complete</th><th>Shows up on</th>
               <th>Fee</th><th>Access</th><th>Subjects</th><th>Enrolled</th><th aria-label="actions" />
             </tr>
@@ -1630,6 +1682,7 @@ const Courses = () => {
               const publishedIncomplete = c.status === "PUBLISHED" && incomplete;
               return (
                 <tr key={c.id}>
+                  <td>{c.display_order ?? 0}</td>
                   <td className="courses-title">
                     <button className="cm-link" onClick={() => openCourse(c)}>{c.title}</button>
                   </td>
@@ -1726,6 +1779,7 @@ const Courses = () => {
         <table className="courses-table">
           <thead>
             <tr>
+              <th>#</th>
               <th>Course</th><th>Board</th><th>Status</th><th>Content complete</th>
               <th>Fee</th><th>Access</th><th>Subjects</th><th>Enrolled</th><th aria-label="actions" />
             </tr>
@@ -1736,6 +1790,7 @@ const Courses = () => {
               const publishedIncomplete = c.status === "PUBLISHED" && pct < 100;
               return (
                 <tr key={c.id}>
+                  <td>{c.display_order ?? 0}</td>
                   <td className="courses-title">
                     <button className="cm-link" onClick={() => openCourseFromAllCourses(c)}>{c.title}</button>
                   </td>

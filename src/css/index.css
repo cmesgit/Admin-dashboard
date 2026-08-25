@@ -96,6 +96,70 @@ button {
   padding: 0 20px;
 }
 
+/* ── Shared data-table primitives ───────────────────────────────────────
+   Same story as the layout primitives above, one level down. These lived only
+   in Payments.css, which only Payments.jsx imports — but
+   EnrollmentManagement.jsx renders `.payments-table-card` / `.payments-table`
+   too and imported no stylesheet at all. With per-route CSS chunks that meant
+   /enrollments rendered a bare table (no padding, no borders, no header
+   chrome, and no horizontal-scroll container) unless you happened to visit
+   /payments first. That is the "enrollment list is far too cramped" report.
+
+   `min-width` is the other half of it: the card scrolls on overflow, but with
+   `width: 100%` and no floor the columns just compressed and wrapped instead
+   of ever reaching that scroll. An 8-column table needs a width to defend. */
+.payments-table-card {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.payments-count {
+  padding: 14px 20px;
+  font-size: 0.85rem;
+  color: #6b7280;
+  border-bottom: 1px solid #e8ebf1;
+}
+
+.payments-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.payments-table th {
+  text-align: left;
+  padding: 12px 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e8ebf1;
+  background: #fafafa;
+  white-space: nowrap;
+}
+
+.payments-table td {
+  padding: 14px 20px;
+  font-size: 0.9rem;
+  color: #1f2937;
+  border-bottom: 1px solid #e8ebf1;
+}
+
+.payments-user {
+  font-weight: 500;
+}
+
+.payments-email {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.payments-amount {
+  font-weight: 600;
+  color: #222;
+}
+
 .dashboard-title {
   font-size: 22px;
   font-weight: 700;
