@@ -4,6 +4,18 @@ import { API_URL } from "../config/urls";
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: true,
+  // Without this a request that never settles leaves the calling screen on its
+  // spinner forever. Observed on the Courses page: the request to
+  // /courses/admin/courses/ stalled in flight, so `setLoading(false)` never
+  // ran and the view sat on "Loading…" indefinitely while also showing
+  // "0 courses" — indistinguishable from an empty database. A finite timeout
+  // turns that into a normal rejection, which `safe()` already handles (it
+  // returns the empty fallback tagged `__failed`).
+  //
+  // 30s is deliberately generous: some admin list endpoints aggregate counts
+  // across every course, so this is a backstop against a hung connection, not
+  // a latency budget.
+  timeout: 30000,
 });
 
 let isRefreshing = false;

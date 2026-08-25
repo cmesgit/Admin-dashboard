@@ -1267,6 +1267,12 @@ const Courses = () => {
   const [nav, setNav] = useState({ level: "boards", board: null, course: null });
   const [boards, setBoards] = useState([]);
   const [courses, setCourses] = useState([]);
+  // `safe()` tags a failed request's empty fallback with a non-enumerable
+  // `__failed` flag precisely so a screen can tell "the request broke" apart
+  // from "there is genuinely nothing here". This page rendered both as
+  // "No courses match this search/filter.", so an outage looked like an empty
+  // catalog.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [allCourses, setAllCourses] = useState([]);
   const [allCoursesSearch, setAllCoursesSearch] = useState("");
   const [allCoursesBoardFilter, setAllCoursesBoardFilter] = useState("");
@@ -1300,12 +1306,14 @@ const Courses = () => {
   const loadCourses = useCallback(async (boardId) => {
     setLoading(true);
     const c = await getBoardCourses(boardId);
+    setLoadFailed(!!c?.__failed);
     setCourses(Array.isArray(c) ? c : []);
     setLoading(false);
   }, []);
   const loadAllCourses = useCallback(async (params = {}) => {
     setLoading(true);
     const c = await getAllCourses(params);
+    setLoadFailed(!!c?.__failed);
     setAllCourses(Array.isArray(c) ? c : []);
     setLoading(false);
   }, []);
@@ -1653,7 +1661,9 @@ const Courses = () => {
     <div className="dashboard-card courses-table-card">
       <div className="cm-card-head">
         <div className="courses-count">
-          {courses.length} course{courses.length !== 1 ? "s" : ""} in {nav.board?.name}
+          {loading
+            ? "Loading courses…"
+            : `${courses.length} course${courses.length !== 1 ? "s" : ""} in ${nav.board?.name ?? ""}`}
         </div>
         <button className="cm-add-btn" onClick={() => openCreate("course", { price_rupees: 0, subscription_duration_days: 30 })}>
           + New Course
@@ -1661,6 +1671,14 @@ const Courses = () => {
       </div>
       {loading ? (
         <div className="dashboard-loading">Loading…</div>
+      ) : loadFailed ? (
+        <div className="cm-form-error" style={{ margin: 20 }}>
+          Couldn’t load this board’s courses — the request failed. This board is
+          not necessarily empty.{" "}
+          <button className="cm-linkish" onClick={() => loadCourses(nav.board?.id)}>
+            Retry
+          </button>
+        </div>
       ) : courses.length === 0 ? (
         <div className="dashboard-loading">No courses in this board yet. Create the first one.</div>
       ) : (
@@ -1748,7 +1766,12 @@ const Courses = () => {
     <div className="dashboard-card courses-table-card">
       <div className="cm-card-head">
         <div className="courses-count">
-          {allCourses.length} course{allCourses.length !== 1 ? "s" : ""} across all boards
+          {/* Not rendered while loading: showing "0 courses across all boards"
+              next to a spinner reads as a definitive empty result that has
+              already come back. */}
+          {loading
+            ? "Loading courses…"
+            : `${allCourses.length} course${allCourses.length !== 1 ? "s" : ""} across all boards`}
         </div>
       </div>
       <div className="cm-row" style={{ padding: "12px 20px", borderBottom: "1px solid #f0f0f0" }}>
@@ -1773,6 +1796,14 @@ const Courses = () => {
       </div>
       {loading ? (
         <div className="dashboard-loading">Loading…</div>
+      ) : loadFailed ? (
+        <div className="cm-form-error" style={{ margin: 20 }}>
+          Couldn’t load courses — the request failed. This is not an empty
+          catalog.{" "}
+          <button className="cm-linkish" onClick={() => loadAllCourses()}>
+            Retry
+          </button>
+        </div>
       ) : allCourses.length === 0 ? (
         <div className="dashboard-loading">No courses match this search/filter.</div>
       ) : (
