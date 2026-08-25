@@ -46,6 +46,11 @@ const HOME_SECTIONS = [
   ["about_mission", "About — Our Mission"],
   ["about_values", "About — Our Values"],
   ["about_why", "About — Why Choose ShikshaCom"],
+  // And the /contact page. Its heading, blurb and all four detail cards
+  // were hardcoded in Contact.jsx, so a changed phone number needed a
+  // deploy. The cards are list items on this same section (variant
+  // "contact_card"), so an office or number can be added or retired.
+  ["contact_hero", "Contact — Header & details"],
 ];
 
 // The one section whose content block also carries a card-count cap, stored as
@@ -93,6 +98,7 @@ const VARIANT_CHOICES = [
   ["pillar", "Pillar (About — Mission icon row)"],
   ["numbered", "Numbered card (About — Why Choose)"],
   ["sticker", "Sticker (About — hero image row)"],
+  ["contact_card", "Contact card (Contact — details)"],
 ];
 const VARIANT_LABEL = Object.fromEntries(VARIANT_CHOICES);
 
