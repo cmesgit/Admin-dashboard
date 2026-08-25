@@ -1,15 +1,47 @@
 name: Deploy to Dev
 
+# NOTE: every run of this workflow from #1 to #47 failed, all inside the
+# ssh-action step in about 5 seconds, and nobody noticed for months — a push
+# looked fine on GitHub while the dev box silently stayed on the old commit.
+# The sibling workflow in shiksha-frontend is byte-identical and succeeds, so
+# the difference is this repository's own secrets, which are set per-repo.
+#
+# The preflight step below exists so that failure mode is never silent again:
+# it names the missing secret instead of dying inside the SSH action. Secret
+# VALUES are masked in logs; only presence is reported here.
+
 on:
   push:
     branches:
       - dev
+  # Lets the deploy be retried from the Actions tab once the secrets exist,
+  # without needing an empty commit.
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check the deploy secrets are present
+        env:
+          DEV_HOST: ${{ secrets.DEV_HOST }}
+          DEV_USER: ${{ secrets.DEV_USER }}
+          DEV_SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
+        run: |
+          missing=""
+          [ -n "$DEV_HOST" ]    || missing="$missing DEV_HOST"
+          [ -n "$DEV_USER" ]    || missing="$missing DEV_USER"
+          [ -n "$DEV_SSH_KEY" ] || missing="$missing DEV_SSH_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing"
+            echo "Set them under Settings > Secrets and variables > Actions."
+            echo "The same three secrets already exist on cmesgit/shiksha-frontend,"
+            echo "whose identical workflow deploys to the same droplet."
+            exit 1
+          fi
+          echo "All three deploy secrets are present."
+
       - name: Deploy to Dev Droplet
         uses: appleboy/ssh-action@v1
         with:
@@ -17,8 +49,13 @@ jobs:
           username: ${{ secrets.DEV_USER }}
           key: ${{ secrets.DEV_SSH_KEY }}
           script: |
+            set -e
             cd /home/appuser/frontend/admin_dashboard
             git checkout dev
             git pull origin dev
             npm ci
             npm run build
+            # Print what actually landed, so a green run can be trusted and a
+            # no-op pull is visible in the log rather than being assumed.
+            echo "deployed commit: $(git rev-parse --short HEAD)"
+            echo "dist built at:   $(stat -c %y dist | cut -d. -f1)"
