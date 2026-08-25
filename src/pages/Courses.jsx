@@ -438,7 +438,12 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
                 mrp={form.mrp_rupees || null}
                 discountLabel={form.discount_label}
                 thumbnailUrl={filePreviewUrl || form.thumbnail || null}
-                ribbon={form.badge}
+                // No ribbon here on purpose. The homepage card's ribbon comes
+                // from ShowcaseCourse.ribbon, edited on the Showcase screen —
+                // /courses/public/featured/ reads card.ribbon and never looks at
+                // Course.badge. Passing form.badge made this "Live preview"
+                // show a ribbon the live site would not render. (Course.badge
+                // does drive a ribbon, but on the catalog page, not this card.)
                 isComingSoon={form.status === "COMING_SOON"}
               />
             )}
