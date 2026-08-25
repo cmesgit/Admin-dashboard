@@ -190,6 +190,39 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
               <span>Description</span>
               <textarea rows={3} value={form.description || ""} onChange={set("description")} placeholder="Optional" />
             </label>
+            {/* Course type + class level. Both are writable on CourseSerializer
+                but were missing from this form, so every course created here
+                was silently ACADEMIC with no class level — the only way to get
+                a COACHING (competitive) course was the create_competitive_courses
+                management command or Django admin. That is why competitive exams
+                had no admin workflow. */}
+            <div className="cm-row">
+              <label className="cm-field">
+                <span>Course type</span>
+                <select value={form.kind || "ACADEMIC"} onChange={set("kind")}>
+                  <option value="ACADEMIC">Academic (board / class)</option>
+                  <option value="COACHING">Coaching (competitive exam)</option>
+                </select>
+              </label>
+              <label className="cm-field">
+                <span>Class level</span>
+                {/* A coaching course spans no single class — the backend stores
+                    NULL for these — so the picker is disabled rather than
+                    offering a value that would be wrong whatever you chose. */}
+                <select
+                  value={form.kind === "COACHING" ? "" : (form.class_level ?? "")}
+                  onChange={set("class_level")}
+                  disabled={form.kind === "COACHING"}
+                >
+                  <option value="">
+                    {form.kind === "COACHING" ? "Not applicable" : "None"}
+                  </option>
+                  {[6, 7, 8, 9, 10, 11, 12].map((n) => (
+                    <option key={n} value={n}>Class {n}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <div className="cm-row">
               <label className="cm-field">
                 <span>Price (₹)</span>
@@ -1350,6 +1383,8 @@ const Courses = () => {
       price_rupees: ((full?.price ?? c.price) || 0) / 100,
       subscription_duration_days: full?.subscription_duration_days ?? c.subscription_duration_days ?? 30,
       status: full?.status ?? c.status ?? "DRAFT",
+      kind: full?.kind ?? c.kind ?? "ACADEMIC",
+      class_level: full?.class_level ?? c.class_level ?? "",
       thumbnail: full?.thumbnail ?? c.thumbnail ?? null,
       mrp_rupees: full?.mrp != null ? full.mrp / 100 : "",
       discount_label: full?.discount_label || "",
@@ -1402,6 +1437,16 @@ const Courses = () => {
           promo_video_url: form.promo_video_url || "",
           subscription_duration_days: Math.max(1, parseInt(form.subscription_duration_days, 10) || 30),
           status: form.status || "DRAFT",
+          // Both are writable CourseSerializer fields that this form never
+          // sent, so every course it created defaulted to ACADEMIC/no class.
+          // A coaching course spans no single class — the model documents
+          // class_level as NULL for exactly these — so force it null rather
+          // than persisting whatever the picker last held before it disabled.
+          kind: form.kind === "COACHING" ? "COACHING" : "ACADEMIC",
+          class_level:
+            form.kind === "COACHING" || form.class_level === "" || form.class_level == null
+              ? null
+              : parseInt(form.class_level, 10) || null,
         };
         // `details` (nested CourseDetail row) and `categories` (M2M ids) are
         // not writable CourseSerializer fields — the backend reads them off
