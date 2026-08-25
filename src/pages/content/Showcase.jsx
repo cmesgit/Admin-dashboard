@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Star, BookOpen, FlaskConical, Calculator, Compass, Activity, Target,
+  BookOpen, FlaskConical, Calculator, Compass, Activity, Target,
   Landmark, Shield, Medal, School,
 } from "lucide-react";
 import {
@@ -37,16 +37,12 @@ const ICON_CMP = {
   medal: Medal, institution: School,
 };
 
-function Stars({ n }) {
-  const count = Math.max(0, Math.min(5, n || 0));
-  return (
-    <span className="cms-card-stars">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} size={13} fill={i < count ? "currentColor" : "none"} className={i < count ? "" : "empty"} />
-      ))}
-    </span>
-  );
-}
+/* NOTE: a <Stars> helper and "Stars"/"Review count" number inputs lived here.
+   They wrote ShowcaseCourse.stars / .review_count, which the public homepage
+   rendered as a star rating and a "(214)" review count — but nothing ever
+   aggregated them from real reviews, because the platform has no course-review
+   model. Editors were effectively typing in social proof. Removed here and in
+   the backend (content migration 0017). */
 
 /* ───────────────────────── Create/Edit modal ───────────────────────── */
 function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
@@ -54,8 +50,6 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     title: initial?.title || "",
     level_label: initial?.level_label || "",
     ribbon: initial?.ribbon || "",
-    stars: initial?.stars ?? 5,
-    review_count: initial?.review_count ?? 0,
     fact_line: initial?.fact_line || "",
     price_label: initial?.price_label || "",
     tutor_name: initial?.tutor_name || "",
@@ -149,8 +143,6 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
       title: form.title.trim(),
       level_label: form.level_label.trim(),
       ribbon: form.ribbon.trim(),
-      stars: Math.max(0, Math.min(5, parseInt(form.stars, 10) || 0)),
-      review_count: parseInt(form.review_count, 10) || 0,
       fact_line: form.fact_line.trim(),
       price_label: form.price_label.trim(),
       tutor_name: form.tutor_name.trim(),
@@ -195,14 +187,6 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
           <label className="cm-field">
             <span>Ribbon (optional)</span>
             <input value={form.ribbon} onChange={set("ribbon")} placeholder="e.g. Bestseller" />
-          </label>
-          <label className="cm-field">
-            <span>Stars (max 5)</span>
-            <input type="number" min="0" max="5" value={form.stars} onChange={set("stars")} />
-          </label>
-          <label className="cm-field">
-            <span>Review count</span>
-            <input type="number" min="0" value={form.review_count} onChange={set("review_count")} />
           </label>
         </div>
 
@@ -346,8 +330,6 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
             priceLabel={previewIsComingSoon ? null : previewPriceLabel}
             thumbnailUrl={previewThumbnailUrl}
             ribbon={form.ribbon}
-            stars={form.stars}
-            reviewCount={form.review_count}
             tutorName={form.tutor_name}
             isComingSoon={previewIsComingSoon}
           />
@@ -469,10 +451,6 @@ const Showcase = ({ onAction }) => {
                 <div className="cms-card-body">
                   <div className="cms-card-title">{c.title}</div>
                   <div className="cms-card-sub">{c.level_label}{c.tutor_name ? ` · ${c.tutor_name}` : ""}</div>
-                  <div className="cms-card-meta">
-                    <Stars n={c.stars} />
-                    <span>({c.review_count ?? 0})</span>
-                  </div>
                   <div className="cms-card-sub">{c.fact_line}</div>
                   {c.price_label && <div className="cms-card-sub"><strong>₹{c.price_label}</strong></div>}
                   {c.course_title && <div className="cms-card-sub">Linked: {c.course_title}</div>}

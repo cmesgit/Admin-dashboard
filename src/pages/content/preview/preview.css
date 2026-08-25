@@ -49,9 +49,6 @@
 .cms-preview .hm-fc-heart.hm-on svg{fill:currentColor}
 .cms-preview .hm-fc-lvl{position:absolute;bottom:-13px;left:18px;background:#fff;border:1.5px solid var(--line);color:var(--coral-dark);font-family:var(--font);font-size:10.5px;font-weight:700;padding:5px 13px;border-radius:999px;box-shadow:0 6px 14px rgba(11,46,32,.08)}
 .cms-preview .hm-fc-body{padding:26px 20px 20px;display:flex;flex-direction:column;flex:1}
-.cms-preview .hm-fc-rate{display:flex;align-items:center;gap:7px}
-.cms-preview .hm-fc-rate svg{width:13px;height:13px}
-.cms-preview .hm-fc-rate span{font-size:11.5px;color:var(--body)}
 .cms-preview .hm-fc-body h3{font-family:var(--display);font-size:16.3px;font-weight:700;margin:8px 0 10px;line-height:1.35}
 .cms-preview .hm-fc-fact{display:flex;align-items:center;gap:7px;font-size:11.8px;color:var(--body)}
 .cms-preview .hm-fc-fact svg{width:14px;height:14px;color:#8AA396}
