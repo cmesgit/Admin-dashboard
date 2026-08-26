@@ -142,3 +142,12 @@ export const getExamReadiness = async () => {
   const { data } = await api.get(`${BASE}/exams/readiness/`);
   return data;
 };
+
+/** Create a label of either kind. 409s on a case-variant tag, because
+ *  ContentTag.slug is unique and slugified from the name. */
+export const createLabel = async (kind, name, group) => {
+  const { data } = await api.post(`${BASE}/labels/`, {
+    kind, name, ...(group ? { group } : {}),
+  });
+  return data;
+};

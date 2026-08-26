@@ -13,7 +13,8 @@ import {
   AlertCircle, FileText, HelpCircle, Newspaper, Plus, Search,
 } from "lucide-react";
 import {
-  createContentFaq, deleteContentFaq, getContentAnnouncements,
+  createContentAnnouncement, createContentFaq, deleteContentFaq,
+  getContentAnnouncements,
   getContentAffairs, getContentFaqs, updateContentAnnouncement,
   updateContentAffair, updateContentFaq,
 } from "../../api/admin";
@@ -56,6 +57,8 @@ const QuestionsAndNotices = () => {
   const [busy, setBusy] = useState(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ question: "", answer: "", page: "general" });
+  const [editing, setEditing] = useState(null);
+  const [notice, setNotice] = useState(null);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
@@ -157,6 +160,49 @@ const QuestionsAndNotices = () => {
     }
   };
 
+  const saveEdit = async () => {
+    const { id, question, answer, page } = editing;
+    if (!question.trim()) return say("The question needs some words.");
+    setBusy(`edit-${id}`);
+    try {
+      await updateContentFaq(id, {
+        question: question.trim(),
+        // The old screen asked for raw HTML. Wrap plain paragraphs so nobody
+        // has to know what a <p> is; existing markup is left alone.
+        answer_html: /<[a-z][\s\S]*>/i.test(answer) ? answer : `<p>${answer.trim()}</p>`,
+        page,
+      });
+      say("Saved.");
+      setEditing(null);
+      load();
+    } catch (e) {
+      say(errText(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveNotice = async () => {
+    if (!notice.message.trim()) return say("A notice needs something to say.");
+    setBusy("notice");
+    try {
+      await createContentAnnouncement({
+        message: notice.message.trim(),
+        link_url: notice.link_url.trim(),
+        link_label: notice.link_label.trim(),
+        level: notice.level,
+        status: "draft",
+      });
+      say("Saved as a draft. Nobody sees it yet.");
+      setNotice(null);
+      load();
+    } catch (e) {
+      say(errText(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const remove = async (row) => {
     setBusy(`del-${row.id}`);
     try {
@@ -208,6 +254,15 @@ const QuestionsAndNotices = () => {
         {tab === "answers" && (
           <button type="button" className="cs-btn-primary cs-btn-primary--sm" onClick={() => setCreating(true)}>
             <Plus size={14} aria-hidden="true" /> New answer
+          </button>
+        )}
+        {tab === "notices" && (
+          <button
+            type="button"
+            className="cs-btn-primary cs-btn-primary--sm"
+            onClick={() => setNotice({ message: "", link_url: "", link_label: "", level: "info" })}
+          >
+            <Plus size={14} aria-hidden="true" /> New notice
           </button>
         )}
       </div>
@@ -262,14 +317,28 @@ const QuestionsAndNotices = () => {
                     </select>
 
                     {tab === "answers" && (
-                      <button
-                        type="button"
-                        className="cs-btn-ghost"
-                        disabled={busy === `del-${r.id}`}
-                        onClick={() => remove(r)}
-                      >
-                        Delete
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="cs-btn-ghost"
+                          onClick={() => setEditing({
+                            id: r.id,
+                            question: r.question || "",
+                            answer: r.answer_html || "",
+                            page: r.page || "general",
+                          })}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="cs-btn-ghost"
+                          disabled={busy === `del-${r.id}`}
+                          onClick={() => remove(r)}
+                        >
+                          Delete
+                        </button>
+                      </>
                     )}
                   </div>
                 );
@@ -341,6 +410,151 @@ const QuestionsAndNotices = () => {
                 onClick={submitNew}
               >
                 {busy === "new" ? "Saving…" : "Save as draft"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editing && (
+        <div className="cs-palette-overlay" onMouseDown={(e) => {
+          if (e.target === e.currentTarget) setEditing(null);
+        }}>
+          <div className="cs-confirm" role="dialog" aria-modal="true">
+            <h2 className="cs-card__title">Edit answer</h2>
+            <p className="cs-field__hint cs-field__hint--tight">
+              Changing the words doesn’t change who can see it — the status
+              on the row still decides that.
+            </p>
+
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="e-question">The question</label>
+              <input
+                id="e-question"
+                className="cs-input cs-input--block"
+                value={editing.question}
+                onChange={(e) => setEditing((f) => ({ ...f, question: e.target.value }))}
+              />
+            </div>
+
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="e-answer">The answer</label>
+              <textarea
+                id="e-answer"
+                className="cs-input cs-input--block cs-textarea"
+                rows={6}
+                value={editing.answer}
+                onChange={(e) => setEditing((f) => ({ ...f, answer: e.target.value }))}
+              />
+              <p className="cs-field__hint">
+                Write it as normal text. Existing formatting is kept as-is.
+              </p>
+            </div>
+
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="e-page">Where it appears</label>
+              <select
+                id="e-page"
+                className="cs-input cs-input--block"
+                value={editing.page}
+                onChange={(e) => setEditing((f) => ({ ...f, page: e.target.value }))}
+              >
+                {Object.entries(PAGE_LABELS).map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="cs-confirm__actions">
+              <button type="button" className="cs-btn-ghost" onClick={() => setEditing(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="cs-btn-primary cs-btn-primary--sm"
+                disabled={busy === `edit-${editing.id}`}
+                onClick={saveEdit}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {notice && (
+        <div className="cs-palette-overlay" onMouseDown={(e) => {
+          if (e.target === e.currentTarget) setNotice(null);
+        }}>
+          <div className="cs-confirm" role="dialog" aria-modal="true">
+            <h2 className="cs-card__title">New notice</h2>
+            <p className="cs-field__hint cs-field__hint--tight">
+              A strip across the top of the site. It saves as a draft.
+            </p>
+
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="n-message">What it says</label>
+              <input
+                id="n-message"
+                className="cs-input cs-input--block"
+                value={notice.message}
+                autoFocus
+                onChange={(e) => setNotice((n) => ({ ...n, message: e.target.value }))}
+                placeholder="e.g. Admissions for 2027 are now open"
+              />
+            </div>
+
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="n-level">How it looks</label>
+              <select
+                id="n-level"
+                className="cs-input cs-input--block"
+                value={notice.level}
+                onChange={(e) => setNotice((n) => ({ ...n, level: e.target.value }))}
+              >
+                <option value="info">Ordinary — blue</option>
+                <option value="success">Good news — green</option>
+                <option value="warning">Needs attention — amber</option>
+              </select>
+            </div>
+
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="n-label">Button words (optional)</label>
+              <input
+                id="n-label"
+                className="cs-input cs-input--block"
+                value={notice.link_label}
+                onChange={(e) => setNotice((n) => ({ ...n, link_label: e.target.value }))}
+              />
+            </div>
+
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="n-url">Where it goes (optional)</label>
+              <input
+                id="n-url"
+                className="cs-input cs-input--block"
+                value={notice.link_url}
+                onChange={(e) => setNotice((n) => ({ ...n, link_url: e.target.value }))}
+                placeholder="/courses"
+              />
+              {notice.link_label && !notice.link_url && (
+                <p className="cs-field__warn">
+                  The button has words but nowhere to go.
+                </p>
+              )}
+            </div>
+
+            <div className="cs-confirm__actions">
+              <button type="button" className="cs-btn-ghost" onClick={() => setNotice(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="cs-btn-primary cs-btn-primary--sm"
+                disabled={busy === "notice"}
+                onClick={saveNotice}
+              >
+                {busy === "notice" ? "Saving…" : "Save as draft"}
               </button>
             </div>
           </div>

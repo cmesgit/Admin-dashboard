@@ -11,9 +11,9 @@
 // across groups and a delete that would empty one; this screen surfaces those
 // refusals rather than hiding them behind a generic error.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Merge, Search, Tag } from "lucide-react";
+import { AlertTriangle, Merge, Plus, Search, Tag } from "lucide-react";
 import {
-  deleteLabel, getLabels, mergeLabels, renameLabel,
+  createLabel, deleteLabel, getLabels, mergeLabels, renameLabel,
 } from "../../api/admin_content_studio";
 import { errText } from "../../utils/errText";
 import Toast from "../../components/Toast";
@@ -37,6 +37,7 @@ const Labels = () => {
   const [renaming, setRenaming] = useState(null);
   const [merging, setMerging] = useState(null);
   const [blocked, setBlocked] = useState(null);
+  const [creating, setCreating] = useState(null);
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
@@ -65,6 +66,24 @@ const Labels = () => {
     const t = setTimeout(() => load(q.trim()), q ? 250 : 0);
     return () => clearTimeout(t);
   }, [q, load]);
+
+  const doCreate = async () => {
+    const { kind, name, group } = creating;
+    if (!name.trim()) return say("Give the label a name.");
+    setBusy("new");
+    try {
+      await createLabel(kind, name.trim(), kind === "category" ? group : undefined);
+      say(`Created “${name.trim()}”.`);
+      setCreating(null);
+      load(q.trim());
+    } catch (e) {
+      // A case-variant tag is a designed 409, not a failure — the server names
+      // the label that already exists.
+      say(e?.response?.data?.detail || errText(e));
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const doRename = async () => {
     const { kind, id, value } = renaming;
@@ -149,6 +168,13 @@ const Labels = () => {
           />
         </div>
         <div className="cs-pilltabs__spacer" />
+        <button
+          type="button"
+          className="cs-btn-primary cs-btn-primary--sm"
+          onClick={() => setCreating({ kind: "tag", name: "", group: "boards" })}
+        >
+          <Plus size={14} aria-hidden="true" /> New label
+        </button>
         <span className="cs-muted">
           {rows.length} label{rows.length === 1 ? "" : "s"}
           {dupeCount > 0 && (dupeCount === 1
@@ -224,6 +250,74 @@ const Labels = () => {
       <p className="cs-note">
         Renaming a label updates it everywhere it’s used — nothing breaks.
       </p>
+
+      {creating && (
+        <div className="cs-palette-overlay" onMouseDown={(e) => {
+          if (e.target === e.currentTarget) setCreating(null);
+        }}>
+          <div className="cs-confirm" role="dialog" aria-modal="true">
+            <h2 className="cs-card__title">New label</h2>
+
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="new-kind">What kind</label>
+              <select
+                id="new-kind"
+                className="cs-input cs-input--block"
+                value={creating.kind}
+                onChange={(e) => setCreating((c) => ({ ...c, kind: e.target.value }))}
+              >
+                <option value="tag">Blog tag — groups posts and articles</option>
+                <option value="category">Course category — what visitors browse by</option>
+              </select>
+            </div>
+
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="new-name">Name</label>
+              <input
+                id="new-name"
+                className="cs-input cs-input--block"
+                value={creating.name}
+                autoFocus
+                onChange={(e) => setCreating((c) => ({ ...c, name: e.target.value }))}
+              />
+            </div>
+
+            {creating.kind === "category" && (
+              <div className="cs-field">
+                <label className="cs-field__label" htmlFor="new-group">Which section</label>
+                <select
+                  id="new-group"
+                  className="cs-input cs-input--block"
+                  value={creating.group}
+                  onChange={(e) => setCreating((c) => ({ ...c, group: e.target.value }))}
+                >
+                  <option value="boards">Boards</option>
+                  <option value="class8-12">Class 8-12</option>
+                  <option value="competitive">Competitive</option>
+                </select>
+                <p className="cs-field__hint">
+                  This decides where courses using it appear on the site. It
+                  can’t be changed by merging later.
+                </p>
+              </div>
+            )}
+
+            <div className="cs-confirm__actions">
+              <button type="button" className="cs-btn-ghost" onClick={() => setCreating(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="cs-btn-primary cs-btn-primary--sm"
+                disabled={busy === "new"}
+                onClick={doCreate}
+              >
+                {busy === "new" ? "Creating…" : "Create"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {renaming && (
         <div className="cs-palette-overlay" onMouseDown={(e) => {
