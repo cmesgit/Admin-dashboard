@@ -15,6 +15,9 @@ const Courses = lazy(() => import("./pages/Courses"));
 const RolesPage = lazy(() => import("./pages/roles/RolesPage"));
 const ContentPanel = lazy(() => import("./pages/content/ContentPanel"));
 const BlogEditor = lazy(() => import("./pages/content/BlogEditor"));
+const ContentStudioHome = lazy(() => import("./pages/content/ContentStudioHome"));
+const Pictures = lazy(() => import("./pages/content/Pictures"));
+const PageEditor = lazy(() => import("./pages/content/PageEditor"));
 const SkillCMSPanel = lazy(() => import("./pages/skillcms/SkillCMSPanel"));
 const ScholarshipPanel = lazy(() => import("./pages/scholarship/ScholarshipPanel"));
 const AcademyQuizzes = lazy(() => import("./pages/AcademyQuizzes"));
@@ -111,6 +114,12 @@ const App = () => {
                 matches by specificity, not declaration order) but keeping the
                 more specific blog routes visually grouped next to the parent
                 tab route they replace the modal for. */}
+            {/* Content Studio landing screen (Phase 3). Sits alongside the
+                eight-tab panel rather than replacing it, so every existing
+                /content and /content?tab= URL keeps resolving. */}
+            <Route path="content/home" element={<ContentStudioHome />} />
+            <Route path="content/pictures" element={<Pictures />} />
+            <Route path="content/pages/:key" element={<PageEditor />} />
             <Route path="content/blogs/new" element={<BlogEditor />} />
             <Route path="content/blogs/:id" element={<BlogEditor />} />
             <Route path="communication/reports" element={<CommunicationReports />} />

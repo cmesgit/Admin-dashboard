@@ -1,0 +1,1128 @@
+/* Content Studio (design_handoff_content_studio).
+ *
+ * New CSS only. Every colour resolves through an --admin-* token from
+ * css/index.css — several of which were added in Phase 2 precisely so this
+ * file would have something to point at. No literal hex here.
+ *
+ * Existing vocabulary is reused wherever it fits (.mod-*, .cm-*, .sidebar-*);
+ * this file covers only what genuinely has no equivalent yet.
+ */
+
+/* ── Sidebar: the ⌘K trigger under the brand ─────────────────────── */
+
+.cs-search-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 24px);
+  margin: 0 12px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 9px;
+  background: var(--admin-page-bg);
+  color: var(--admin-body);
+  font-family: var(--admin-font-body);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.cs-search-trigger:hover {
+  border-color: var(--admin-primary-edge);
+  background: var(--admin-surface);
+}
+
+.cs-search-trigger__label {
+  flex: 1;
+  text-align: left;
+}
+
+.cs-search-trigger__key {
+  padding: 1px 6px;
+  border: 1px solid var(--admin-border);
+  border-radius: 5px;
+  background: var(--admin-surface);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--admin-body-soft);
+}
+
+/* ── ⌘K palette ──────────────────────────────────────────────────── */
+
+.cs-palette-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12vh 16px 16px;
+  background: var(--admin-scrim);
+}
+
+.cs-palette {
+  width: 100%;
+  max-width: 620px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-overlay);
+  overflow: hidden;
+}
+
+.cs-palette__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--admin-border-soft);
+}
+
+.cs-palette__head-icon { color: var(--admin-body-soft); flex: none; }
+
+.cs-palette__input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--admin-font-body);
+  font-size: 16px;
+  color: var(--admin-ink);
+}
+
+.cs-palette__input::placeholder { color: var(--admin-body-faint); }
+
+.cs-palette__esc {
+  flex: none;
+  padding: 3px 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  background: var(--admin-page-bg);
+  color: var(--admin-body-soft);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cs-palette__body {
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.cs-palette__hint {
+  margin: 0;
+  padding: 22px 14px;
+  text-align: center;
+  color: var(--admin-body-soft);
+  font-size: 13px;
+}
+
+.cs-palette__row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--admin-font-body);
+}
+
+.cs-palette__row.is-active { background: var(--admin-primary-tint); }
+
+.cs-palette__tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--admin-surface-sunken);
+  color: var(--admin-body);
+}
+
+/* One tint per content type, so the kinds are distinguishable at a glance
+ * rather than by reading the right-hand label. */
+.cs-palette__tile.cs-kind-post    { background: var(--admin-info-tint);    color: var(--admin-info); }
+.cs-palette__tile.cs-kind-answer  { background: var(--admin-warn-tint);    color: var(--admin-warn); }
+.cs-palette__tile.cs-kind-page    { background: var(--admin-primary-tint); color: var(--admin-primary-deep); }
+.cs-palette__tile.cs-kind-label   { background: var(--admin-success-tint); color: var(--admin-success); }
+.cs-palette__tile.cs-kind-picture { background: var(--admin-surface-sunken); color: var(--admin-body); }
+
+.cs-palette__text {
+  flex: 1;
+  min-width: 0;              /* lets the ellipsis actually engage */
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cs-palette__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--admin-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-palette__where {
+  font-size: 11.5px;
+  color: var(--admin-body-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-palette__kind {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--admin-body-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-search-trigger { transition: none; }
+}
+
+/* Nav rows whose screen a later phase still has to build. Dimmed and inert,
+ * so the four-group nav can be complete without four of ten entries silently
+ * landing on the Blog Posts tab. */
+.sidebar-link.cs-link-soon {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.cs-soon-tag {
+  margin-left: auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--admin-surface-sunken);
+  color: var(--admin-body-soft);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* ── Home screen (Phase 3) ────────────────────────────────────────── */
+
+.cs-home { display: flex; flex-direction: column; gap: 16px; }
+
+.cs-home__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cs-home__greeting {
+  margin: 0;
+  font-family: var(--admin-font-display);
+  font-weight: 700;
+  font-size: 27px;
+  letter-spacing: -0.01em;
+  color: var(--admin-ink);
+}
+
+.cs-home__sub {
+  margin: 4px 0 0;
+  font-size: 14.5px;
+  color: var(--admin-body);
+}
+
+.cs-home__split {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 16px;
+}
+
+/* ── Cards ────────────────────────────────────────────────────────── */
+
+.cs-card {
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 14px;
+  background: var(--admin-surface);
+  padding: 16px 18px;
+}
+
+.cs-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--admin-body);
+}
+
+.cs-card__title {
+  margin: 0;
+  font-family: var(--admin-font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--admin-ink);
+}
+
+.cs-card__count {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--admin-surface-sunken);
+  color: var(--admin-body-soft);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* ── Rows ─────────────────────────────────────────────────────────── */
+
+.cs-list { list-style: none; margin: 0; padding: 0; }
+.cs-list--tight .cs-list__row { padding: 7px 0; }
+
+.cs-list__row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 0;
+  border-top: 1px solid var(--admin-border-soft);
+}
+
+.cs-list__row:first-child { border-top: 0; }
+
+.cs-list__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+
+.cs-list__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--admin-ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.cs-list__reason {
+  font-size: 12.5px;
+  color: var(--admin-body-soft);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.cs-tile {
+  flex: none;
+  display: grid; place-items: center;
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  background: var(--admin-surface-sunken);
+  color: var(--admin-body);
+}
+
+.cs-avatar {
+  flex: none;
+  display: grid; place-items: center;
+  width: 26px; height: 26px;
+  border-radius: 999px;
+  background: var(--admin-primary-tint);
+  color: var(--admin-primary-deep);
+  font-size: 10.5px; font-weight: 700;
+}
+
+/* State tints — one per kind of waiting work. */
+.cs-tile.cs-state-scheduled { background: var(--admin-info-tint);    color: var(--admin-info); }
+.cs-tile.cs-state-review    { background: var(--admin-warn-tint);    color: var(--admin-warn); }
+.cs-tile.cs-state-stale     { background: var(--admin-surface-sunken); color: var(--admin-body-faint); }
+
+.cs-chip {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--admin-surface-sunken);
+  color: var(--admin-body);
+}
+
+.cs-chip.cs-state-scheduled { background: var(--admin-info-tint); color: var(--admin-info); }
+.cs-chip.cs-state-review    { background: var(--admin-warn-tint); color: var(--admin-warn); }
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+
+.cs-btn-primary {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 11px 18px;
+  border: 0; border-radius: 10px;
+  background: var(--admin-primary);
+  color: var(--admin-surface);
+  font-family: var(--admin-font-body);
+  font-size: 13.5px; font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(79, 109, 245, 0.28);
+}
+
+.cs-btn-primary:hover { background: var(--admin-primary-dark); }
+
+.cs-btn-ghost {
+  display: inline-flex; align-items: center; gap: 5px;
+  flex: none;
+  padding: 5px 11px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  color: var(--admin-body);
+  font-family: var(--admin-font-body);
+  font-size: 12.5px; font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cs-btn-ghost:hover:not(:disabled) {
+  border-color: var(--admin-primary-edge);
+  color: var(--admin-primary-deep);
+}
+
+.cs-btn-ghost:disabled { opacity: 0.55; cursor: default; }
+
+/* ── Start something ──────────────────────────────────────────────── */
+
+.cs-start-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.cs-start-card {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 17px 18px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 13px;
+  background: var(--admin-surface);
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cs-start-card:hover {
+  border-color: var(--admin-primary-edge);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.cs-start-card .cs-tile { width: 32px; height: 32px; border-radius: 9px; }
+.cs-start-card__title { font-size: 14px; font-weight: 600; color: var(--admin-ink); }
+.cs-start-card__sub { font-size: 12.5px; line-height: 1.45; color: var(--admin-body-soft); }
+
+/* ── Week strip ───────────────────────────────────────────────────── */
+
+.cs-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.cs-week__cell {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 2px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 9px;
+  background: var(--admin-surface);
+}
+
+.cs-week__cell.is-today {
+  background: var(--admin-primary-tint);
+  border-color: var(--admin-primary-edge);
+}
+
+.cs-week__dow { font-size: 10.5px; font-weight: 700; color: var(--admin-body-faint); text-transform: uppercase; }
+.cs-week__num { font-size: 14px; font-weight: 600; color: var(--admin-ink); }
+.cs-week__dots { display: flex; gap: 2px; height: 5px; }
+.cs-week__dot { width: 5px; height: 5px; border-radius: 999px; background: var(--admin-primary); }
+
+/* ── Activity ─────────────────────────────────────────────────────── */
+
+.cs-day + .cs-day { margin-top: 10px; }
+
+.cs-day__label {
+  margin: 0 0 2px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--admin-body-faint);
+}
+
+/* ── Shared ───────────────────────────────────────────────────────── */
+
+.cs-muted { margin: 0; padding: 6px 0; font-size: 13px; color: var(--admin-body-soft); }
+.cs-muted--inset { list-style: none; padding: 10px 0; }
+.cs-error { margin: 0; padding: 6px 0; font-size: 13px; color: var(--admin-danger); }
+
+@media (max-width: 1100px) {
+  .cs-home__split { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-start-card { transition: none; }
+}
+
+/* ── Pictures library (Phase 4) ───────────────────────────────────── */
+
+.cs-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 26px 18px;
+  margin-bottom: 14px;
+  border: 2px dashed var(--admin-border);
+  border-radius: 13px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-body-soft);
+  text-align: center;
+}
+
+.cs-dropzone.is-dragging {
+  border-color: var(--admin-primary);
+  background: var(--admin-primary-tint);
+}
+
+.cs-dropzone__title {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--admin-ink);
+}
+
+.cs-dropzone__sub { margin: 0; font-size: 12.5px; }
+
+.cs-linklike {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--admin-primary);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.cs-pictures__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cs-input {
+  flex: 1;
+  max-width: 320px;
+  padding: 8px 11px;
+  border: 1px solid var(--admin-border);
+  border-radius: 9px;
+  background: var(--admin-surface);
+  font-family: var(--admin-font-body);
+  font-size: 13px;
+  color: var(--admin-ink);
+}
+
+.cs-input:focus {
+  outline: none;
+  border-color: var(--admin-primary-edge);
+}
+
+.cs-picture-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.cs-picture {
+  position: relative;
+  margin: 0;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 12px;
+  background: var(--admin-surface);
+  overflow: hidden;
+}
+
+.cs-picture__thumb {
+  height: 112px;
+  display: grid;
+  place-items: center;
+  background: var(--admin-surface-sunken);
+  overflow: hidden;
+}
+
+.cs-picture__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cs-picture__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px 12px;
+}
+
+.cs-picture__name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--admin-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The usage half of this line is the point of the whole screen. */
+.cs-picture__meta { font-size: 11.5px; color: var(--admin-body-soft); }
+
+.cs-picture__delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--admin-surface);
+  color: var(--admin-body);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.cs-picture:hover .cs-picture__delete,
+.cs-picture__delete:focus-visible { opacity: 1; }
+
+.cs-picture__delete:hover { color: var(--admin-danger); }
+
+.cs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 34px 18px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 13px;
+  background: var(--admin-surface);
+  color: var(--admin-body-soft);
+  font-size: 13px;
+}
+
+.cs-empty p { margin: 0; }
+
+.cs-confirm {
+  width: 100%;
+  max-width: 460px;
+  padding: 20px 22px;
+  border-radius: 14px;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-pop);
+}
+
+.cs-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-picture__delete { transition: none; opacity: 1; }
+}
+
+/* ── Split page editor (Phase 5a) ─────────────────────────────────── */
+
+.cs-editor { display: flex; flex-direction: column; min-height: 100%; margin: -24px -28px -60px; }
+
+.cs-publishbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 11px 22px;
+  border-bottom: 1px solid var(--admin-border-soft);
+  background: var(--admin-surface);
+}
+
+.cs-publishbar__id { display: flex; flex-direction: column; margin-right: auto; }
+
+.cs-publishbar__name {
+  font-family: var(--admin-font-display);
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--admin-ink);
+}
+
+.cs-publishbar__url { font-size: 11.5px; color: var(--admin-body-soft); }
+
+.cs-chip--warn {
+  background: var(--admin-warn-tint);
+  border: 1px solid var(--admin-warn-edge);
+  color: var(--admin-warn);
+}
+
+.cs-savestate {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 108px;
+  font-size: 12.5px;
+  color: var(--admin-body-soft);
+}
+
+.cs-btn-primary--sm {
+  padding: 8px 14px;
+  font-size: 13px;
+  box-shadow: none;
+}
+
+.cs-btn-primary:disabled { opacity: 0.5; cursor: default; }
+
+.cs-editor__body { display: flex; flex: 1; align-items: stretch; }
+
+/* Section list */
+.cs-sectionlist {
+  width: 250px;
+  flex: none;
+  padding: 16px 12px;
+  border-right: 1px solid var(--admin-border-soft);
+  background: var(--admin-surface-muted);
+}
+
+.cs-sectionlist__label,
+.cs-sectionlist__note {
+  margin: 0 0 8px;
+  padding: 0 6px;
+  font-size: 11.5px;
+  color: var(--admin-body-faint);
+}
+
+.cs-sectionlist__note { margin: 10px 0 0; line-height: 1.45; }
+
+.cs-sectionrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px 10px;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--admin-body);
+  font-family: var(--admin-font-body);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cs-sectionrow:hover:not(:disabled) { background: var(--admin-surface); }
+
+.cs-sectionrow.is-selected {
+  background: var(--admin-primary-tint);
+  border-color: var(--admin-primary-edge);
+  color: var(--admin-primary-deep);
+  font-weight: 600;
+}
+
+.cs-sectionrow:disabled { opacity: 0.45; cursor: default; }
+.cs-sectionrow__name { flex: 1; }
+
+.cs-editeddot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--admin-accent);
+}
+
+/* Fields column */
+.cs-fields {
+  flex: 1;
+  min-width: 0;
+  padding: 22px 26px 60px;
+  max-width: 720px;
+}
+
+.cs-fields__title {
+  margin: 0;
+  font-family: var(--admin-font-display);
+  font-weight: 700;
+  font-size: 19px;
+  color: var(--admin-ink);
+}
+
+.cs-fields__purpose {
+  margin: 4px 0 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--admin-body);
+}
+
+.cs-field { margin-bottom: 15px; }
+
+.cs-field__labelrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.cs-field__label { font-size: 13px; font-weight: 600; color: var(--admin-ink); }
+
+.cs-field__hint {
+  margin: 5px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--admin-body-faint);
+}
+
+.cs-field__hint--tight { margin: 2px 0 0; }
+
+.cs-field__warn {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--admin-warn);
+}
+
+.cs-input--block { width: 100%; max-width: none; }
+.cs-textarea { resize: vertical; line-height: 1.5; font-family: var(--admin-font-body); }
+
+.cs-length { font-size: 11.5px; font-weight: 600; }
+.cs-length--ok { color: var(--admin-success); }
+.cs-length--warn { color: var(--admin-warn); }
+.cs-length--empty { color: var(--admin-body-faint); }
+
+.cs-subcard {
+  padding: 14px 15px;
+  margin-bottom: 15px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 12px;
+  background: var(--admin-surface-muted);
+}
+
+.cs-subcard__title { margin: 0; font-size: 13px; font-weight: 600; color: var(--admin-ink); }
+
+.cs-button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.cs-button-row .cs-field { margin-bottom: 0; }
+
+.cs-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--admin-border);
+  border-radius: 9px;
+  background: var(--admin-surface);
+  color: var(--admin-body-soft);
+}
+
+.cs-select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--admin-font-body);
+  font-size: 13px;
+  color: var(--admin-ink);
+}
+
+.cs-picture-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 12px;
+  background: var(--admin-surface);
+}
+
+.cs-picture-row__thumb {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--admin-surface-sunken);
+  color: var(--admin-body-faint);
+  overflow: hidden;
+}
+
+.cs-picture-row__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.cs-picture-row__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cs-picture-row__name { font-size: 13px; font-weight: 600; color: var(--admin-ink); }
+
+/* Visibility switch */
+.cs-switch-row { display: flex; align-items: flex-start; gap: 12px; }
+
+.cs-switch {
+  flex: none;
+  position: relative;
+  width: 34px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--admin-border);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.cs-switch.is-on { background: var(--admin-primary); }
+
+.cs-switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--admin-surface);
+  transition: transform 0.15s ease;
+}
+
+.cs-switch.is-on .cs-switch__knob { transform: translateX(14px); }
+
+/* Publish checklist */
+.cs-checklist {
+  width: 100%;
+  max-width: 400px;
+  padding: 18px 20px;
+  border-radius: 13px;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-pop);
+  max-height: 74vh;
+  overflow-y: auto;
+}
+
+.cs-checklist__group { margin-top: 12px; }
+
+.cs-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 0;
+  font-size: 13px;
+}
+
+.cs-check--ok { color: var(--admin-success); }
+.cs-check--warn { color: var(--admin-warn); }
+.cs-check--block { color: var(--admin-danger); }
+
+.cs-check__label { display: block; font-weight: 600; color: var(--admin-ink); }
+.cs-check__note { display: block; font-size: 12px; color: var(--admin-body-soft); line-height: 1.45; }
+
+.cs-checklist__later {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--admin-body-faint);
+}
+
+@media (max-width: 1240px) {
+  .cs-editor__body { flex-direction: column; }
+  .cs-sectionlist {
+    width: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--admin-border-soft);
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+  }
+  .cs-sectionlist__label, .cs-sectionlist__note { display: none; }
+  .cs-sectionrow { width: auto; white-space: nowrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-switch, .cs-switch__knob { transition: none; }
+}
+
+/* ── Live preview column (Phase 5b) ───────────────────────────────── */
+
+.cs-preview {
+  width: 420px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--admin-border-soft);
+  background: var(--admin-surface-sunken);
+}
+
+.cs-preview__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--admin-border-soft);
+}
+
+.cs-preview__title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--admin-body-faint);
+}
+
+.cs-preview__devices { display: flex; gap: 4px; }
+
+.cs-preview__device {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  border: 1px solid var(--admin-border);
+  border-radius: 7px;
+  background: var(--admin-surface);
+  color: var(--admin-body);
+  cursor: pointer;
+}
+
+.cs-preview__device.is-on {
+  background: var(--admin-primary);
+  border-color: var(--admin-primary);
+  color: var(--admin-surface);
+}
+
+.cs-preview__stage {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 18px 14px;
+  overflow-y: auto;
+}
+
+.cs-preview__card {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 20px 18px;
+  border-radius: 12px;
+  background: var(--admin-surface);
+  box-shadow: 0 10px 30px rgba(31, 41, 55, 0.10);
+  transition: width 0.18s ease;
+}
+
+.cs-preview__empty { margin: 0; font-size: 13px; color: var(--admin-body-faint); text-align: center; }
+
+.cs-preview__note {
+  margin: 0;
+  padding: 8px 14px 12px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--admin-body-faint);
+}
+
+/* The public site's own look. These values belong to shiksha-frontend, not to
+ * the admin token system — resolving them through --admin-* would make the
+ * preview lie about what a visitor sees. This is the only place in the Studio
+ * where a literal is correct, and it is why the hex grep is scoped to admin
+ * chrome rather than this block. */
+.cs-site { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+.cs-site__eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4f6df5;
+}
+
+.cs-site__heading {
+  margin: 0;
+  font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.cs-site__subhead {
+  margin: 9px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #475569;
+}
+
+.cs-site__body {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #475569;
+  white-space: pre-wrap;
+}
+
+.cs-site__image {
+  margin: 14px 0 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #eef0f5;
+}
+
+.cs-site__image img { display: block; width: 100%; }
+
+.cs-site__ctas { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+
+.cs-site__btn {
+  display: inline-block;
+  padding: 9px 16px;
+  border-radius: 8px;
+  background: #4f6df5;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cs-site__btn--ghost {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+/* Drag handle */
+.cs-sectionrow { position: relative; }
+.cs-sectionrow.is-dragging { opacity: 0.5; }
+.cs-sectionrow__grip { flex: none; color: var(--admin-body-faint); cursor: grab; }
+
+.cs-sectionrow__btn {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cs-sectionrow__btn:disabled { cursor: default; }
+
+@media (max-width: 1240px) {
+  /* Below this the three columns can't coexist: the preview drops under the
+     fields rather than squeezing both into unusable widths. */
+  .cs-preview {
+    width: auto;
+    border-left: 0;
+    border-top: 1px solid var(--admin-border-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-preview__card { transition: none; }
+}

@@ -13,6 +13,47 @@
   --admin-page-bg: #f4f5f8;
   --admin-font-display: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
   --admin-font-body: 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  /* ── Added for Content Studio (design_handoff_content_studio Phase 2) ──
+     The nine tokens above cover brand, ink and borders but nothing else, so
+     every new surface, tint or state colour had no token to resolve through.
+     These fill that gap. Existing screens are untouched: the 28 legacy literal
+     hex call sites across 13 files stay unmigrated on purpose — see the
+     workspace CLAUDE.md. New code only. */
+
+  /* Surfaces, lightest to darkest */
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #fbfcfe;
+  --admin-surface-sunken: #eef0f5;
+  --admin-border-soft: #e6e9f0;
+
+  /* Secondary text, in decreasing prominence */
+  --admin-body-soft: #8a93a5;
+  --admin-body-faint: #a3aab8;
+
+  /* Brand tints, for selected rows and hover borders */
+  --admin-primary-tint: #eef2ff;
+  --admin-primary-edge: #c3ccf7;
+  --admin-primary-deep: #2f43c4;
+
+  /* States. Each has a fill and a tint so a badge can use both. */
+  --admin-success: #0f8a5f;
+  --admin-success-tint: #ecfdf5;
+  --admin-warn: #a16207;
+  --admin-warn-tint: #fff8e8;
+  --admin-warn-edge: #ecd080;
+  --admin-danger: #c0392b;
+  --admin-danger-tint: #fdf0ee;
+  --admin-accent: #e8590c;
+  --admin-info: #2563eb;
+  --admin-info-tint: #eff6ff;
+  --admin-info-edge: #bfdbfe;
+
+  /* Elevation */
+  --admin-shadow-card: 0 8px 20px rgba(31, 41, 55, 0.07);
+  --admin-shadow-pop: 0 20px 48px rgba(15, 23, 42, 0.20);
+  --admin-shadow-overlay: 0 30px 70px rgba(15, 23, 42, 0.35);
+  --admin-scrim: rgba(15, 23, 42, 0.45);
 }
 
 *,
