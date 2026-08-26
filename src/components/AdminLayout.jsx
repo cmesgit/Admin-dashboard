@@ -161,14 +161,14 @@ const studioNavGroups = [
     items: [
       { to: "/content?tab=blogs", icon: FileText, label: "Posts & articles" },
       { to: "/content?tab=affairs", icon: Newspaper, label: "Current affairs" },
-      { to: "/content?tab=faqs", icon: HelpCircle, label: "Questions & notices" },
+      { to: "/content/questions", icon: HelpCircle, label: "Questions & notices" },
     ],
   },
   {
     header: "The website",
     items: [
       { to: "/content/pages/home", icon: Layout, label: "Site pages" },
-      { to: "/content?tab=showcase", icon: LayoutDashboard, label: "Course cards" },
+      { to: "/content/cards", icon: LayoutDashboard, label: "Course cards" },
       { to: "/content?tab=exams", icon: GraduationCap, label: "Exams", soon: true },
     ],
   },

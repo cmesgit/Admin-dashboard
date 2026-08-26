@@ -1126,3 +1126,249 @@
 @media (prefers-reduced-motion: reduce) {
   .cs-preview__card { transition: none; }
 }
+
+/* ── Questions & notices (Phase 6a) ───────────────────────────────── */
+
+.cs-pilltabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.cs-pilltabs__spacer { flex: 1; }
+
+.cs-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  background: var(--admin-surface);
+  color: var(--admin-body);
+  font-family: var(--admin-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cs-pill:hover { border-color: var(--admin-primary-edge); }
+
+.cs-pill.is-on {
+  background: var(--admin-primary);
+  border-color: var(--admin-primary);
+  color: var(--admin-surface);
+}
+
+.cs-pill__count {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--admin-surface-sunken);
+  color: var(--admin-body-soft);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cs-pill.is-on .cs-pill__count {
+  background: var(--admin-primary-deep);
+  color: var(--admin-surface);
+}
+
+.cs-searchfield {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid var(--admin-border);
+  border-radius: 9px;
+  background: var(--admin-surface);
+  color: var(--admin-body-soft);
+}
+
+.cs-searchfield__input {
+  width: 160px;
+  padding: 7px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--admin-font-body);
+  font-size: 13px;
+  color: var(--admin-ink);
+}
+
+.cs-card--flush { padding: 0; overflow: hidden; }
+
+.cs-grouphead {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--admin-border-soft);
+  background: var(--admin-surface-muted);
+  color: var(--admin-body);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.cs-grouphead__count {
+  margin-left: auto;
+  color: var(--admin-body-faint);
+  font-weight: 500;
+}
+
+.cs-qrow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--admin-border-soft);
+}
+
+.cs-qrow:last-child { border-bottom: 0; }
+.cs-qrow__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.cs-qrow__title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--admin-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-qrow__body {
+  font-size: 12.5px;
+  color: var(--admin-body-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status tones. The chip says what a visitor experiences, not the enum. */
+.cs-tone-ok    { background: var(--admin-success-tint); color: var(--admin-success); }
+.cs-tone-warn  { background: var(--admin-warn-tint);    color: var(--admin-warn); }
+.cs-tone-muted { background: var(--admin-surface-sunken); color: var(--admin-body-soft); }
+
+.cs-select--inline {
+  flex: none;
+  width: auto;
+  padding: 6px 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface);
+}
+
+.cs-note {
+  margin: 14px 0 0;
+  padding: 10px 13px;
+  border: 1px solid var(--admin-info-edge);
+  border-radius: 10px;
+  background: var(--admin-info-tint);
+  color: var(--admin-info);
+  font-size: 12.5px;
+}
+
+@media (max-width: 720px) {
+  .cs-qrow { flex-wrap: wrap; }
+  .cs-searchfield__input { width: 110px; }
+}
+
+/* ── Course cards (Phase 6b) ──────────────────────────────────────── */
+
+.cs-cardgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.cs-coursecard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 13px;
+  background: var(--admin-surface);
+  overflow: hidden;
+}
+
+/* A hidden card stays legible but visibly out of play — it is not deleted,
+   and the screen should not imply that it is. */
+.cs-coursecard.is-hidden { opacity: 0.6; }
+
+.cs-coursecard__banner {
+  position: relative;
+  height: 112px;
+  background-image: linear-gradient(135deg, var(--admin-primary-tint), var(--admin-surface-sunken));
+  background-size: cover;
+  background-position: center;
+}
+
+.cs-coursecard__banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cs-coursecard__grip {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--admin-scrim);
+  color: var(--admin-surface);
+  cursor: grab;
+}
+
+.cs-coursecard__ribbon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--admin-warn-tint);
+  border: 1px solid var(--admin-warn-edge);
+  color: var(--admin-warn);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cs-coursecard__body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 14px;
+  flex: 1;
+}
+
+.cs-coursecard__title { font-size: 14px; font-weight: 600; color: var(--admin-ink); }
+.cs-coursecard__meta { font-size: 12.5px; color: var(--admin-body-soft); }
+
+.cs-coursecard__link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.cs-coursecard__foot {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--admin-border-soft);
+  background: var(--admin-surface-muted);
+}
+
+.cs-coursecard__state {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--admin-body);
+}
