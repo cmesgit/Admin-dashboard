@@ -147,8 +147,8 @@ const navGroups = [
 // at /content?tab=<something ContentPanel doesn't know> would silently fall
 // back to the Blog Posts tab — the nav would look complete while four of ten
 // entries quietly went to the wrong screen. Each is un-marked by its phase:
-// History/Schedule get dedicated screens later; Exams is Phase 8.
-// Pictures was un-marked in Phase 4.
+// History/Schedule get dedicated screens later. Pictures was un-marked in
+// Phase 4, Exams in Phase 8.
 const studioNavGroups = [
   {
     header: "Content",
@@ -169,7 +169,7 @@ const studioNavGroups = [
     items: [
       { to: "/content/pages/home", icon: Layout, label: "Site pages" },
       { to: "/content/cards", icon: LayoutDashboard, label: "Course cards" },
-      { to: "/content?tab=exams", icon: GraduationCap, label: "Exams", soon: true },
+      { to: "/content/exams", icon: GraduationCap, label: "Exams" },
     ],
   },
   {

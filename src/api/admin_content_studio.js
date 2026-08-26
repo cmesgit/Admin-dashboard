@@ -135,3 +135,10 @@ export const deleteLabel = async (kind, id) => {
   const { data } = await api.delete(`${BASE}/labels/${kind}/${id}/`);
   return data;
 };
+
+/** How far each competitive exam has actually got. Every number is a real
+ *  count — if it says zero subjects, there are zero subjects. */
+export const getExamReadiness = async () => {
+  const { data } = await api.get(`${BASE}/exams/readiness/`);
+  return data;
+};
