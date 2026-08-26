@@ -186,14 +186,22 @@ const QuestionsAndNotices = () => {
     if (!notice.message.trim()) return say("A notice needs something to say.");
     setBusy("notice");
     try {
-      await createContentAnnouncement({
+      const payload = {
         message: notice.message.trim(),
         link_url: notice.link_url.trim(),
         link_label: notice.link_label.trim(),
         level: notice.level,
-        status: "draft",
-      });
-      say("Saved as a draft. Nobody sees it yet.");
+      };
+      if (notice.id) {
+        // Editing must not change who can see it — the row's status control
+        // owns that, and silently re-drafting someone's live notice would be
+        // a nasty surprise.
+        await updateContentAnnouncement(notice.id, payload);
+        say("Saved.");
+      } else {
+        await createContentAnnouncement({ ...payload, status: "draft" });
+        say("Saved as a draft. Nobody sees it yet.");
+      }
       setNotice(null);
       load();
     } catch (e) {
@@ -316,6 +324,21 @@ const QuestionsAndNotices = () => {
                       ))}
                     </select>
 
+                    {tab === "notices" && (
+                      <button
+                        type="button"
+                        className="cs-btn-ghost"
+                        onClick={() => setNotice({
+                          id: r.id,
+                          message: r.message || "",
+                          link_url: r.link_url || "",
+                          link_label: r.link_label || "",
+                          level: r.level || "info",
+                        })}
+                      >
+                        Edit
+                      </button>
+                    )}
                     {tab === "answers" && (
                       <>
                         <button
@@ -487,9 +510,13 @@ const QuestionsAndNotices = () => {
           if (e.target === e.currentTarget) setNotice(null);
         }}>
           <div className="cs-confirm" role="dialog" aria-modal="true">
-            <h2 className="cs-card__title">New notice</h2>
+            <h2 className="cs-card__title">
+              {notice.id ? "Edit notice" : "New notice"}
+            </h2>
             <p className="cs-field__hint cs-field__hint--tight">
-              A strip across the top of the site. It saves as a draft.
+              {notice.id
+                ? "A strip across the top of the site. Editing the words doesn’t change who can see it."
+                : "A strip across the top of the site. It saves as a draft."}
             </p>
 
             <div className="cs-field">
@@ -554,7 +581,7 @@ const QuestionsAndNotices = () => {
                 disabled={busy === "notice"}
                 onClick={saveNotice}
               >
-                {busy === "notice" ? "Saving…" : "Save as draft"}
+                {busy === "notice" ? "Saving…" : (notice.id ? "Save" : "Save as draft")}
               </button>
             </div>
           </div>

@@ -1,14 +1,10 @@
 import { useCallback, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { FileText, Newspaper, HelpCircle, Megaphone, LayoutGrid, Tag, Layers, Home } from "lucide-react";
+import { Navigate, useSearchParams } from "react-router-dom";
+import { FileText, Newspaper, LayoutGrid, Home } from "lucide-react";
 import BlogPosts from "./BlogPosts";
 import CurrentAffairs from "./CurrentAffairs";
-import Faqs from "./Faqs";
-import Announcements from "./Announcements";
 import Showcase from "./Showcase";
 import HomeContent from "./HomeContent";
-import Tags from "./Tags";
-import Categories from "./Categories";
 import Toast from "../../components/Toast";
 import "../../css/Moderator.css";
 import "../../css/Courses.css";
@@ -17,12 +13,8 @@ import "../../css/Content.css";
 const TABS = [
   { id: "blogs", label: "Blog Posts", icon: FileText },
   { id: "affairs", label: "Current Affairs", icon: Newspaper },
-  { id: "faqs", label: "FAQs", icon: HelpCircle },
-  { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "showcase", label: "Showcase Courses", icon: LayoutGrid },
   { id: "home", label: "Homepage Content", icon: Home },
-  { id: "tags", label: "Tags", icon: Tag },
-  { id: "categories", label: "Categories", icon: Layers },
 ];
 const TAB_IDS = TABS.map((t) => t.id);
 const DEFAULT_TAB = "blogs";
@@ -35,6 +27,15 @@ const DEFAULT_TAB = "blogs";
 const ContentPanel = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get("tab");
+  // Screens that moved into the Content Studio. A bookmark to an old tab
+  // should land on its replacement, not silently fall back to Blog Posts.
+  const MOVED = {
+    faqs: "/content/questions",
+    announcements: "/content/questions?tab=notices",
+    tags: "/content/labels",
+    categories: "/content/labels",
+  };
+  const movedTo = MOVED[rawTab];
   const tab = TAB_IDS.includes(rawTab) ? rawTab : DEFAULT_TAB;
   const setTab = (id) => {
     setSearchParams((prev) => {
@@ -51,6 +52,8 @@ const ContentPanel = () => {
     setToast(message);
     toastTimer.current = setTimeout(() => setToast(null), 2500);
   }, []);
+
+  if (movedTo) return <Navigate to={movedTo} replace />;
 
   return (
     <div className="dashboard-wrapper">
@@ -74,12 +77,8 @@ const ContentPanel = () => {
 
       {tab === "blogs" && <BlogPosts onAction={onAction} />}
       {tab === "affairs" && <CurrentAffairs onAction={onAction} />}
-      {tab === "faqs" && <Faqs onAction={onAction} />}
-      {tab === "announcements" && <Announcements onAction={onAction} />}
       {tab === "showcase" && <Showcase onAction={onAction} />}
       {tab === "home" && <HomeContent onAction={onAction} />}
-      {tab === "tags" && <Tags onAction={onAction} />}
-      {tab === "categories" && <Categories onAction={onAction} />}
 
       <Toast message={toast} />
     </div>
