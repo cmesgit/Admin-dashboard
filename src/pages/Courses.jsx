@@ -1380,6 +1380,7 @@ const Courses = () => {
 
   useEffect(() => { loadBoards(); }, [loadBoards]);
 
+
   // Server-side search/filter for the All Courses tab, debounced same as
   // the teacher-picker search elsewhere in this file. Only fires while
   // that tab is actually the active level.
@@ -1439,6 +1440,44 @@ const Courses = () => {
     setNav({ level, board, course });
     if (level === "batches") loadBatches(course.id); else loadSubjects(course.id);
   };
+
+  // Deep link: /courses?course=<id> opens straight into that course's
+  // subjects. The Content Studio's Exams screen links here — its whole promise
+  // is "one click takes you to where you fix that", and without this the click
+  // landed on the Boards list with the parameter silently ignored.
+  //
+  // Routed through openCourseFromAllCourses rather than openCourse because a
+  // competitive course has no board, and that helper is the one that leaves
+  // nav.board NULL instead of {id: undefined}.
+  //
+  // ⚠ No "already ran" ref here, deliberately. StrictMode invokes an effect
+  // twice on mount: a ref set on the first run makes the second run bail,
+  // while the first run's async continuation is stopped by its own cleanup
+  // setting `cancelled`. The two guards cancel each other out and the deep
+  // link silently never applies. The `[deepLinkId]` dependency is what
+  // prevents re-runs; `cancelled` only stops a late resolve touching state
+  // after unmount.
+  const deepLinkId = searchParams.get("course");
+  useEffect(() => {
+    if (!deepLinkId) return undefined;
+    let cancelled = false;
+    (async () => {
+      const list = await getAllCourses({});
+      if (cancelled) return;
+      const found = (Array.isArray(list) ? list : []).find(
+        (c) => String(c.id) === String(deepLinkId),
+      );
+      if (found) {
+        openCourseFromAllCourses(found, "subjects");
+      } else {
+        // Don't strand someone on the Boards list wondering why nothing
+        // happened — show the flat list the course should have been in.
+        goAllCourses();
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepLinkId]);
 
   // Refresh whichever course list the admin is actually looking at. The
   // save handler used to hardcode loadCourses(nav.board.id), which threw a
@@ -1939,7 +1978,8 @@ const Courses = () => {
             {subjects.length} subject{subjects.length !== 1 ? "s" : ""} in {nav.course?.title}
             {unstaffedCount > 0 && (
               <span className="cm-muted" style={{ marginLeft: 8 }}>
-                · {unstaffedCount} subject{unstaffedCount !== 1 ? "s" : ""} have no teacher
+                · {unstaffedCount} subject{unstaffedCount !== 1 ? "s" : ""}{" "}
+                {unstaffedCount === 1 ? "has" : "have"} no teacher
               </span>
             )}
           </div>
