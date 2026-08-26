@@ -1372,3 +1372,31 @@
   font-weight: 600;
   color: var(--admin-body);
 }
+
+/* ── Labels (Phase 7) ─────────────────────────────────────────────── */
+
+.cs-labelpill {
+  flex: none;
+  padding: 4px 11px;
+  border: 1px solid var(--admin-primary-edge);
+  border-radius: 999px;
+  background: var(--admin-primary-tint);
+  color: var(--admin-primary-deep);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.cs-qrow__spacer { flex: 1; }
+
+.cs-labelrow__usage {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--admin-body-soft);
+  white-space: nowrap;
+}
+
+.cs-chip { display: inline-flex; align-items: center; gap: 4px; }
+
+@media (max-width: 900px) {
+  .cs-labelrow__usage { width: 100%; }
+}

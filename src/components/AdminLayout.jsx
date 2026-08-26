@@ -175,7 +175,7 @@ const studioNavGroups = [
   {
     header: "Reusable",
     items: [
-      { to: "/content?tab=tags", icon: Tag, label: "Labels" },
+      { to: "/content/labels", icon: Tag, label: "Labels" },
       { to: "/content/pictures", icon: ImageIcon, label: "Pictures" },
     ],
   },

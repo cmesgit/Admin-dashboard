@@ -109,3 +109,29 @@ export const reorderSections = async (sections) => {
   });
   return data;
 };
+
+/** Blog tags AND course categories on one screen. Reads across two apps. */
+export const getLabels = async (q) => {
+  const { data } = await api.get(`${BASE}/labels/`, { params: q ? { q } : {} });
+  return data;
+};
+
+/** Repoints every relation in a transaction, then deletes the source.
+ *  400s on merging into itself, or across differing CourseCategory groups. */
+export const mergeLabels = async (kind, fromId, intoId) => {
+  const { data } = await api.post(`${BASE}/labels/merge/`, {
+    kind, from_id: fromId, into_id: intoId,
+  });
+  return data;
+};
+
+export const renameLabel = async (kind, id, name) => {
+  const { data } = await api.patch(`${BASE}/labels/${kind}/${id}/`, { name });
+  return data;
+};
+
+/** 409s with used_by when the label is still in use. */
+export const deleteLabel = async (kind, id) => {
+  const { data } = await api.delete(`${BASE}/labels/${kind}/${id}/`);
+  return data;
+};
