@@ -1870,7 +1870,16 @@ const Courses = () => {
                   <td className="courses-title">
                     <button className="cm-link" onClick={() => openCourseFromAllCourses(c)}>{c.title}</button>
                   </td>
-                  <td>{c.board_name || "—"}</td>
+                  <td>
+                    {c.board_name
+                      ? c.board_name
+                      : c.kind === "COACHING"
+                        // Not a missing board — a competitive course has none
+                        // by design (create_competitive_courses sets it NULL).
+                        // A bare em dash here made the two cases identical.
+                        ? <StatusBadge color="blue">Competitive</StatusBadge>
+                        : "—"}
+                  </td>
                   <td>
                     <StatusBadge
                       color={
