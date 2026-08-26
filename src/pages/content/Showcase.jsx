@@ -63,7 +63,7 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     icon: initial?.icon || "book",
     link_path: initial?.link_path || "/courses",
     order: initial?.order ?? 0,
-    is_active: initial?.is_active ?? true,
+    status: initial?.status ?? "published",
     course: initial?.course || "",
     board: initial?.board || "",
   });
@@ -158,7 +158,7 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
       link_path: form.link_path.trim() || "/courses",
       link_state,
       order: parseInt(form.order, 10) || 0,
-      is_active: form.is_active,
+      status: form.status,
     };
     onSubmit(payload, file);
   };
@@ -315,8 +315,14 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
             <input type="number" value={form.order} onChange={set("order")} />
           </label>
           <label className="cm-check" style={{ marginTop: 26 }}>
-            <input type="checkbox" checked={form.is_active} onChange={set("is_active")} />
-            <span>Active</span>
+            <input
+              type="checkbox"
+              checked={form.status === "published"}
+              onChange={(e) => setForm((f) => ({
+                ...f, status: e.target.checked ? "published" : "draft",
+              }))}
+            />
+            <span>Showing on the site</span>
           </label>
         </div>
 
@@ -444,8 +450,8 @@ const Showcase = ({ onAction }) => {
                 >
                   {c.image ? <img src={c.image} alt="" /> : (c.image_url ? <img src={c.image_url} alt="" /> : <Icon size={34} className="cms-card-thumb-icon" />)}
                   {c.ribbon && <span className="cms-card-ribbon">{c.ribbon}</span>}
-                  <span className={`mod-badge ${c.is_active ? "pal-green" : "pal-gray"} cms-card-status`}>
-                    {c.is_active ? "Active" : "Hidden"}
+                  <span className={`mod-badge ${c.status === "published" ? "pal-green" : "pal-gray"} cms-card-status`}>
+                    {c.status === "published" ? "Showing" : "Hidden"}
                   </span>
                 </div>
                 <div className="cms-card-body">

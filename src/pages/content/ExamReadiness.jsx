@@ -11,7 +11,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowRight, BookOpen, Check, CircleAlert, GraduationCap, Layers, Lock,
+  ArrowRight, BookOpen, Check, CircleAlert, EyeOff, GraduationCap, Layers,
+  Lock,
 } from "lucide-react";
 import { getExamReadiness } from "../../api/admin_content_studio";
 import { errText } from "../../utils/errText";
@@ -57,7 +58,7 @@ const ExamReadiness = () => {
   const focus = exams.find((e) => e.id === suggested);
 
   const tiles = [
-    { icon: GraduationCap, value: summary.total, label: "live in the navbar" },
+    { icon: GraduationCap, value: summary.in_navbar ?? summary.total, label: "live in the navbar" },
     {
       icon: Layers, value: summary.with_subjects,
       // "1 have any subjects" reads as a bug even though the number is right.
@@ -65,6 +66,13 @@ const ExamReadiness = () => {
     },
     { icon: CircleAlert, value: summary.coming_soon, label: "showing “Coming soon”" },
     { icon: BookOpen, value: focus ? 1 : 0, label: "worth finishing first" },
+    ...(summary.not_published
+      ? [{
+          icon: EyeOff, value: summary.not_published,
+          label: summary.not_published === 1
+            ? "exists but isn’t published" : "exist but aren’t published",
+        }]
+      : []),
   ];
 
   return (
@@ -73,7 +81,7 @@ const ExamReadiness = () => {
       <p className="cs-home__sub">
         {summary.total === 0
           ? "No competitive exams exist yet."
-          : `${summary.total} exam${summary.total === 1 ? " is" : "s are"} already in the navbar and on the courses page.` +
+          : `${summary.in_navbar ?? summary.total} exam${(summary.in_navbar ?? summary.total) === 1 ? " is" : "s are"} already in the navbar and on the courses page.` +
             (summary.coming_soon
               ? ` ${summary.coming_soon === summary.total ? "None of them has" : "Some have"} any content yet, so ${summary.coming_soon === 1 ? "it says" : "they say"} “Coming soon” to visitors.`
               : "")}
@@ -113,6 +121,15 @@ const ExamReadiness = () => {
                 <span className={`cs-chip ${e.state === "live" ? "cs-tone-ok" : "cs-tone-warn"}`}>
                   {e.state === "live" ? "Live" : "Coming soon"}
                 </span>
+                {e.in_navbar === false && (
+                  <span
+                    className="cs-chip cs-tone-muted"
+                    title={`Course status: ${e.course_status}. Visitors can’t reach it.`}
+                  >
+                    <EyeOff size={11} aria-hidden="true" />
+                    not published
+                  </span>
+                )}
               </div>
               {e.blurb && <p className="cs-examrow__blurb">{e.blurb}</p>}
 

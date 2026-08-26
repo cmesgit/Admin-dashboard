@@ -76,7 +76,15 @@ const QuestionsAndNotices = () => {
         getContentFaqs(), getContentAnnouncements(), getContentAffairs(),
       ]);
       setData({ answers: asList(f), notices: asList(a), affairs: asList(c) });
-      setError("");
+      // admin.js's safe() turns a failed request into [] and marks it
+      // __failed. Without checking that, a dead API is indistinguishable from
+      // "there is nothing here" — which is exactly how an outage gets read as
+      // empty content.
+      if ([f, a, c].some((r) => r?.__failed)) {
+        setError("Couldn’t reach the server, so this may be incomplete. Reload to try again.");
+      } else {
+        setError("");
+      }
     } catch (e) {
       setError(errText(e));
     } finally {

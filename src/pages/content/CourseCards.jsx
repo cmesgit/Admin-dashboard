@@ -49,8 +49,13 @@ const CourseCards = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setCards(asList(await getContentShowcase()));
-      setError("");
+      const res = await getContentShowcase();
+      setCards(asList(res));
+      // safe() swallows a failure into [] — say so rather than showing an
+      // empty grid that looks like "no cards".
+      setError(res?.__failed
+        ? "Couldn’t reach the server. This list may be incomplete — reload to try again."
+        : "");
     } catch (e) {
       setError(errText(e));
     } finally {
