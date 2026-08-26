@@ -37,8 +37,14 @@ import {
   Award,
   Menu,
   X,
+  HelpCircle,
+  History,
+  Layout,
+  Tag,
 } from "lucide-react";
 import { getEnrollmentRequests } from "../api/admin";
+import CommandPalette from "./CommandPalette";
+import "../css/ContentStudio.css";
 import { getAdminSupportTickets } from "../api/admin_communication";
 import { getReviewQueue } from "../api/admin_question_bank";
 import { getScholarshipStats } from "../api/admin_scholarship";
@@ -127,6 +133,94 @@ const navGroups = [
   },
 ];
 
+// design_handoff_content_studio Phase 2 — the CMS nav, grouped by the job
+// someone is doing rather than by which table the rows live in. Replaces the
+// single "Content (CMS)" entry above, and ONLY when
+// GlobalSettings.content_studio_enabled is on; with the flag off the eight-tab
+// panel at /content is what renders, exactly as today.
+//
+// ⚠ Every destination below is deliberately an existing route for now. Later
+// phases replace the screens behind them one at a time; keeping the old URLs
+// alive is what lets that happen without breaking bookmarks mid-rebuild.
+// ⚠ `soon: true` marks a destination whose screen is not built yet. Those
+// render as a dimmed row with a "Soon" tag and do NOT navigate. Pointing them
+// at /content?tab=<something ContentPanel doesn't know> would silently fall
+// back to the Blog Posts tab — the nav would look complete while four of ten
+// entries quietly went to the wrong screen. Each is un-marked by its phase:
+// History/Schedule get dedicated screens later. Pictures was un-marked in
+// Phase 4, Exams in Phase 8.
+const studioNavGroups = [
+  {
+    header: "Content",
+    items: [
+      { to: "/content/home", icon: LayoutDashboard, label: "Home", end: true },
+    ],
+  },
+  {
+    header: "Write",
+    items: [
+      { to: "/content?tab=blogs", icon: FileText, label: "Posts & articles" },
+      { to: "/content?tab=affairs", icon: Newspaper, label: "Current affairs" },
+      { to: "/content/questions", icon: HelpCircle, label: "Questions & notices" },
+    ],
+  },
+  {
+    header: "The website",
+    items: [
+      { to: "/content/pages/home", icon: Layout, label: "Site pages" },
+      { to: "/content/cards", icon: LayoutDashboard, label: "Course cards" },
+      { to: "/content/exams", icon: GraduationCap, label: "Exams" },
+    ],
+  },
+  {
+    header: "Reusable",
+    items: [
+      { to: "/content/labels", icon: Tag, label: "Labels" },
+      { to: "/content/pictures", icon: ImageIcon, label: "Pictures" },
+    ],
+  },
+  {
+    header: "Keeping track",
+    items: [
+      { to: "/content?tab=history", icon: History, label: "History", soon: true },
+      { to: "/content?tab=schedule", icon: CalendarClock, label: "Schedule", soon: true },
+    ],
+  },
+];
+
+// ContentPanel's default tab when ?tab= is absent or unrecognised.
+const DEFAULT_CONTENT_TAB = "blogs";
+
+/** Is this Studio nav entry the one currently open?
+ *
+ * NavLink's own `isActive` compares pathname only and matches by prefix, so
+ * every "/content?tab=…" entry lights up together — and all of them stay lit on
+ * /content/blogs/:id. Studio entries are distinguished purely by their query
+ * string, so the comparison has to include it.
+ */
+const isStudioLinkActive = (to, location) => {
+  const [path, query] = to.split("?");
+  if (location.pathname !== path) return false;
+  const want = new URLSearchParams(query || "").get("tab") || DEFAULT_CONTENT_TAB;
+  const have = new URLSearchParams(location.search).get("tab") || DEFAULT_CONTENT_TAB;
+  return want === have;
+};
+
+/** Swap the single Content entry for the four Studio groups when the flag is on. */
+const buildNav = (studioOn) => {
+  if (!studioOn) return navGroups;
+  return navGroups.flatMap((group) => {
+    if (group.header !== "Content & Comms") return [group];
+    return [
+      ...studioNavGroups,
+      {
+        header: "Comms",
+        items: group.items.filter((i) => i.to !== "/content"),
+      },
+    ];
+  });
+};
+
 const len = (r) => (Array.isArray(r) ? r.length : r?.results?.length ?? r?.count ?? 0);
 
 const AdminLayout = () => {
@@ -140,10 +234,33 @@ const AdminLayout = () => {
   // whether it's open. Irrelevant above that breakpoint (CSS keeps the
   // sidebar always visible there regardless of this state).
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // design_handoff_content_studio Phase 2. /accounts/me/ already carries
+  // feature_flags, so nothing needs adding to AuthContext — which matters,
+  // because that file is generated from shared/src and editing it here would
+  // be reverted by the next sync.
+  const studioOn = !!user?.feature_flags?.content_studio_enabled;
+  const groups = buildNav(studioOn);
 
   // Close the mobile overlay on every navigation, so picking a nav link
   // doesn't leave the sidebar covering the page it just opened.
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
+
+  // ⌘K / Ctrl-K opens the palette from anywhere in the console. Bound only
+  // while the Studio is on, so the shortcut doesn't swallow the browser's own
+  // behaviour for admins who don't have the feature.
+  useEffect(() => {
+    if (!studioOn) return undefined;
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [studioOn]);
 
   // Live nav count pills: pending enrollment requests + open support tickets
   // + scholarship items needing attention (flagged sessions + pending
@@ -201,18 +318,47 @@ const AdminLayout = () => {
           </button>
         </div>
 
+        {studioOn && (
+          <button
+            type="button"
+            className="cs-search-trigger"
+            onClick={() => setPaletteOpen(true)}
+          >
+            <Search size={14} aria-hidden="true" />
+            <span className="cs-search-trigger__label">Search everything</span>
+            <span className="cs-search-trigger__key">⌘K</span>
+          </button>
+        )}
+
         <nav className="sidebar-nav">
-          {navGroups.map((group, gi) => (
+          {groups.map((group, gi) => (
             <div key={group.header || `g${gi}`}>
               {group.header && <div className="sidebar-group-header">{group.header}</div>}
-              {group.items.map(({ to, icon: Icon, label, end, isNew, badgeKey }) => {
+              {group.items.map(({ to, icon: Icon, label, end, isNew, badgeKey, soon }) => {
                 const badge = badgeKey ? badges[badgeKey] : 0;
+                if (soon) {
+                  return (
+                    <span key={to} className="sidebar-link cs-link-soon" aria-disabled="true">
+                      <Icon size={17} />
+                      <span className="sidebar-link-label">{label}</span>
+                      <span className="cs-soon-tag">Soon</span>
+                    </span>
+                  );
+                }
+                // Studio entries live at one pathname and differ only by
+                // ?tab=, so they need the query-aware comparison above.
+                const isStudioEntry = studioOn && to.startsWith("/content");
                 return (
                   <NavLink
                     key={to}
                     to={to}
                     end={end}
-                    className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`}
+                    className={({ isActive }) => {
+                      const on = isStudioEntry
+                        ? isStudioLinkActive(to, location)
+                        : isActive;
+                      return `sidebar-link${on ? " active" : ""}`;
+                    }}
                   >
                     <Icon size={17} />
                     <span className="sidebar-link-label">{label}</span>
@@ -235,6 +381,10 @@ const AdminLayout = () => {
           </button>
         </div>
       </aside>
+
+      {studioOn && (
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      )}
 
       <div className="admin-main">
         <header className="admin-header">

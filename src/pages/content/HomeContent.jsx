@@ -119,7 +119,7 @@ function ContentBlockForm({ section, row, busy, error, onSubmit, onDeleteClick }
     cta_secondary_href: row?.cta_secondary_href || "",
     image_url: row?.image_url || "",
     max_cards: row?.extra?.max_cards ?? "",
-    is_active: row?.is_active ?? true,
+    status: row?.status ?? "published",
   });
   const [file, setFile] = useState(null);
 
@@ -137,7 +137,7 @@ function ContentBlockForm({ section, row, busy, error, onSubmit, onDeleteClick }
       cta_secondary_href: row?.cta_secondary_href || "",
       image_url: row?.image_url || "",
       max_cards: row?.extra?.max_cards ?? "",
-      is_active: row?.is_active ?? true,
+      status: row?.status ?? "published",
     });
     setFile(null);
   }, [row, section]);
@@ -173,8 +173,14 @@ function ContentBlockForm({ section, row, busy, error, onSubmit, onDeleteClick }
           <input value={form.eyebrow} onChange={set("eyebrow")} placeholder="e.g. Empowerment Through Education" />
         </label>
         <label className="cm-check" style={{ marginTop: 26 }}>
-          <input type="checkbox" checked={form.is_active} onChange={set("is_active")} />
-          <span>Active</span>
+          <input
+            type="checkbox"
+            checked={form.status === "published"}
+            onChange={(e) => setForm((f) => ({
+              ...f, status: e.target.checked ? "published" : "draft",
+            }))}
+          />
+          <span>Showing on the site</span>
         </label>
       </div>
 
@@ -375,7 +381,7 @@ function ListItemFormModal({ section, showVariant, initial, busy, error, onSubmi
     tint: initial?.tint || "",
     image_url: initial?.image_url || "",
     order: initial?.order ?? 0,
-    is_active: initial?.is_active ?? true,
+    status: initial?.status ?? "published",
   });
   const [file, setFile] = useState(null);
 
@@ -487,8 +493,14 @@ function ListItemFormModal({ section, showVariant, initial, busy, error, onSubmi
             <input type="number" value={form.order} onChange={set("order")} />
           </label>
           <label className="cm-check" style={{ marginTop: 26 }}>
-            <input type="checkbox" checked={form.is_active} onChange={set("is_active")} />
-            <span>Active</span>
+            <input
+              type="checkbox"
+              checked={form.status === "published"}
+              onChange={(e) => setForm((f) => ({
+                ...f, status: e.target.checked ? "published" : "draft",
+              }))}
+            />
+            <span>Showing on the site</span>
           </label>
         </div>
 
@@ -513,7 +525,7 @@ function ListItemFormModal({ section, showVariant, initial, busy, error, onSubmi
               tint: form.tint,
               image_url: form.image_url.trim(),
               order: parseInt(form.order, 10) || 0,
-              is_active: form.is_active,
+              status: form.status,
             }, file)}
           >
             {busy ? "Saving…" : initial ? "Save" : "Create"}
@@ -624,8 +636,8 @@ function ListItemsPanel({ section, notify }) {
                   </td>
                   <td>{r.order}</td>
                   <td>
-                    <span className={`mod-badge ${r.is_active ? "pal-green" : "pal-gray"}`}>
-                      {r.is_active ? "Active" : "Hidden"}
+                    <span className={`mod-badge ${r.status === "published" ? "pal-green" : "pal-gray"}`}>
+                      {r.status === "published" ? "Showing" : "Hidden"}
                     </span>
                   </td>
                   <td className="cm-actions">
@@ -671,7 +683,7 @@ function FloaterFormModal({ section, slot, slotLabel, initial, busy, error, onSu
     icon: initial?.icon || "",
     label: initial?.label || "",
     sublabel: initial?.sublabel || "",
-    is_active: initial?.is_active ?? true,
+    status: initial?.status ?? "published",
   });
 
   const set = (k) => (e) =>
@@ -703,8 +715,14 @@ function FloaterFormModal({ section, slot, slotLabel, initial, busy, error, onSu
         </label>
 
         <label className="cm-check">
-          <input type="checkbox" checked={form.is_active} onChange={set("is_active")} />
-          <span>Active (unticking removes the badge from the page)</span>
+          <input
+            type="checkbox"
+            checked={form.status === "published"}
+            onChange={(e) => setForm((f) => ({
+              ...f, status: e.target.checked ? "published" : "draft",
+            }))}
+          />
+          <span>Showing on the site</span>
         </label>
 
         {error && <div className="cm-form-error">{error}</div>}
@@ -798,8 +816,8 @@ function FloatersPanel({ section, notify }) {
                     <>
                       <div className="cms-card-sub">{r.label || <em>No label yet</em>}</div>
                       {r.sublabel && <div className="cms-card-sub">{r.sublabel}</div>}
-                      <span className={`mod-badge ${r.is_active ? "pal-green" : "pal-gray"}`}>
-                        {r.is_active ? "Active" : "Hidden"}
+                      <span className={`mod-badge ${r.status === "published" ? "pal-green" : "pal-gray"}`}>
+                        {r.status === "published" ? "Showing" : "Hidden"}
                       </span>
                     </>
                   ) : (
