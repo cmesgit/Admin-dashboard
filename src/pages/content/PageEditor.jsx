@@ -19,6 +19,7 @@ import {
   savePageDraft,
 } from "../../api/admin_content_studio";
 import SectionPreview from "./SectionPreview";
+import SectionListItems from "./SectionListItems";
 import { errText } from "../../utils/errText";
 import Toast from "../../components/Toast";
 import {
@@ -351,6 +352,15 @@ const PageEditor = () => {
               <VisibilitySwitch
                 status={current.status}
                 onChange={(next) => edit("status", next)}
+              />
+
+              {/* The rows listed beneath this section's own copy. Without
+                  this the editor showed a section with six live bullet
+                  points as though it had none. */}
+              <SectionListItems
+                section={current.key}
+                sectionLabel={current.label}
+                onNotify={say}
               />
             </>
           )}
