@@ -1,18 +1,32 @@
+// The card create/edit form, lifted verbatim out of the old Showcase screen.
+//
+// design_handoff_content_studio. CourseCards was the browse-and-triage view and
+// linked back to the legacy Content panel tab for anything real, which left two
+// card screens and a dead-end link. The form is 300 lines of genuinely useful
+// editor — image upload, live preview, course linking, placement — so it was
+// MOVED here rather than reimplemented, and CourseCards now owns it.
 import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen, FlaskConical, Calculator, Compass, Activity, Target,
   Landmark, Shield, Medal, School,
 } from "lucide-react";
-import {
-  getContentShowcase, createContentShowcase, updateContentShowcase, deleteContentShowcase,
-  getAcademicCourses, getBoards,
-} from "../../api/admin";
-import ConfirmModal from "../../components/ConfirmModal";
+import { getAcademicCourses, getBoards } from "../../api/admin";
 import ImageUploadField from "../../components/ImageUploadField";
 import FeaturedCardPreview from "./preview/FeaturedCardPreview";
 import PlacementBadge from "./preview/PlacementBadge";
-import { errText } from "../../utils/errText";
-import { buildBody } from "../../utils/buildBody";
+// ⚠ The cm-* classes this form is built from live here. The old Showcase
+// screen got this stylesheet from ContentPanel, its parent; CourseCards does
+// not, so without this the whole form renders unstyled and inline instead of
+// as a card. Imported by the component that needs it, not by a parent, so it
+// cannot be lost again by a move.
+// ⚠ BOTH sheets, and in this order. Content.css's own header says the base
+// cm-form-card / cm-field / cm-row rules live in Courses.css; Content.css only
+// adds the --with-preview and --split modifiers on top. The old Showcase
+// screen happened to get Courses.css from another route's chunk, so the form
+// looked styled by accident. Imported explicitly here so it does not depend on
+// what else the app happens to have loaded.
+import "../../css/Courses.css";
+import "../../css/Content.css";
 
 // Keys must match shiksha-frontend's homeData.js COURSE_TABS ids. "all" is
 // deliberately excluded — it's a reserved sentinel meaning "no filter applied"
@@ -45,7 +59,7 @@ const ICON_CMP = {
    the backend (content migration 0017). */
 
 /* ───────────────────────── Create/Edit modal ───────────────────────── */
-function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
+export default function CardFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
   const [form, setForm] = useState({
     title: initial?.title || "",
     level_label: initial?.level_label || "",
@@ -360,144 +374,3 @@ function ShowcaseFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
     </div>
   );
 }
-
-const Showcase = ({ onAction }) => {
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [modal, setModal] = useState(null);
-  const [confirm, setConfirm] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [formError, setFormError] = useState("");
-
-  const notify = (msg) => onAction && onAction(msg);
-
-  const load = async () => {
-    setLoading(true);
-    const d = await getContentShowcase();
-    setLoadError(!!d?.__failed);
-    setRows(Array.isArray(d) ? d : d.results || []);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const handleSubmit = async (payload, file) => {
-    setBusy(true); setFormError("");
-    try {
-      const { data, isMultipart } = buildBody(payload, file);
-      if (modal.mode === "edit") {
-        const updated = await updateContentShowcase(modal.initial.id, data, isMultipart);
-        setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
-        notify(`Updated "${updated.title}"`);
-      } else {
-        const created = await createContentShowcase(data, isMultipart);
-        setRows((prev) => [...prev, created]);
-        notify(`Created "${created.title}"`);
-      }
-      setModal(null);
-    } catch (e) {
-      setFormError(errText(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!confirm) return;
-    setBusy(true);
-    try {
-      await deleteContentShowcase(confirm.item.id);
-      setRows((prev) => prev.filter((r) => r.id !== confirm.item.id));
-      notify(`Deleted "${confirm.item.title}"`);
-      setConfirm(null);
-    } catch (e) {
-      setConfirm((c) => ({ ...c, error: errText(e) }));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div>
-      <div className="cms-toolbar">
-        <div className="courses-count" style={{ padding: 0 }}>{rows.length} card{rows.length !== 1 ? "s" : ""}</div>
-        <div className="cms-toolbar-spacer" />
-        <button className="cm-add-btn" onClick={() => { setFormError(""); setModal({ mode: "create", initial: {} }); }}>
-          + New Card
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="dashboard-loading">Loading…</div>
-      ) : loadError ? (
-        <div className="dashboard-card">
-          <div className="dashboard-loading">Couldn't load showcase cards. <button className="cm-icon-btn" onClick={load}>Retry</button></div>
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="dashboard-card">
-          <div className="dashboard-loading">No showcase cards yet. Add one to populate the homepage "Featured courses" grid.</div>
-        </div>
-      ) : (
-        <div className="cms-card-grid">
-          {rows.map((c) => {
-            const Icon = ICON_CMP[c.icon] || BookOpen;
-            return (
-              <div className="cms-card" key={c.id}>
-                <div
-                  className="cms-card-thumb"
-                  style={!c.image && c.gradient_css ? { background: `linear-gradient(135deg, ${c.gradient_css})` } : undefined}
-                >
-                  {c.image ? <img src={c.image} alt="" /> : (c.image_url ? <img src={c.image_url} alt="" /> : <Icon size={34} className="cms-card-thumb-icon" />)}
-                  {c.ribbon && <span className="cms-card-ribbon">{c.ribbon}</span>}
-                  <span className={`mod-badge ${c.status === "published" ? "pal-green" : "pal-gray"} cms-card-status`}>
-                    {c.status === "published" ? "Showing" : "Hidden"}
-                  </span>
-                </div>
-                <div className="cms-card-body">
-                  <div className="cms-card-title">{c.title}</div>
-                  <div className="cms-card-sub">{c.level_label}{c.tutor_name ? ` · ${c.tutor_name}` : ""}</div>
-                  <div className="cms-card-sub">{c.fact_line}</div>
-                  {c.price_label && <div className="cms-card-sub"><strong>₹{c.price_label}</strong></div>}
-                  {c.course_title && <div className="cms-card-sub">Linked: {c.course_title}</div>}
-                  {(c.categories || []).length > 0 && (
-                    <div className="cms-card-chips">
-                      {c.categories.map((cat) => <span className="cms-card-chip" key={cat}>{cat}</span>)}
-                    </div>
-                  )}
-                </div>
-                <div className="cms-card-footer">
-                  <button className="mod-btn ghost small" onClick={() => { setFormError(""); setModal({ mode: "edit", initial: c }); }}>Edit</button>
-                  <button className="mod-btn danger small" onClick={() => setConfirm({ item: c })}>Delete</button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {modal && (
-        <ShowcaseFormModal
-          mode={modal.mode}
-          initial={modal.initial}
-          busy={busy}
-          error={formError}
-          onSubmit={handleSubmit}
-          onCancel={() => setModal(null)}
-        />
-      )}
-
-      {confirm && (
-        <ConfirmModal
-          title="Delete Showcase Card"
-          message={`Delete "${confirm.item.title}"? It will disappear from the homepage grid immediately.`}
-          extra={confirm.error ? <div className="cm-form-error">{confirm.error}</div> : null}
-          onConfirm={handleDelete}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
-    </div>
-  );
-};
-
-export default Showcase;

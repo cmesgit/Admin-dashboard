@@ -1,9 +1,8 @@
 import { useCallback, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { FileText, Newspaper, LayoutGrid, Home } from "lucide-react";
+import { FileText, Newspaper, Home } from "lucide-react";
 import BlogPosts from "./BlogPosts";
 import CurrentAffairs from "./CurrentAffairs";
-import Showcase from "./Showcase";
 import HomeContent from "./HomeContent";
 import Toast from "../../components/Toast";
 import "../../css/Moderator.css";
@@ -13,7 +12,6 @@ import "../../css/Content.css";
 const TABS = [
   { id: "blogs", label: "Blog Posts", icon: FileText },
   { id: "affairs", label: "Current Affairs", icon: Newspaper },
-  { id: "showcase", label: "Showcase Courses", icon: LayoutGrid },
   { id: "home", label: "Homepage Content", icon: Home },
 ];
 const TAB_IDS = TABS.map((t) => t.id);
@@ -33,6 +31,7 @@ const ContentPanel = () => {
     faqs: "/content/questions",
     announcements: "/content/questions?tab=notices",
     tags: "/content/labels",
+    showcase: "/content/cards",
     categories: "/content/labels",
   };
   const movedTo = MOVED[rawTab];
@@ -77,7 +76,6 @@ const ContentPanel = () => {
 
       {tab === "blogs" && <BlogPosts onAction={onAction} />}
       {tab === "affairs" && <CurrentAffairs onAction={onAction} />}
-      {tab === "showcase" && <Showcase onAction={onAction} />}
       {tab === "home" && <HomeContent onAction={onAction} />}
 
       <Toast message={toast} />

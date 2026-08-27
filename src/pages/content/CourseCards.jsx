@@ -14,8 +14,13 @@
 // form, it links to it.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { GripVertical, LayoutGrid, Link2, Plus } from "lucide-react";
-import { getContentShowcase, updateContentShowcase } from "../../api/admin";
+import { GripVertical, LayoutGrid, Link2, Plus, Trash2 } from "lucide-react";
+import {
+  createContentShowcase, deleteContentShowcase, getContentShowcase,
+  updateContentShowcase,
+} from "../../api/admin";
+import { buildBody } from "../../utils/buildBody";
+import CardFormModal from "./CardFormModal";
 import { errText } from "../../utils/errText";
 import Toast from "../../components/Toast";
 import "../../css/ContentStudio.css";
@@ -37,6 +42,8 @@ const CourseCards = () => {
   const [filter, setFilter] = useState("all");
   const [busy, setBusy] = useState(null);
   const [toast, setToast] = useState(null);
+  const [modal, setModal] = useState(null);   // { mode, initial }
+  const [formError, setFormError] = useState("");
   const toastTimer = useRef(null);
 
   const say = useCallback((m) => {
@@ -83,6 +90,41 @@ const CourseCards = () => {
     }
   };
 
+  const submit = async (payload, file) => {
+    setBusy("form");
+    setFormError("");
+    try {
+      const { data, isMultipart } = buildBody(payload, file, "image");
+      if (modal.mode === "edit") {
+        await updateContentShowcase(modal.initial.id, data, isMultipart);
+      } else {
+        await createContentShowcase(data, isMultipart);
+      }
+      say(modal.mode === "edit" ? "Saved." : "Card added.");
+      setModal(null);
+      load();
+    } catch (e) {
+      // Keep the modal open with the reason — a card form holds a lot of
+      // typing and closing it on failure loses all of it.
+      setFormError(errText(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const remove = async (card) => {
+    setBusy(card.id);
+    try {
+      await deleteContentShowcase(card.id);
+      say(`Deleted “${card.title}”.`);
+      setCards((cs) => cs.filter((c) => c.id !== card.id));
+    } catch (e) {
+      say(errText(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const visible = useMemo(() => {
     if (filter === "showing") return cards.filter(isShowing);
     if (filter === "hidden") return cards.filter((c) => !isShowing(c));
@@ -101,9 +143,13 @@ const CourseCards = () => {
             The cards in the “Featured courses” grid on the homepage.
           </p>
         </div>
-        <Link to="/content?tab=showcase" className="cs-btn-primary">
+        <button
+          type="button"
+          className="cs-btn-primary"
+          onClick={() => setModal({ mode: "create", initial: null })}
+        >
           <Plus size={15} aria-hidden="true" /> Add a card
-        </Link>
+        </button>
       </div>
 
       <div className="cs-pilltabs">
@@ -189,12 +235,38 @@ const CourseCards = () => {
                 <span className="cs-coursecard__state">
                   {showing ? "Showing" : "Hidden from visitors"}
                 </span>
-                <Link to="/content?tab=showcase" className="cs-btn-ghost">Edit</Link>
+                <button
+                  type="button"
+                  className="cs-btn-ghost"
+                  onClick={() => setModal({ mode: "edit", initial: c })}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="cs-btn-ghost"
+                  disabled={busy === c.id}
+                  onClick={() => remove(c)}
+                  aria-label={`Delete ${c.title}`}
+                >
+                  <Trash2 size={13} aria-hidden="true" />
+                </button>
               </div>
             </article>
           );
         })}
       </div>
+
+      {modal && (
+        <CardFormModal
+          mode={modal.mode}
+          initial={modal.initial}
+          busy={busy === "form"}
+          error={formError}
+          onSubmit={submit}
+          onCancel={() => { setModal(null); setFormError(""); }}
+        />
+      )}
 
       <Toast message={toast} />
     </div>
