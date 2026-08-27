@@ -1577,6 +1577,16 @@
   overflow-y: auto;
 }
 
+/* The one destructive action in the editor, set apart from the fields above. */
+.cs-fields__danger {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--admin-border-soft);
+}
+
+.cs-btn-ghost--danger { color: var(--admin-danger); }
+.cs-btn-ghost--danger:hover { background: var(--admin-danger-tint); }
+
 .cs-picture-more {
   display: flex;
   justify-content: center;

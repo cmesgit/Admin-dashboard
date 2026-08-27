@@ -20,7 +20,7 @@ import {
 } from "../../api/admin_content_studio";
 // Section-order visibility reuses the existing helper rather than growing a
 // second copy in admin_content_studio.js.
-import { updateHomeSectionOrder } from "../../api/admin";
+import { deleteHomeContentBlock, updateHomeSectionOrder } from "../../api/admin";
 import SectionPreview from "./SectionPreview";
 import SectionListItems from "./SectionListItems";
 import SectionFloaters from "./SectionFloaters";
@@ -95,6 +95,7 @@ const PageEditor = () => {
   const [toast, setToast] = useState(null);
   const [device, setDevice] = useState("desktop");
   const [dragKey, setDragKey] = useState(null);
+  const [busy, setBusy] = useState(false);
 
   const toastTimer = useRef(null);
   const saveTimer = useRef(null);
@@ -288,6 +289,32 @@ const PageEditor = () => {
     } catch (e) {
       setSections(before);
       say(`Couldn’t change that — ${errText(e)}`);
+    }
+  };
+
+  /** Delete this section's copy outright.
+   *
+   * Not the same as hiding it: this removes the HomeContentBlock row, and the
+   * public site falls back to its own default copy for that section. Rare and
+   * destructive, hence the typed-out confirmation rather than a bare OK. */
+  const deleteBlock = async () => {
+    if (!current?.block_id) return;
+    if (!window.confirm(
+      `Delete all the copy for “${current.label}”?\n\n`
+      + "The section stays on the page but falls back to the built-in wording, "
+      + "and any pending edits to it are discarded. This can't be undone here.",
+    )) return;
+    setBusy(true);
+    try {
+      await deleteHomeContentBlock(current.block_id);
+      clearTimeout(saveTimer.current);
+      pending.current = {};
+      applyServerState(await getPageDraft(pageKey));
+      say(`“${current.label}” is back to its built-in wording.`);
+    } catch (e) {
+      say(`Couldn’t delete that — ${errText(e)}`);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -584,6 +611,23 @@ const PageEditor = () => {
                 slots={current.floater_slots}
                 onNotify={say}
               />
+
+              {current.block_id && (
+                <div className="cs-fields__danger">
+                  <button
+                    type="button"
+                    className="cs-btn-ghost cs-btn-ghost--danger"
+                    onClick={deleteBlock}
+                    disabled={busy}
+                  >
+                    {busy ? "Deleting…" : "Delete this section’s copy"}
+                  </button>
+                  <p className="cs-field__hint">
+                    The section stays on the page and falls back to the
+                    built-in wording.
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>

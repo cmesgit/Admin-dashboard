@@ -1,18 +1,17 @@
 import { useCallback, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { FileText, Newspaper, Home } from "lucide-react";
+import { FileText } from "lucide-react";
 import BlogPosts from "./BlogPosts";
-import CurrentAffairs from "./CurrentAffairs";
-import HomeContent from "./HomeContent";
 import Toast from "../../components/Toast";
 import "../../css/Moderator.css";
 import "../../css/Courses.css";
 import "../../css/Content.css";
 
+// Blog Posts is all that is left here — every other tab moved into the
+// Content Studio, and the last two (Current Affairs, Homepage Content) went
+// once the Studio could finally do everything they could.
 const TABS = [
   { id: "blogs", label: "Blog Posts", icon: FileText },
-  { id: "affairs", label: "Current Affairs", icon: Newspaper },
-  { id: "home", label: "Homepage Content", icon: Home },
 ];
 const TAB_IDS = TABS.map((t) => t.id);
 const DEFAULT_TAB = "blogs";
@@ -30,9 +29,11 @@ const ContentPanel = () => {
   const MOVED = {
     faqs: "/content/questions",
     announcements: "/content/questions?tab=notices",
+    affairs: "/content/questions?tab=affairs",
     tags: "/content/labels",
     showcase: "/content/cards",
     categories: "/content/labels",
+    home: "/content/pages/home",
   };
   const movedTo = MOVED[rawTab];
   const tab = TAB_IDS.includes(rawTab) ? rawTab : DEFAULT_TAB;
@@ -58,25 +59,29 @@ const ContentPanel = () => {
     <div className="dashboard-wrapper">
       <h1 className="dashboard-title">Content (CMS)</h1>
       <p className="content-subtitle">
-        Manage blog posts, current affairs, FAQs, announcements and homepage showcase cards without touching Django admin.
+        Write and manage blog posts. Everything else — pages, answers, notices,
+        current affairs, course cards, labels and pictures — now lives in the
+        Content Studio in the sidebar.
       </p>
 
-      <div className="mod-tabs">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            className={`mod-tab${tab === id ? " active" : ""}`}
-            onClick={() => setTab(id)}
-          >
-            <Icon size={16} />
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* One tab left, so the bar would just be a label. Kept the map so
+          adding a tab back needs no restructuring. */}
+      {TABS.length > 1 && (
+        <div className="mod-tabs">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              className={`mod-tab${tab === id ? " active" : ""}`}
+              onClick={() => setTab(id)}
+            >
+              <Icon size={16} />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {tab === "blogs" && <BlogPosts onAction={onAction} />}
-      {tab === "affairs" && <CurrentAffairs onAction={onAction} />}
-      {tab === "home" && <HomeContent onAction={onAction} />}
 
       <Toast message={toast} />
     </div>
