@@ -239,6 +239,17 @@ export const getAdminExpert  = async (id) =>
   (await api.get(`/skill/admin/experts/${id}/`)).data;
 export const suspendExpert   = async (id, action) =>
   (await api.post(`/skill/admin/experts/${id}/suspend/`, { action })).data;
+/** List an existing teacher as a skill expert — the whole onboarding path.
+ *
+ * The Skill track has no screening: there is no application to review and no
+ * interview. This replaced the evaluation endpoint, which used to be the only
+ * code able to produce a listed expert. 201 = newly listed, 200 = re-listed. */
+export const listTeacherAsExpert = async ({ email, teacherProfileId, headline, categoryId }) =>
+  (await api.post("/skill/admin/experts/list-teacher/", {
+    ...(teacherProfileId ? { teacher_profile_id: teacherProfileId } : { email }),
+    ...(headline ? { headline } : {}),
+    ...(categoryId ? { category_id: categoryId } : {}),
+  })).data;
 
 /* ── Payments (gateway orders — only meaningful once a gateway is live) ── */
 export const getPayments = async (params) =>

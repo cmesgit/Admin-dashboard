@@ -9,7 +9,9 @@
 // subscription (all three). Suspended experts remain here so they can be lifted.
 
 import { useEffect, useMemo, useState } from "react";
-import { getAdminExperts, getAdminExpert, suspendExpert } from "../api/admin";
+import {
+  getAdminExperts, getAdminExpert, suspendExpert, listTeacherAsExpert,
+} from "../api/admin";
 import { HOME_URL } from "../config/urls";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
@@ -62,6 +64,85 @@ function ExpertModal({ id, onClose }) {
   );
 }
 
+/** List a teacher as an expert.
+ *
+ * This is the ONLY way anyone becomes a listed skill expert. The screening
+ * pipeline (application -> interview -> evaluation) that used to do it was
+ * removed: the Skill track grants direct access, no review. Without a UI here
+ * the backend endpoint would be unreachable and the marketplace would have no
+ * onboarding path at all.
+ */
+function ListTeacherModal({ onClose, onDone }) {
+  const [email, setEmail] = useState("");
+  const [headline, setHeadline] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) { setErr("Enter the teacher's email."); return; }
+    setBusy(true); setErr("");
+    try {
+      const row = await listTeacherAsExpert({
+        email: email.trim(), headline: headline.trim(),
+      });
+      onDone(row);
+    } catch (e2) {
+      // 404 = no teacher profile for that email, which is the likely mistake.
+      setErr(e2?.response?.status === 404
+        ? "No teacher account with that email. They need to finish teacher onboarding first."
+        : e2?.response?.data?.detail || "Couldn’t list that teacher.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="ap-modal-overlay" onClick={onClose}>
+      <form className="ap-modal" onClick={(e) => e.stopPropagation()}
+        onSubmit={submit} style={{ maxWidth: 460 }}>
+        <h2 style={{ marginTop: 0 }}>List a teacher as an expert</h2>
+        <p style={{ color: "#6b7280", marginTop: -6 }}>
+          They appear in the marketplace straight away and can open the Skill
+          dashboard. There is no application or interview.
+        </p>
+
+        <label style={{ display: "block", marginTop: 14, fontWeight: 600 }}>
+          Teacher’s email
+          <input value={email} onChange={(ev) => setEmail(ev.target.value)}
+            type="email" autoFocus placeholder="teacher@example.com"
+            style={{ width: "100%", marginTop: 6, padding: "8px 12px",
+                     border: "1px solid #d7dbe0", borderRadius: 8, fontWeight: 400 }} />
+        </label>
+
+        <label style={{ display: "block", marginTop: 12, fontWeight: 600 }}>
+          Headline <span style={{ fontWeight: 400, color: "#6b7280" }}>(optional)</span>
+          <input value={headline} onChange={(ev) => setHeadline(ev.target.value)}
+            placeholder="e.g. Web Developer · ex-Infosys"
+            style={{ width: "100%", marginTop: 6, padding: "8px 12px",
+                     border: "1px solid #d7dbe0", borderRadius: 8, fontWeight: 400 }} />
+          <span style={{ display: "block", marginTop: 4, fontSize: 12, color: "#6b7280" }}>
+            Shown on their marketplace card. Left blank, it uses their name.
+          </span>
+        </label>
+
+        {err && <div style={{ color: "#dc2626", marginTop: 12 }}>{err}</div>}
+
+        <div style={{ marginTop: 20, textAlign: "right", display: "flex",
+                      gap: 8, justifyContent: "flex-end" }}>
+          <button type="button" onClick={onClose} style={{ padding: "8px 16px", cursor: "pointer" }}>
+            Cancel
+          </button>
+          <button type="submit" disabled={busy}
+            style={{ padding: "8px 16px", cursor: busy ? "default" : "pointer", fontWeight: 600 }}>
+            {busy ? "Listing…" : "List as expert"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 const SkillExperts = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +152,7 @@ const SkillExperts = () => {
   const [confirm, setConfirm] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [msg, setMsg] = useState("");
+  const [listing, setListing] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -115,6 +197,19 @@ const SkillExperts = () => {
       <h1 className="dashboard-title">Skill Experts</h1>
       {msg && <div style={{ color: "#16a34a", margin: "0 0 12px" }}>{msg}</div>}
 
+      {listing && (
+        <ListTeacherModal
+          onClose={() => setListing(false)}
+          onDone={(row) => {
+            setListing(false);
+            setMsg(row.created
+              ? `${row.name} is now listed as an expert.`
+              : `${row.name} was already an expert — re-listed.`);
+            load();
+          }}
+        />
+      )}
+
       <div className="dashboard-card payments-table-card">
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
           <input value={q} onChange={(e) => setQ(e.target.value)}
@@ -127,6 +222,10 @@ const SkillExperts = () => {
             <option value="suspended">Suspended</option>
           </select>
           <span className="payments-count">{view.length} of {rows.length}</span>
+          <button type="button" onClick={() => setListing(true)}
+            style={{ padding: "8px 14px", cursor: "pointer", fontWeight: 600 }}>
+            + List a teacher
+          </button>
         </div>
 
         {loading ? (
