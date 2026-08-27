@@ -8,7 +8,7 @@
 //
 // "List item" is deliberately never said out loud here. To a writer these are
 // just the points, cards or stats in this section.
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
   createHomeListItem, deleteHomeListItem, getHomeListItems, updateHomeListItem,
@@ -236,4 +236,7 @@ const SectionListItems = ({ section, sectionLabel, onNotify }) => {
   );
 };
 
-export default SectionListItems;
+// memo: all three props are stable while the editor types, but PageEditor
+// re-renders on every keystroke, which re-rendered this whole item list (and
+// any open modal) for nothing.
+export default memo(SectionListItems);

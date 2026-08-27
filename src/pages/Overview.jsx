@@ -13,7 +13,6 @@ import {
 import {
   getStats,
   getApprovals,
-  getSkillApplications,
   getAdSubscriptions,
   getEnrollmentRequests,
   getSkillSessions,
@@ -60,15 +59,13 @@ const Overview = () => {
     // each guarded so one failure never blanks the dashboard.
     Promise.allSettled([
       getApprovals(),
-      getSkillApplications(),
       getAdSubscriptions(),
       getEnrollmentRequests(),
       getSkillSessions(),
-    ]).then(([appr, skApps, adSubs, enr, sess]) => {
+    ]).then(([appr, adSubs, enr, sess]) => {
       const v = (r) => (r.status === "fulfilled" ? r.value : []);
       setQueue({
         approvals:    len(v(appr)),
-        skillApps:    len(v(skApps)),
         adSubs:       len(v(adSubs)),
         enrollments:  len(v(enr)),
       });
@@ -79,7 +76,6 @@ const Overview = () => {
 
   const attention = queue ? [
     { label: "Teacher approvals",   n: queue.approvals,   to: "/approvals" },
-    { label: "Skill applications",  n: queue.skillApps,   to: "/skill-approvals" },
     { label: "Ad subscriptions",    n: queue.adSubs,      to: "/ad-subscriptions" },
     { label: "Enrollment requests", n: queue.enrollments, to: "/enrollment-requests" },
   ] : [];

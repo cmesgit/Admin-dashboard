@@ -728,8 +728,6 @@
   font-weight: 600;
 }
 
-.cs-sectionrow:disabled { opacity: 0.45; cursor: default; }
-.cs-sectionrow__name { flex: 1; }
 
 .cs-editeddot {
   width: 6px;
@@ -1550,4 +1548,12 @@
   font-size: 11.5px;
   color: var(--admin-body-faint);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* The Pictures library's "show more" row. Everything past the first page used
+   to be unreachable through this screen. */
+.cs-picture-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
 }

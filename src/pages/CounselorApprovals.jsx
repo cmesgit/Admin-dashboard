@@ -1,7 +1,8 @@
 // PLACEMENT: src/pages/CounselorApprovals.jsx   (NEW FILE — admin app)
 //
-// Counsellor application queue — mirrors Approvals.jsx (teacher
-// approvals) / SkillApprovals.jsx (skill-dev screening) in style.
+// Counsellor application queue — mirrors Approvals.jsx (teacher approvals) in
+// style. It used to also cite SkillApprovals.jsx; that screen was retired
+// because the Skill track doesn't gate on admin review.
 //   GET  /counseling/admin/applications/?status=
 //   POST /counseling/admin/applications/<id>/action/  {action, note}
 //     action: approve | reject | suspend | relist

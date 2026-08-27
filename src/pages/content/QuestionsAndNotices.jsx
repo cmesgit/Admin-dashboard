@@ -9,12 +9,13 @@
 // "deliberately taken down", so an answer could not be written without being
 // immediately visible to the public.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   AlertCircle, FileText, HelpCircle, Newspaper, Plus, Search,
 } from "lucide-react";
 import {
   createContentAnnouncement, createContentFaq, deleteContentFaq,
-  getContentAnnouncements,
+  fetchAllPages, getContentAnnouncements,
   getContentAffairs, getContentFaqs, updateContentAnnouncement,
   updateContentAffair, updateContentFaq,
 } from "../../api/admin";
@@ -49,7 +50,21 @@ const stripHtml = (html) =>
 const asList = (r) => (Array.isArray(r) ? r : r?.results || []);
 
 const QuestionsAndNotices = () => {
-  const [tab, setTab] = useState("answers");
+  // The tab lives in the URL. ContentPanel redirects ?tab=announcements here as
+  // /content/questions?tab=notices and the backend inbox emits the same link,
+  // but this screen used to ignore it and always open on Answers — so clicking
+  // a notice in "Needs you" landed on a list that didn't contain it.
+  const [params, setParams] = useSearchParams();
+  const urlTab = params.get("tab");
+  const tab = TABS.some((t) => t.id === urlTab) ? urlTab : "answers";
+  const setTab = (next) => setParams(
+    (prev) => {
+      const p = new URLSearchParams(prev);
+      p.set("tab", next);
+      return p;
+    },
+    { replace: true },
+  );
   const [data, setData] = useState({ answers: [], notices: [], affairs: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -73,7 +88,9 @@ const QuestionsAndNotices = () => {
     setLoading(true);
     try {
       const [f, a, c] = await Promise.all([
-        getContentFaqs(), getContentAnnouncements(), getContentAffairs(),
+        fetchAllPages(getContentFaqs),
+        fetchAllPages(getContentAnnouncements),
+        fetchAllPages(getContentAffairs),
       ]);
       setData({ answers: asList(f), notices: asList(a), affairs: asList(c) });
       // admin.js's safe() turns a failed request into [] and marks it

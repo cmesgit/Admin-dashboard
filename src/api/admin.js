@@ -25,6 +25,38 @@ const safe = async (fn, fallback) => {
   }
 };
 
+/** Every page of a paginated admin list, flattened into one array.
+ *
+ * The content viewsets paginate at 20 (`AdminPagination`) and the screens'
+ * `asList()` discarded `count`/`next`, so a 26-row table silently rendered 20
+ * with no control and no indication — an editor concluded the row didn't exist
+ * and wrote a duplicate. `page_size` is pinned to the class's `max_page_size`,
+ * so realistic volumes still cost exactly one request.
+ *
+ * `__failed` is carried through: an outage must not read as "nothing here".
+ */
+const LIST_PAGE_SIZE = 50; // AdminPagination.max_page_size
+
+export const fetchAllPages = async (fn, params = {}) => {
+  const first = await fn({ ...params, page_size: LIST_PAGE_SIZE });
+  // Unpaginated endpoint, or safe()'s [] fallback — hand it straight back so
+  // the caller's __failed check still works.
+  if (Array.isArray(first)) return first;
+
+  const rows = [...(first.results || [])];
+  const total = typeof first.count === "number" ? first.count : rows.length;
+  for (let page = 2; rows.length < total && page <= 100; page += 1) {
+    const next = await fn({ ...params, page_size: LIST_PAGE_SIZE, page });
+    const batch = Array.isArray(next) ? next : next?.results || [];
+    if (!batch.length) break;
+    rows.push(...batch);
+  }
+  if (first.__failed) {
+    Object.defineProperty(rows, "__failed", { value: true, enumerable: false });
+  }
+  return rows;
+};
+
 /* ── Dashboard ── */
 export const getStats = async () => (await api.get("/accounts/admin/stats/")).data;
 
@@ -66,8 +98,6 @@ export const getPaymentConfig = async () =>
 /* ── Courses: academic (courses app) + skill (skills app) ── */
 export const getAcademicCourses = async (params) =>
   safe(async () => (await api.get("/courses/admin/", { params })).data, []);
-// alias kept so older pages calling getCourses keep working
-export const getCourses = getAcademicCourses;
 
 /* ── Academic course management: Boards → Courses → Subjects ── */
 export const getBoards   = async () =>
@@ -88,12 +118,6 @@ export const deleteBoard = async (id) =>
    other Content tabs — CourseCategory lives in the courses app. ── */
 export const getCourseCategories = async () =>
   safe(async () => (await api.get("/courses/admin/categories/")).data, []);
-export const createCourseCategory = async (data) =>
-  (await api.post("/courses/admin/categories/", data)).data;
-export const updateCourseCategory = async (id, data) =>
-  (await api.patch(`/courses/admin/categories/${id}/`, data)).data;
-export const deleteCourseCategory = async (id) =>
-  (await api.delete(`/courses/admin/categories/${id}/`)).data;
 
 export const getBoardCourses = async (boardId) =>
   safe(async () => (await api.get(`/courses/admin/boards/${boardId}/courses/`)).data, []);
@@ -215,8 +239,6 @@ export const getAdminExpert  = async (id) =>
   (await api.get(`/skill/admin/experts/${id}/`)).data;
 export const suspendExpert   = async (id, action) =>
   (await api.post(`/skill/admin/experts/${id}/suspend/`, { action })).data;
-export const getSkillApplications = async () =>
-  safe(async () => (await api.get("/skill/admin/interview-queue/")).data, []);
 
 /* ── Payments (gateway orders — only meaningful once a gateway is live) ── */
 export const getPayments = async (params) =>
@@ -361,12 +383,6 @@ const multipartConfig = { headers: { "Content-Type": "multipart/form-data" } };
 /* ── Content: Tags ── */
 export const getContentTags    = async (params) =>
   safe(async () => (await api.get("/content/admin/tags/", { params })).data, []);
-export const createContentTag  = async (data) =>
-  (await api.post("/content/admin/tags/", data)).data;
-export const updateContentTag  = async (id, data) =>
-  (await api.patch(`/content/admin/tags/${id}/`, data)).data;
-export const deleteContentTag  = async (id) =>
-  (await api.delete(`/content/admin/tags/${id}/`)).data;
 
 /* ── Content: FAQs (list supports ?page=home|courses|counselling|skills|general) ── */
 export const getContentFaqs    = async (params) =>
@@ -385,8 +401,6 @@ export const createContentAnnouncement = async (data) =>
   (await api.post("/content/admin/announcements/", data)).data;
 export const updateContentAnnouncement = async (id, data) =>
   (await api.patch(`/content/admin/announcements/${id}/`, data)).data;
-export const deleteContentAnnouncement = async (id) =>
-  (await api.delete(`/content/admin/announcements/${id}/`)).data;
 
 /* ── Content: Showcase Courses (homepage "Featured courses" grid cards) ── */
 export const getContentShowcase    = async (params) =>

@@ -9,18 +9,19 @@
 // Phase 5a: publish bar, section list, plain-language fields, autosave, and
 // the publish checklist. Phase 5b: live preview column and drag-reorder.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   AlertTriangle, CheckCircle2, ChevronDown, CloudCheck, EyeOff, GripVertical,
   History,
 } from "lucide-react";
 import {
-  getLinkTargets, getPageChecklist, getPageDraft, publishPage, reorderSections,
-  savePageDraft,
+  discardPageDraft, getLinkTargets, getPageChecklist, getPageDraft, publishPage,
+  reorderSections, savePageDraft,
 } from "../../api/admin_content_studio";
 import SectionPreview from "./SectionPreview";
 import SectionListItems from "./SectionListItems";
 import { errText } from "../../utils/errText";
+import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
 import Toast from "../../components/Toast";
 import {
   ButtonField, HeadingField, LongTextField, PictureField, TextField,
@@ -28,8 +29,24 @@ import {
 } from "./ChapterlessFields";
 import "../../css/ContentStudio.css";
 
-const PAGE_KEY = "home";
+// The page being edited comes from the route (/content/pages/:key). This used
+// to be hardcoded to "home", so /content/pages/<anything> silently loaded,
+// edited, autosaved and published the HOME page under another page's name —
+// harmless only for as long as the backend's PAGES registry has one entry.
+const FALLBACK_PAGE_KEY = "home";
 const AUTOSAVE_MS = 1500;
+
+/** Merge two `{section: {field: value}}` maps, the right-hand side winning.
+ *
+ * Both the autosave queue and the draft use this nested shape, and a plain
+ * spread at the top level would drop every other field in a section. */
+const mergeSections = (base, extra) => {
+  const out = { ...base };
+  for (const [section, fields] of Object.entries(extra || {})) {
+    out[section] = { ...(out[section] || {}), ...fields };
+  }
+  return out;
+};
 
 // The renaming that makes this screen worth building. Left side: the column
 // name nobody outside the codebase should ever see. Right side: what it
@@ -57,6 +74,9 @@ const SECTION_PURPOSE = {
 };
 
 const PageEditor = () => {
+  const { key: routeKey } = useParams();
+  const pageKey = routeKey || FALLBACK_PAGE_KEY;
+
   const [page, setPage] = useState(null);
   const [sections, setSections] = useState([]);
   const [draft, setDraft] = useState({});
@@ -82,9 +102,16 @@ const PageEditor = () => {
     toastTimer.current = setTimeout(() => setToast(null), 2600);
   }, []);
 
+  const mounted = useRef(true);
+  const flushRef = useRef(null);
+
   useEffect(() => () => {
     clearTimeout(toastTimer.current);
     clearTimeout(saveTimer.current);
+    // Send whatever the debounce was still holding. Clearing the timer alone
+    // silently dropped any edit made within 1.5s of clicking a sidebar link.
+    if (Object.keys(pending.current).length) flushRef.current?.();
+    mounted.current = false;
   }, []);
 
   const applyServerState = useCallback((data) => {
@@ -96,7 +123,7 @@ const PageEditor = () => {
 
   useEffect(() => {
     let alive = true;
-    Promise.all([getPageDraft(PAGE_KEY), getLinkTargets()])
+    Promise.all([getPageDraft(pageKey), getLinkTargets()])
       .then(([d, t]) => {
         if (!alive) return;
         applyServerState(d);
@@ -105,7 +132,7 @@ const PageEditor = () => {
       .catch((e) => alive && setError(errText(e)))
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
-  }, [applyServerState]);
+  }, [applyServerState, pageKey]);
 
   const current = sections.find((s) => s.key === selected) || null;
 
@@ -122,19 +149,36 @@ const PageEditor = () => {
     const payload = pending.current;
     pending.current = {};
     if (!Object.keys(payload).length) return;
-    setSaving("saving");
+    if (mounted.current) setSaving("saving");
     try {
-      const data = await savePageDraft(PAGE_KEY, payload);
+      const data = await savePageDraft(pageKey, payload);
+      if (!mounted.current) return;
       applyServerState(data);
-      setSaving("saved");
+      // Anything typed while the request was in flight is NEWER than the copy
+      // the server just echoed back, so it goes back on top. Without this the
+      // response overwrites live keystrokes and the input jumps backwards
+      // mid-sentence.
+      const newer = pending.current;
+      const stillPending = Object.keys(newer).length > 0;
+      if (stillPending) setDraft((d) => mergeSections(d, newer));
+      setSaving(stillPending ? "saving" : "saved");
       // A stale checklist is worse than none — it would green-light an edit
       // that has since broken something.
       setChecklist(null);
     } catch (e) {
+      // Put the edits back in the queue. They were taken out before the
+      // request, so without this the fields still show the new text and the bar
+      // still counts them, but nothing will ever send them: Publish then
+      // reports "no unpublished edits" and a reload loses the work silently.
+      pending.current = mergeSections(pending.current, payload);
+      if (!mounted.current) return;
       setSaving("idle");
-      say(errText(e));
+      say(`Couldn’t save — ${errText(e)}. Your changes are still here; keep
+        typing or press Publish to retry.`.replace(/\s+/g, " "));
     }
-  }, [applyServerState, say]);
+  }, [applyServerState, say, pageKey]);
+
+  useEffect(() => { flushRef.current = flush; }, [flush]);
 
   const edit = (field, value) => {
     // Optimistic: the field must not lag 1.5s behind the keystroke.
@@ -155,10 +199,21 @@ const PageEditor = () => {
 
   // What the preview renders: the live row with this author's pending edits
   // laid over it. Neither half alone is what the page would look like.
-  const previewValues = useMemo(
-    () => ({ ...(current?.values || {}), ...(draft[selected] || {}) }),
-    [current, draft, selected],
-  );
+  const previewValues = useMemo(() => {
+    const d = draft[selected] || {};
+    const merged = { ...(current?.values || {}), ...d };
+    // The preview reads `img`, but the editable fields are `image_url` and the
+    // uploaded `image` — so a picture change used to show in neither the
+    // thumbnail nor the pane captioned "as it would look".
+    if ("image_url" in d || "image" in d) {
+      merged.img = d.image_url || (d.image ? merged.img : "");
+    }
+    return merged;
+  }, [current, draft, selected]);
+
+  // Covers tab close / reload. It cannot intercept a sidebar-link click — see
+  // the hook's own note on useBlocker — which is why unmount flushes instead.
+  useUnsavedChangesGuard(saving !== "saved" && changeCount > 0);
 
   /** Drag-reorder, optimistic with a revert on failure.
    *
@@ -194,23 +249,54 @@ const PageEditor = () => {
     clearTimeout(saveTimer.current);
     await flush();
     try {
-      setChecklist(await getPageChecklist(PAGE_KEY));
+      setChecklist(await getPageChecklist(pageKey));
       setChecklistOpen(true);
     } catch (e) {
       say(errText(e));
     }
   };
 
+  /** Throw away this author's pending edits.
+   *
+   * The endpoint has existed since Phase 1b but nothing reached it, so an
+   * editor who changed their mind had no way out: the edits sat in the bar
+   * forever and the only escape was publishing them. */
+  const discard = async () => {
+    if (!window.confirm(
+      `Throw away ${changeCount} unpublished edit${changeCount === 1 ? "" : "s"}? `
+      + "What's live on the site now won't change.",
+    )) return;
+    clearTimeout(saveTimer.current);
+    pending.current = {};
+    try {
+      await discardPageDraft(pageKey);
+      applyServerState(await getPageDraft(pageKey));
+      setChecklist(null);
+      setSaving("idle");
+      say("Unpublished edits discarded.");
+    } catch (e) {
+      say(`Couldn’t discard — ${errText(e)}`);
+    }
+  };
+
   const doPublish = async () => {
     setPublishing(true);
     try {
-      const res = await publishPage(PAGE_KEY);
+      const res = await publishPage(pageKey);
       say(`Published ${res.section_count} section${res.section_count === 1 ? "" : "s"}.`);
       setChecklistOpen(false);
       setChecklist(null);
-      applyServerState(await getPageDraft(PAGE_KEY));
+      applyServerState(await getPageDraft(pageKey));
     } catch (e) {
       say(e?.response?.data?.detail || errText(e));
+      // A refusal means the checklist on screen is now wrong — it went on
+      // showing everything passing with Publish still armed, so the only way to
+      // find the second blocker was to click again and read another one-line
+      // toast. Re-read it so the dialog shows all of them at once.
+      try {
+        setChecklist(await getPageChecklist(pageKey));
+        setChecklistOpen(true);
+      } catch { /* the toast already said what went wrong */ }
     } finally {
       setPublishing(false);
     }
@@ -245,6 +331,11 @@ const PageEditor = () => {
         <Link to="/content/home" className="cs-btn-ghost">
           <History size={13} aria-hidden="true" /> Version history
         </Link>
+        {changeCount > 0 && (
+          <button type="button" className="cs-btn-ghost" onClick={discard}>
+            Discard changes
+          </button>
+        )}
         <button
           type="button"
           className="cs-btn-primary cs-btn-primary--sm"
@@ -340,17 +431,25 @@ const PageEditor = () => {
                 targets={targets}
               />
 
+              {/* Both read the pending edit, not the live row. Reading `current`
+                  meant clicking either control changed nothing on screen for
+                  1.5s — and Remove appeared to do nothing at all, because
+                  clearing `image_url` on a section whose picture is an uploaded
+                  `image` is a no-op the server correctly dedupes away. */}
               <PictureField
                 label="Picture"
                 hint="Shown alongside this section."
-                url={current.values?.img || ""}
-                name={current.values?.img ? "Current picture" : ""}
+                url={previewValues.img || ""}
+                name={previewValues.img ? "Current picture" : ""}
                 onChoose={() => say("Choosing from the library lands in a later phase.")}
-                onClear={() => edit("image_url", "")}
+                onClear={() => {
+                  edit("image_url", "");
+                  edit("image", "");
+                }}
               />
 
               <VisibilitySwitch
-                status={current.status}
+                status={draft[selected]?.status || current.status}
                 onChange={(next) => edit("status", next)}
               />
 

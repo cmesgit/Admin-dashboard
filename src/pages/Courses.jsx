@@ -5,7 +5,7 @@ import {
   getBoardCourses, getAllCourses, createCourse, getCourse, updateCourse, deleteCourse,
   getCourseSubjects, createSubject, updateSubject, deleteSubject,
   createChapter, updateChapter, deleteChapter,
-  getSkillCategories, getSkillExperts, getSkillApplications,
+  getSkillCategories, getSkillExperts,
   // ── new: batches + teacher assignment + progress/roster ──
   getCourseBatches, createBatch, updateBatch, deleteBatch,
   getBatchProgress, getBatchRoster, moveEnrollmentBatch,
@@ -1285,7 +1285,6 @@ const Courses = () => {
   // Skill Dev (read-only overview, unchanged)
   const [categories, setCategories] = useState([]);
   const [experts, setExperts] = useState([]);
-  const [applications, setApplications] = useState([]);
 
   const [modal, setModal] = useState(null);       // { type, mode, initial }
   const [confirm, setConfirm] = useState(null);    // { kind, item, message, error? }
@@ -1399,12 +1398,11 @@ const Courses = () => {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getSkillCategories(), getSkillExperts(), getSkillApplications()])
-      .then(([cats, exp, apps]) => {
+    Promise.all([getSkillCategories(), getSkillExperts()])
+      .then(([cats, exp]) => {
         if (cancelled) return;
         setCategories(Array.isArray(cats) ? cats : cats.results || []);
         setExperts(Array.isArray(exp) ? exp : exp.results || []);
-        setApplications(Array.isArray(apps) ? apps : apps.results || []);
       });
     return () => { cancelled = true; };
   }, []);
@@ -2181,31 +2179,6 @@ const Courses = () => {
                   </span>
                 ))}
               </div>
-            )}
-          </div>
-
-          <div className="dashboard-card courses-table-card">
-            <div className="courses-count">
-              {applications.length} skill application{applications.length !== 1 ? "s" : ""} in review
-            </div>
-            {applications.length === 0 ? (
-              <div className="dashboard-loading">No pending skill applications.</div>
-            ) : (
-              <table className="courses-table">
-                <thead>
-                  <tr><th>Applicant</th><th>Skill</th><th>Stage</th><th>Status</th></tr>
-                </thead>
-                <tbody>
-                  {applications.map((a) => (
-                    <tr key={a.id}>
-                      <td className="courses-title">{a.user_name || a.user_email || a.applicant || "—"}</td>
-                      <td>{a.skill_name || "—"}</td>
-                      <td>{a.stage || "—"}</td>
-                      <td><StatusBadge color="yellow">{a.status || "—"}</StatusBadge></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             )}
           </div>
 

@@ -23,9 +23,13 @@ const KIND_ICON = {
 
 const START_ACTIONS = [
   { to: "/content/blogs/new", icon: PenLine, title: "Write a post", sub: "A blog article or a chapter." },
-  { to: "/content?tab=faqs", icon: HelpCircle, title: "Answer a question", sub: "Adds to the questions on any page." },
-  { to: "/content?tab=home", icon: Layout, title: "Edit the home page", sub: "Change what visitors see first." },
-  { to: "/content?tab=showcase", icon: ImageIcon, title: "Add a course card", sub: "Feature a course on the homepage." },
+  // Straight to the Studio screens. Routing through /content?tab= meant
+  // downloading and evaluating the 42KB ContentPanel chunk just to render a
+  // <Navigate> — and ?tab=home opened the LEGACY homepage tab rather than the
+  // split editor with preview, checklist and autosave that this screen fronts.
+  { to: "/content/questions", icon: HelpCircle, title: "Answer a question", sub: "Adds to the questions on any page." },
+  { to: "/content/pages/home", icon: Layout, title: "Edit the home page", sub: "Change what visitors see first." },
+  { to: "/content/cards", icon: ImageIcon, title: "Add a course card", sub: "Feature a course on the homepage." },
 ];
 
 /** One independently-loading panel's state. */

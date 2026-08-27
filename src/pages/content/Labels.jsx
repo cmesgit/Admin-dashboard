@@ -10,7 +10,7 @@
 // the seven competitive exams in the navbar at all. The server refuses a merge
 // across groups and a delete that would empty one; this screen surfaces those
 // refusals rather than hiding them behind a generic error.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Merge, Plus, Search, Tag } from "lucide-react";
 import {
   createLabel, deleteLabel, getLabels, mergeLabels, renameLabel,
@@ -48,14 +48,17 @@ const Labels = () => {
   }, []);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
-  const load = useCallback(async (term) => {
+  const load = useCallback(async (term, { signal } = {}) => {
     setLoading(true);
     try {
-      const data = await getLabels(term);
+      const data = await getLabels(term, { signal });
       setRows(data.results || []);
       setDupeCount(data.duplicate_count || 0);
       setError("");
     } catch (e) {
+      // Expected on every keystroke; only a real failure is worth reporting.
+      if (e?.name === "CanceledError" || e?.code === "ERR_CANCELED"
+          || e?.name === "AbortError") return;
       setError(errText(e));
     } finally {
       setLoading(false);
@@ -63,8 +66,12 @@ const Labels = () => {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => load(q.trim()), q ? 250 : 0);
-    return () => clearTimeout(t);
+    // Clearing only the timer left in-flight requests racing each other.
+    const controller = new AbortController();
+    const t = setTimeout(
+      () => load(q.trim(), { signal: controller.signal }), q ? 250 : 0,
+    );
+    return () => { clearTimeout(t); controller.abort(); };
   }, [q, load]);
 
   const doCreate = async () => {
@@ -139,10 +146,23 @@ const Labels = () => {
   // Merge targets: same kind only, never itself. For categories the server
   // also demands the same group, so offering others would only produce a
   // refusal the person could have been spared.
-  const targetsFor = (row) => rows.filter(
-    (r) => r.kind === row.kind && r.id !== row.id
-      && (row.kind !== "category" || r.group === row.group),
-  );
+  // Grouped once per data change instead of scanning every row for every other
+  // row on every render — the search box re-renders the whole list, so this ran
+  // n^2 comparisons per keystroke purely to decide if one button is disabled.
+  const targetsByBucket = useMemo(() => {
+    const buckets = new Map();
+    for (const r of rows) {
+      const key = r.kind === "category" ? `category:${r.group}` : r.kind;
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(r);
+    }
+    return buckets;
+  }, [rows]);
+
+  const targetsFor = useCallback((row) => {
+    const key = row.kind === "category" ? `category:${row.group}` : row.kind;
+    return (targetsByBucket.get(key) || []).filter((r) => r.id !== row.id);
+  }, [targetsByBucket]);
 
   return (
     <div className="dashboard-wrapper">

@@ -13,10 +13,9 @@
 // Showcase editor — this screen deliberately does not reimplement 497 lines of
 // form, it links to it.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { GripVertical, LayoutGrid, Link2, Plus, Trash2 } from "lucide-react";
 import {
-  createContentShowcase, deleteContentShowcase, getContentShowcase,
+  createContentShowcase, deleteContentShowcase, fetchAllPages, getContentShowcase,
   updateContentShowcase,
 } from "../../api/admin";
 import { buildBody } from "../../utils/buildBody";
@@ -56,7 +55,7 @@ const CourseCards = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getContentShowcase();
+      const res = await fetchAllPages(getContentShowcase);
       setCards(asList(res));
       // safe() swallows a failure into [] — say so rather than showing an
       // empty grid that looks like "no cards".

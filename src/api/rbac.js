@@ -15,7 +15,7 @@ export const setRolePermissions = async (id, permissions) =>
   (await api.put(`/accounts/admin/roles/${id}/permissions/`, { permissions })).data;
 
 // ── User ↔ role assignment ──
-export const getUserRoles = async (userId) => (await api.get(`/accounts/admin/users/${userId}/roles/`)).data;
+
 export const assignRole = async (userId, role) =>
   (await api.post(`/accounts/admin/users/${userId}/roles/`, { role })).data;
 export const revokeRole = async (userId, role) =>

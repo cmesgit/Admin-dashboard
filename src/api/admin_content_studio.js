@@ -76,9 +76,17 @@ export const publishPage = async (key) => {
   return data;
 };
 
-/** The Pictures library. Each asset carries usage_count and used_in[]. */
-export const getMedia = async (q) => {
-  const { data } = await api.get(`${BASE}/media/`, { params: q ? { q } : {} });
+/** The Pictures library. Each asset carries usage_count and used_in[].
+ *
+ * Returns `{results, count, page, page_size, has_more}` — `count` is the real
+ * table total, not the length of this page. `signal` matters: without it a slow
+ * response for "her" can land after a fast one for "hero" and repaint the grid
+ * with results for a query the box no longer contains. */
+export const getMedia = async (q, { page = 1, signal } = {}) => {
+  const { data } = await api.get(`${BASE}/media/`, {
+    params: { ...(q ? { q } : {}), ...(page > 1 ? { page } : {}) },
+    signal,
+  });
   return data;
 };
 
@@ -111,8 +119,10 @@ export const reorderSections = async (sections) => {
 };
 
 /** Blog tags AND course categories on one screen. Reads across two apps. */
-export const getLabels = async (q) => {
-  const { data } = await api.get(`${BASE}/labels/`, { params: q ? { q } : {} });
+export const getLabels = async (q, { signal } = {}) => {
+  const { data } = await api.get(`${BASE}/labels/`, {
+    params: q ? { q } : {}, signal,
+  });
   return data;
 };
 

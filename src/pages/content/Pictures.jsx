@@ -32,13 +32,26 @@ const Pictures = () => {
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
-  const load = useCallback(async (term) => {
+  // The real table total, so the header can't present a truncated library as
+  // complete the way `assets.length` did at exactly 200.
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const load = useCallback(async (term, { signal, append = false, page: p = 1 } = {}) => {
     setLoading(true);
     try {
-      const data = await getMedia(term);
-      setAssets(data.results || []);
+      const data = await getMedia(term, { page: p, signal });
+      const rows = data.results || [];
+      setAssets((cur) => (append ? [...cur, ...rows] : rows));
+      setTotal(typeof data.count === "number" ? data.count : rows.length);
+      setHasMore(Boolean(data.has_more));
+      setPage(p);
       setError("");
     } catch (e) {
+      // An abort is expected on every keystroke — not a failure to report.
+      if (e?.name === "CanceledError" || e?.code === "ERR_CANCELED"
+          || e?.name === "AbortError") return;
       setError(errText(e));
     } finally {
       setLoading(false);
@@ -46,8 +59,13 @@ const Pictures = () => {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => load(q.trim()), q ? 250 : 0);
-    return () => clearTimeout(t);
+    // Cancelling only the debounce timer left in-flight requests racing: a slow
+    // early response could overwrite a newer one.
+    const controller = new AbortController();
+    const t = setTimeout(
+      () => load(q.trim(), { signal: controller.signal }), q ? 250 : 0,
+    );
+    return () => { clearTimeout(t); controller.abort(); };
   }, [q, load]);
 
   const send = async (files) => {
@@ -137,7 +155,9 @@ const Pictures = () => {
           aria-label="Search pictures"
         />
         <span className="cs-muted">
-          {loading ? "Loading…" : `${assets.length} picture${assets.length === 1 ? "" : "s"}`}
+          {loading ? "Loading…" : total > assets.length
+            ? `${assets.length} of ${total} pictures`
+            : `${total} picture${total === 1 ? "" : "s"}`}
         </span>
       </div>
 
@@ -178,6 +198,20 @@ const Pictures = () => {
         ))}
       </div>
 
+      {/* Everything past the first page used to be unreachable — and
+          undeletable — through this screen. */}
+      {hasMore && !loading && (
+        <div className="cs-picture-more">
+          <button
+            type="button"
+            className="cs-btn-ghost"
+            onClick={() => load(q.trim(), { append: true, page: page + 1 })}
+          >
+            Show more pictures
+          </button>
+        </div>
+      )}
+
       {blocked && (
         <div className="cs-palette-overlay" onMouseDown={(e) => {
           if (e.target === e.currentTarget) setBlocked(null);
@@ -186,14 +220,21 @@ const Pictures = () => {
             <h2 className="cs-card__title">Still in use</h2>
             <p className="cs-muted">{blocked.detail}</p>
             <ul className="cs-list">
+              {/* One link per place it's used. A single shared button had to
+                  guess a destination, and guessed the homepage tab for
+                  everything — including blog covers, which aren't on it.
+                  `field` is a raw column name, so it stays out of the copy. */}
               {blocked.used.map((u, i) => (
                 <li key={i} className="cs-list__row">
                   <span className="cs-list__text">
                     <span className="cs-list__title">{u.title}</span>
-                    <span className="cs-list__reason">
-                      {u.kind_label} · {u.field}
-                    </span>
+                    <span className="cs-list__reason">{u.kind_label}</span>
                   </span>
+                  {u.url && (
+                    <Link to={u.url} className="cs-btn-ghost">
+                      Open
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -201,9 +242,6 @@ const Pictures = () => {
               <button type="button" className="cs-btn-ghost" onClick={() => setBlocked(null)}>
                 Close
               </button>
-              <Link to="/content?tab=home" className="cs-btn-primary">
-                Go and remove it
-              </Link>
             </div>
           </div>
         </div>

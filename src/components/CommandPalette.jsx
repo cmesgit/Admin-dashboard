@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FileText, HelpCircle, Image as ImageIcon, Layout, Search, Tag, X,
+  FileText, HelpCircle, Image as ImageIcon, Layout, Search, Tag,
 } from "lucide-react";
 import { searchContent } from "../api/admin_content_studio";
 import "../css/ContentStudio.css";
@@ -26,12 +26,14 @@ const CommandPalette = ({ open, onClose }) => {
   const [results, setResults] = useState([]);
   const [cursor, setCursor] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   // Reset on every open so the palette never reopens showing a stale query.
   useEffect(() => {
     if (open) {
       setQ("");
       setResults([]);
+      setFailed(false);
       setCursor(0);
       // Focus after paint, or the input isn't in the DOM yet.
       requestAnimationFrame(() => inputRef.current?.focus());
@@ -50,13 +52,22 @@ const CommandPalette = ({ open, onClose }) => {
     }
     const controller = new AbortController();
     setLoading(true);
+    setFailed(false);
     const timer = setTimeout(() => {
       searchContent(term, { signal: controller.signal })
         .then((data) => {
           setResults(data.results || []);
           setCursor(0);
         })
-        .catch(() => { /* aborted or failed; leave the previous list */ })
+        .catch((err) => {
+          // An abort is expected on every keystroke; a real failure is not.
+          // Leaving `results` empty rendered "Nothing matches" — telling the
+          // editor the content doesn't exist when the search never ran.
+          if (err?.name === "CanceledError" || err?.code === "ERR_CANCELED"
+              || err?.name === "AbortError") return;
+          setResults([]);
+          setFailed(true);
+        })
         .finally(() => setLoading(false));
     }, 180);
     return () => {
@@ -133,7 +144,13 @@ const CommandPalette = ({ open, onClose }) => {
           {term.length >= 2 && loading && results.length === 0 && (
             <p className="cs-palette__hint">Searching…</p>
           )}
-          {term.length >= 2 && !loading && results.length === 0 && (
+          {term.length >= 2 && !loading && failed && (
+            <p className="cs-palette__hint">
+              Search isn’t responding right now. Nothing was searched — try again
+              in a moment.
+            </p>
+          )}
+          {term.length >= 2 && !loading && !failed && results.length === 0 && (
             <p className="cs-palette__hint">
               Nothing matches “{term}”.
             </p>
