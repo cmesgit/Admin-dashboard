@@ -1097,6 +1097,24 @@
 .cs-sectionrow.is-dragging { opacity: 0.5; }
 .cs-sectionrow__grip { flex: none; color: var(--admin-body-faint); cursor: grab; }
 
+/* Show/hide the whole section on the page. Sits quiet until hovered — it is a
+   real control now, not the read-only eye icon it replaced. */
+.cs-sectionrow__eye {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--admin-body-faint);
+  cursor: pointer;
+}
+.cs-sectionrow__eye:hover {
+  color: var(--admin-ink);
+  background: var(--admin-surface-sunken);
+}
+
 .cs-sectionrow__btn {
   flex: 1;
   min-width: 0;

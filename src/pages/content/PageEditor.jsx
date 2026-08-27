@@ -11,15 +11,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, CloudCheck, EyeOff, GripVertical,
-  History,
+  AlertTriangle, CheckCircle2, ChevronDown, CloudCheck, Eye, EyeOff,
+  GripVertical, History,
 } from "lucide-react";
 import {
   discardPageDraft, getLinkTargets, getPageChecklist, getPageDraft, publishPage,
   reorderSections, savePageDraft,
 } from "../../api/admin_content_studio";
+// Section-order visibility reuses the existing helper rather than growing a
+// second copy in admin_content_studio.js.
+import { updateHomeSectionOrder } from "../../api/admin";
 import SectionPreview from "./SectionPreview";
 import SectionListItems from "./SectionListItems";
+import SectionFloaters from "./SectionFloaters";
 import { errText } from "../../utils/errText";
 import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
 import Toast from "../../components/Toast";
@@ -219,6 +223,13 @@ const PageEditor = () => {
     return merged;
   }, [current, draft, selected]);
 
+  // The cap reads out of the block's `extra` dict, draft-aware like every
+  // other field so it doesn't lag 1.5s behind the keystroke.
+  const cardCap = (() => {
+    const v = (valueOf("extra") || {}).max_cards;
+    return v === undefined || v === null ? "" : String(v);
+  })();
+
   // Covers tab close / reload. It cannot intercept a sidebar-link click — see
   // the hook's own note on useBlocker — which is why unmount flushes instead.
   useUnsavedChangesGuard(saving !== "saved" && changeCount > 0);
@@ -250,6 +261,33 @@ const PageEditor = () => {
     } catch (e) {
       setSections(before);
       say(`Couldn’t save the new order — ${errText(e)}`);
+    }
+  };
+
+  /** Show or hide a whole section on the homepage.
+   *
+   * Distinct from the block's own visibility switch: this drops the section
+   * out of the page sequence (HomeSectionOrder.is_visible), while `status` is
+   * the content's publish state. The editor could only *display* this before —
+   * the eye icon in the list — which is what kept the legacy tab alive.
+   *
+   * Applies immediately rather than joining the draft: order and visibility
+   * are not draft-backed, exactly like drag-reorder above. */
+  const toggleVisible = async (s) => {
+    if (!s.order_id) return say("This section has no place on the page yet.");
+    const next = !s.is_visible;
+    const before = sections;
+    setSections((xs) => xs.map(
+      (x) => (x.key === s.key ? { ...x, is_visible: next } : x),
+    ));
+    try {
+      await updateHomeSectionOrder(s.order_id, { is_visible: next });
+      say(next
+        ? `“${s.label}” is showing on the home page again.`
+        : `“${s.label}” is hidden from the home page.`);
+    } catch (e) {
+      setSections(before);
+      say(`Couldn’t change that — ${errText(e)}`);
     }
   };
 
@@ -386,7 +424,21 @@ const PageEditor = () => {
                 >
                   {s.label}
                 </button>
-                {!s.is_visible && <EyeOff size={13} aria-hidden="true" />}
+                <button
+                  type="button"
+                  className="cs-sectionrow__eye"
+                  onClick={() => toggleVisible(s)}
+                  title={s.is_visible
+                    ? "Showing on the home page — click to hide"
+                    : "Hidden from the home page — click to show"}
+                  aria-label={s.is_visible
+                    ? `Hide ${s.label} from the home page`
+                    : `Show ${s.label} on the home page`}
+                >
+                  {s.is_visible
+                    ? <Eye size={13} aria-hidden="true" />
+                    : <EyeOff size={13} aria-hidden="true" />}
+                </button>
                 {edited && <i className="cs-editeddot" title="Edited, not yet published" />}
               </div>
             );
@@ -470,6 +522,41 @@ const PageEditor = () => {
                   panel everywhere meant rows saved against Featured Courses,
                   FAQ, Hero, the closing CTA or the courses hero were accepted,
                   reported as saved, and then never displayed anywhere. */}
+              {/* Only Featured Courses has this. It lives in the block's
+                  `extra` JSON, which the draft round-trips as a dict, so it
+                  autosaves and publishes like any other field. Absent from
+                  this editor entirely until now — the legacy tab was the only
+                  place to change how many cards the homepage renders. */}
+              {current.has_card_cap && (
+                <div className="cs-field">
+                  <div className="cs-field__labelrow">
+                    <label className="cs-field__label" htmlFor="f-maxcards">
+                      Cards shown on the homepage
+                    </label>
+                  </div>
+                  <input
+                    id="f-maxcards"
+                    className="cs-input"
+                    type="number"
+                    min="0"
+                    value={cardCap}
+                    placeholder="6"
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const next = { ...(valueOf("extra") || {}) };
+                      if (raw === "") delete next.max_cards;
+                      else next.max_cards = Number(raw);
+                      edit("extra", next);
+                    }}
+                  />
+                  <p className="cs-field__hint">
+                    The grid is three cards wide, so 6 fills two rows. Leave
+                    blank for 6. Set 0 to show every card you have published —
+                    visitors can always reach the rest through “All courses”.
+                  </p>
+                </div>
+              )}
+
               {current.supports_list_items ? (
                 <SectionListItems
                   section={current.key}
@@ -489,6 +576,14 @@ const PageEditor = () => {
                   </Link>
                 </div>
               ) : null}
+
+              {/* The badges pinned on this section's artwork. Renders nothing
+                  for the fourteen sections that have no slots. */}
+              <SectionFloaters
+                section={current.key}
+                slots={current.floater_slots}
+                onNotify={say}
+              />
             </>
           )}
         </div>
