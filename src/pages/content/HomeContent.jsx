@@ -69,6 +69,28 @@ const SECTION_ORDER_LABELS = {
   faq: "FAQ", cta: "Closing CTA",
 };
 
+// Sections whose public component actually RENDERS list items — mirrors
+// backend content.models.SECTIONS_WITH_LIST_ITEMS exactly. The other five
+// (hero, featured_courses, faq, cta, courses_hero) take only the content
+// block, so a row saved against them is invisible on the live site forever.
+// This screen's own labels have always said so ("Featured Courses (heading +
+// card count)", "FAQ (heading only)") — but it rendered the panel anyway, so
+// editors filled it in, saw it save, and nothing appeared.
+const SECTIONS_WITH_LIST_ITEMS = new Set([
+  "why_shiksha", "teachers_students", "browse_categories", "why_choose",
+  "resources", "collaborate", "contact_hero",
+  "about_hero", "about_vision", "about_mission", "about_values", "about_why",
+]);
+
+// Two of the five do have repeatable content — it just lives in another model
+// on another tab. Mirrors backend content.models.LIST_CONTENT_ELSEWHERE.
+const LIST_CONTENT_ELSEWHERE = {
+  featured_courses: "The cards here come from your courses, not from a list on "
+    + "this tab. Add or reorder them under Showcase.",
+  faq: "The questions here come from your FAQs, not from a list on this tab. "
+    + "Edit them under FAQs.",
+};
+
 // Closed per-section slot list — mirrors backend
 // content.models.HomeFloater.SLOT_CHOICES_BY_SECTION exactly. A slot maps
 // 1:1 to a pre-tested CSS position on the public site, so this screen never
@@ -984,8 +1006,17 @@ const HomeContent = ({ onAction }) => {
 
       <ContentBlockPanel key={`block-${section}`} section={section} notify={notify} />
 
-      <h3 className="content-subsection-title">List items</h3>
-      <ListItemsPanel key={`items-${section}`} section={section} notify={notify} />
+      {SECTIONS_WITH_LIST_ITEMS.has(section) ? (
+        <>
+          <h3 className="content-subsection-title">List items</h3>
+          <ListItemsPanel key={`items-${section}`} section={section} notify={notify} />
+        </>
+      ) : LIST_CONTENT_ELSEWHERE[section] ? (
+        <>
+          <h3 className="content-subsection-title">List items</h3>
+          <p className="cm-hint">{LIST_CONTENT_ELSEWHERE[section]}</p>
+        </>
+      ) : null}
 
       {!!FLOATER_SLOTS_BY_SECTION[section] && (
         <>

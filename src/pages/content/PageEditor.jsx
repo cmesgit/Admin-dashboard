@@ -463,12 +463,32 @@ const PageEditor = () => {
 
               {/* The rows listed beneath this section's own copy. Without
                   this the editor showed a section with six live bullet
-                  points as though it had none. */}
-              <SectionListItems
-                section={current.key}
-                sectionLabel={current.label}
-                onNotify={say}
-              />
+                  points as though it had none.
+
+                  Only for sections whose public component actually renders
+                  them (`supports_list_items`, from the backend). Offering the
+                  panel everywhere meant rows saved against Featured Courses,
+                  FAQ, Hero, the closing CTA or the courses hero were accepted,
+                  reported as saved, and then never displayed anywhere. */}
+              {current.supports_list_items ? (
+                <SectionListItems
+                  section={current.key}
+                  sectionLabel={current.label}
+                  onNotify={say}
+                />
+              ) : current.list_source ? (
+                <div className="cs-field">
+                  <div className="cs-field__labelrow">
+                    <span className="cs-field__label">
+                      What’s listed in {current.label}
+                    </span>
+                  </div>
+                  <p className="cs-field__hint">{current.list_source.note}</p>
+                  <Link to={current.list_source.url} className="cs-btn-ghost">
+                    Go to {current.list_source.label}
+                  </Link>
+                </div>
+              ) : null}
             </>
           )}
         </div>
