@@ -15,12 +15,14 @@ import {
 } from "lucide-react";
 import {
   createContentAnnouncement, createContentFaq, deleteContentFaq,
+  createContentAffair, deleteContentAffair,
   fetchAllPages, getContentAnnouncements,
   getContentAffairs, getContentFaqs, updateContentAnnouncement,
   updateContentAffair, updateContentFaq,
 } from "../../api/admin";
 import { errText } from "../../utils/errText";
 import Toast from "../../components/Toast";
+import AffairFormModal from "./AffairFormModal";
 import "../../css/ContentStudio.css";
 
 const PAGE_LABELS = {
@@ -71,6 +73,8 @@ const QuestionsAndNotices = () => {
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [affair, setAffair] = useState(null);
+  const [affairError, setAffairError] = useState("");
   const [form, setForm] = useState({ question: "", answer: "", page: "general" });
   const [editing, setEditing] = useState(null);
   const [notice, setNotice] = useState(null);
@@ -236,6 +240,40 @@ const QuestionsAndNotices = () => {
     }
   };
 
+  /** Create or update a current affair.
+   *
+   * The legacy Current Affairs tab was the only place this could be done, and
+   * it is the last thing keeping that screen alive. */
+  const saveAffair = async (payload, validationMessage) => {
+    if (!payload) return setAffairError(validationMessage);
+    setAffairError("");
+    setBusy("affair");
+    try {
+      if (affair?.id) await updateContentAffair(affair.id, payload);
+      else await createContentAffair(payload);
+      say(affair?.id ? "Saved." : "Written. It is a draft until you publish it.");
+      setAffair(null);
+      load();
+    } catch (e) {
+      setAffairError(errText(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const removeAffair = async (row) => {
+    setBusy(`del-${row.id}`);
+    try {
+      await deleteContentAffair(row.id);
+      say("Deleted.");
+      setData((d) => ({ ...d, affairs: d.affairs.filter((x) => x.id !== row.id) }));
+    } catch (e) {
+      say(errText(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const remove = async (row) => {
     setBusy(`del-${row.id}`);
     try {
@@ -296,6 +334,15 @@ const QuestionsAndNotices = () => {
             onClick={() => setNotice({ message: "", link_url: "", link_label: "", level: "info" })}
           >
             <Plus size={14} aria-hidden="true" /> New notice
+          </button>
+        )}
+        {tab === "affairs" && (
+          <button
+            type="button"
+            className="cs-btn-primary cs-btn-primary--sm"
+            onClick={() => { setAffairError(""); setAffair({}); }}
+          >
+            <Plus size={14} aria-hidden="true" /> New current affair
           </button>
         )}
       </div>
@@ -364,6 +411,25 @@ const QuestionsAndNotices = () => {
                         Edit
                       </button>
                     )}
+                    {tab === "affairs" && (
+                      <>
+                        <button
+                          type="button"
+                          className="cs-btn-ghost"
+                          onClick={() => { setAffairError(""); setAffair(r); }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="cs-btn-ghost"
+                          disabled={busy === `del-${r.id}`}
+                          onClick={() => removeAffair(r)}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
                     {tab === "answers" && (
                       <>
                         <button
@@ -394,6 +460,16 @@ const QuestionsAndNotices = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {affair && (
+        <AffairFormModal
+          initial={affair}
+          busy={busy === "affair"}
+          error={affairError}
+          onSubmit={saveAffair}
+          onCancel={() => setAffair(null)}
+        />
       )}
 
       <p className="cs-note">
