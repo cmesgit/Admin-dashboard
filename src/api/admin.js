@@ -424,12 +424,7 @@ export const deleteContentShowcase = async (id) =>
   (await api.delete(`/content/admin/showcase/${id}/`)).data;
 
 /* ── Content: Homepage Content Blocks (Hero/WhyShiksha/etc. heading+copy+image) ── */
-export const getHomeContentBlocks    = async (params) =>
-  safe(async () => (await api.get("/content/admin/home-content/", { params })).data, []);
-export const createHomeContentBlock  = async (data, isMultipart = false) =>
-  (await api.post("/content/admin/home-content/", data, isMultipart ? multipartConfig : undefined)).data;
-export const updateHomeContentBlock  = async (id, data, isMultipart = false) =>
-  (await api.patch(`/content/admin/home-content/${id}/`, data, isMultipart ? multipartConfig : undefined)).data;
+
 export const deleteHomeContentBlock  = async (id) =>
   (await api.delete(`/content/admin/home-content/${id}/`)).data;
 
@@ -454,8 +449,7 @@ export const deleteHomeFloater  = async (id) =>
   (await api.delete(`/content/admin/home-floaters/${id}/`)).data;
 
 /* ── Content: Homepage Section Order (sequence + show/hide, no create/delete — fixed row set) ── */
-export const getHomeSectionOrder     = async () =>
-  safe(async () => (await api.get("/content/admin/home-section-order/")).data, []);
+
 export const updateHomeSectionOrder  = async (id, data) =>
   (await api.patch(`/content/admin/home-section-order/${id}/`, data)).data;
 export const reorderHomeSections     = async (sections) =>
@@ -521,7 +515,3 @@ export const updateContentAffair    = async (id, data) =>
   (await api.patch(`/content/admin/current-affairs/${id}/`, data)).data;
 export const deleteContentAffair    = async (id) =>
   (await api.delete(`/content/admin/current-affairs/${id}/`)).data;
-export const publishContentAffair   = async (id) =>
-  (await api.post(`/content/admin/current-affairs/${id}/publish/`, {})).data;
-export const unpublishContentAffair = async (id) =>
-  (await api.post(`/content/admin/current-affairs/${id}/unpublish/`, {})).data;
