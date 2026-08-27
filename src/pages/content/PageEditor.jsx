@@ -105,13 +105,21 @@ const PageEditor = () => {
   const mounted = useRef(true);
   const flushRef = useRef(null);
 
-  useEffect(() => () => {
-    clearTimeout(toastTimer.current);
-    clearTimeout(saveTimer.current);
-    // Send whatever the debounce was still holding. Clearing the timer alone
-    // silently dropped any edit made within 1.5s of clicking a sidebar link.
-    if (Object.keys(pending.current).length) flushRef.current?.();
-    mounted.current = false;
+  useEffect(() => {
+    // Set on every mount, not just via useRef's initial value: StrictMode runs
+    // this effect's cleanup once before the real mount, and a ref survives that
+    // simulated unmount. Relying on useRef(true) alone left `mounted` false for
+    // the rest of the session, so every autosave response bailed out of its
+    // own `if (!mounted.current) return` and the bar sat on "Saving…" forever.
+    mounted.current = true;
+    return () => {
+      clearTimeout(toastTimer.current);
+      clearTimeout(saveTimer.current);
+      // Send whatever the debounce was still holding. Clearing the timer alone
+      // silently dropped any edit made within 1.5s of clicking a sidebar link.
+      if (Object.keys(pending.current).length) flushRef.current?.();
+      mounted.current = false;
+    };
   }, []);
 
   const applyServerState = useCallback((data) => {
