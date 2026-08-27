@@ -32,6 +32,38 @@ const START_ACTIONS = [
   { to: "/content/cards", icon: ImageIcon, title: "Add a course card", sub: "Feature a course on the homepage." },
 ];
 
+// What each action reads as in a sentence. The stored values are fine as data
+// ("hidden", "created") but "admin hidden a faq item" is not English, and this
+// is the flagship feed of a screen whose whole point is plain language.
+const ACTION_VERB = {
+  created: "added",
+  updated: "edited",
+  published: "published",
+  hidden: "hid",
+  deleted: "deleted",
+  restored: "restored",
+};
+
+// "a answer" reads as a bug to anyone looking at it. Only ever applied to the
+// words in KIND_WORD below, so a crude vowel check is exactly right here.
+const article = (word) => (/^[aeiou]/i.test(word) ? "an" : "a");
+
+// The model name is an implementation detail. `kind_label` comes from Django's
+// content_type.name, so without this the feed says "a faq item" and "a
+// homepage content block".
+const KIND_WORD = {
+  faqitem: "answer",
+  announcement: "notice",
+  showcasecourse: "course card",
+  homecontentblock: "page section",
+  homelistitem: "listed row",
+  homefloater: "badge",
+  contenttag: "label",
+  blogpost: "post",
+  currentaffair: "current affair",
+  contentimage: "picture",
+};
+
 /** One independently-loading panel's state. */
 const useAsync = (fn, deps = []) => {
   const [state, setState] = useState({ data: null, loading: true, error: "" });
@@ -238,7 +270,13 @@ const ContentStudioHome = () => {
                     </span>
                     <span className="cs-list__text">
                       <span className="cs-list__title">
-                        {item.actor || "Someone"} {item.action} a {item.kind_label.toLowerCase()}
+                        {item.actor || "Someone"}{" "}
+                        {ACTION_VERB[item.action] || item.action}{" "}
+                        {(() => {
+                          const word = KIND_WORD[item.kind]
+                            || (item.kind_label || "").toLowerCase();
+                          return `${article(word)} ${word}`;
+                        })()}
                       </span>
                       <span className="cs-list__reason">
                         {item.note || new Date(item.at).toLocaleTimeString(undefined, {
