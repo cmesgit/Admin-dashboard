@@ -420,7 +420,16 @@ const RichTextEditor = ({
   // modal opening with `initial.body_html`, or a mode switch) — but not on
   // every keystroke, since that would fight the user's own cursor.
   useEffect(() => {
-    if (!editor) return;
+    // `editor.isDestroyed` matters, not just `!editor`. StrictMode runs this
+    // effect, tears the editor down, then re-runs the effect with the SAME
+    // (now destroyed) instance still in scope — and getHTML() on a destroyed
+    // editor throws "Cannot read properties of null (reading 'cached')" out of
+    // DOMSerializer.fromSchema, taking the whole tree down with it.
+    //
+    // BlogEditor never hit this because its editor mounts on a click, long
+    // after StrictMode's double-invoke has settled. Anything that mounts this
+    // component fresh — a modal opening — crashed on open.
+    if (!editor || editor.isDestroyed) return;
     const incoming = value || "";
     if (incoming !== editor.getHTML()) {
       editor.commands.setContent(incoming, { emitUpdate: false });

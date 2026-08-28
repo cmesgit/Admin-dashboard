@@ -18,8 +18,10 @@
 //    editor, most likely useEditor under StrictMode. Not worth blocking the
 //    screen on: a textarea is exactly what this field had before, so this is
 //    parity, not a regression. Revisit as its own change.
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
 import TagChipInput from "../../components/TagChipInput";
+
+const RichTextEditor = lazy(() => import("../../components/RichTextEditor"));
 import { isoToLocalInput, localInputToIso } from "../../utils/datetimeLocal";
 
 // Mirrors CurrentAffair.CATEGORY_CHOICES. Left as the stored keys with a
@@ -102,17 +104,16 @@ const AffairFormModal = ({ initial, busy, error, onSubmit, onCancel }) => {
         </div>
 
         <div className="cs-field">
-          <label className="cs-field__label" htmlFor="af-body">
-            Full write-up
-          </label>
-          <textarea
-            id="af-body" className="cs-input cs-input--block" rows={10}
-            value={form.body_html} onChange={set("body_html")}
-            placeholder="<p>The whole piece…</p>"
-          />
-          <p className="cs-field__hint">
-            Plain HTML, not a rich editor — paragraphs need &lt;p&gt; tags.
-          </p>
+          <span className="cs-field__label">Full write-up</span>
+          <Suspense fallback={<p className="cs-muted">Loading the editor…</p>}>
+            <RichTextEditor
+              mode="full"
+              value={form.body_html}
+              onChange={(html) => setForm((f) => ({ ...f, body_html: html }))}
+              placeholder="The whole piece…"
+              tall
+            />
+          </Suspense>
         </div>
 
         <div className="cs-field">
