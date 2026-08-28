@@ -8,7 +8,7 @@ import {
   FileText, HelpCircle, Image as ImageIcon, Layout, Search, Tag,
 } from "lucide-react";
 import { searchContent } from "../api/admin_content_studio";
-import "../css/ContentStudio.css";
+import "../css/ContentStudioChrome.css";
 
 const KIND_ICON = {
   post: FileText,

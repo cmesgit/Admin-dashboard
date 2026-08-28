@@ -44,7 +44,7 @@ import {
 } from "lucide-react";
 import { getEnrollmentRequests } from "../api/admin";
 import CommandPalette from "./CommandPalette";
-import "../css/ContentStudio.css";
+import "../css/ContentStudioChrome.css";
 import { getAdminSupportTickets } from "../api/admin_communication";
 import { getReviewQueue } from "../api/admin_question_bank";
 import { getScholarshipStats } from "../api/admin_scholarship";
