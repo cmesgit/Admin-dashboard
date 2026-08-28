@@ -59,6 +59,27 @@ const ICON_CMP = {
    the backend (content migration 0017). */
 
 /* ───────────────────────── Create/Edit modal ───────────────────────── */
+// Course and board catalogs, fetched once per page load rather than on every
+// modal open. Editing five cards in a row used to cost ten requests for lists
+// that do not change while you are doing it. Module-level, so it dies with the
+// tab — a stale catalog for the length of one session is the right trade for
+// pickers whose options are managed on a different screen entirely.
+let catalogPromise = null;
+
+const loadCatalogs = () => {
+  if (!catalogPromise) {
+    catalogPromise = Promise.all([getAcademicCourses(), getBoards()])
+      .then(([courses, boards]) => ({
+        courses: Array.isArray(courses) ? courses : [],
+        boards: Array.isArray(boards) ? boards : [],
+      }))
+      // Never cache a failure — the next open should retry rather than show an
+      // empty picker for the rest of the session.
+      .catch((e) => { catalogPromise = null; throw e; });
+  }
+  return catalogPromise;
+};
+
 export default function CardFormModal({ mode, initial, busy, error, onSubmit, onCancel }) {
   const [form, setForm] = useState({
     title: initial?.title || "",
@@ -99,24 +120,20 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
   useEffect(() => () => { if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl); }, [filePreviewUrl]);
 
   useEffect(() => {
-    getAcademicCourses().then((rows) => {
-      const list = Array.isArray(rows) ? rows : [];
-      setCourseOptions((prev) => {
-        const known = new Map(list.map((c) => [c.id, c]));
-        // keep the currently-linked course visible even if the admin list call
-        // is scoped/paginated differently than expected
-        prev.forEach((c) => { if (!known.has(c.id)) known.set(c.id, c); });
+    let cancelled = false;
+    loadCatalogs().then(({ courses, boards }) => {
+      if (cancelled) return;
+      // Merge rather than replace: keep the currently-linked row visible even
+      // if the admin list is scoped or paginated differently than expected.
+      const merge = (list, prev) => {
+        const known = new Map(list.map((x) => [x.id, x]));
+        prev.forEach((x) => { if (!known.has(x.id)) known.set(x.id, x); });
         return Array.from(known.values());
-      });
-    });
-    getBoards().then((rows) => {
-      const list = Array.isArray(rows) ? rows : [];
-      setBoardOptions((prev) => {
-        const known = new Map(list.map((b) => [b.id, b]));
-        prev.forEach((b) => { if (!known.has(b.id)) known.set(b.id, b); });
-        return Array.from(known.values());
-      });
-    });
+      };
+      setCourseOptions((prev) => merge(courses, prev));
+      setBoardOptions((prev) => merge(boards, prev));
+    }).catch(() => { /* the picker degrades to whatever is already linked */ });
+    return () => { cancelled = true; };
   }, []);
 
   const linkedToCourse = !!form.course;

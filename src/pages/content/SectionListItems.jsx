@@ -72,6 +72,10 @@ const SectionListItems = ({ section, sectionLabel, onNotify }) => {
       else await createHomeListItem({ ...payload, section, order: items.length });
       onNotify(id ? "Saved." : "Added.");
       setEditing(null);
+      // Refetch rather than splice the response in: `order` is assigned
+      // server-side (a create sends items.length as a hint, not a decision),
+      // so an in-place insert can show a position the server didn't agree to.
+      // One request on an infrequent action is the cheaper mistake.
       load();
     } catch (e) {
       onNotify(errText(e));

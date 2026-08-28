@@ -101,6 +101,10 @@ const CourseCards = () => {
       }
       say(modal.mode === "edit" ? "Saved." : "Card added.");
       setModal(null);
+      // Refetch rather than patching the response in: a card linked to a
+      // course derives its title, price and thumbnail server-side on every
+      // read, so the row this screen should show is the one the server
+      // computes, not the one we sent.
       load();
     } catch (e) {
       // Keep the modal open with the reason — a card form holds a lot of

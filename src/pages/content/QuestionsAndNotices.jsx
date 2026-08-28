@@ -51,6 +51,13 @@ const stripHtml = (html) =>
 
 const asList = (r) => (Array.isArray(r) ? r : r?.results || []);
 
+// One fetcher per tab, so a mutation can reload just the list it touched.
+const FETCHERS = {
+  answers: getContentFaqs,
+  notices: getContentAnnouncements,
+  affairs: getContentAffairs,
+};
+
 const QuestionsAndNotices = () => {
   // The tab lives in the URL. ContentPanel redirects ?tab=announcements here as
   // /content/questions?tab=notices and the backend inbox emits the same link,
@@ -88,20 +95,28 @@ const QuestionsAndNotices = () => {
   }, []);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
-  const load = useCallback(async () => {
+  /** Reload one tab, or all three on first paint.
+   *
+   * Editing a single answer used to refetch answers, notices AND affairs —
+   * three requests, two of them for lists that could not have changed. A
+   * delete was four requests in total.
+   */
+  const load = useCallback(async (only) => {
+    const keys = only ? [only] : ["answers", "notices", "affairs"];
     setLoading(true);
     try {
-      const [f, a, c] = await Promise.all([
-        fetchAllPages(getContentFaqs),
-        fetchAllPages(getContentAnnouncements),
-        fetchAllPages(getContentAffairs),
-      ]);
-      setData({ answers: asList(f), notices: asList(a), affairs: asList(c) });
+      const results = await Promise.all(
+        keys.map((k) => fetchAllPages(FETCHERS[k])),
+      );
+      setData((cur) => ({
+        ...cur,
+        ...Object.fromEntries(keys.map((k, i) => [k, asList(results[i])])),
+      }));
       // admin.js's safe() turns a failed request into [] and marks it
       // __failed. Without checking that, a dead API is indistinguishable from
       // "there is nothing here" — which is exactly how an outage gets read as
       // empty content.
-      if ([f, a, c].some((r) => r?.__failed)) {
+      if (results.some((r) => r?.__failed)) {
         setError("Couldn’t reach the server, so this may be incomplete. Reload to try again.");
       } else {
         setError("");
@@ -181,7 +196,7 @@ const QuestionsAndNotices = () => {
       say("Saved as a draft. Nobody can see it yet.");
       setCreating(false);
       setForm({ question: "", answer: "", page: "general" });
-      load();
+      load("answers");
     } catch (e) {
       say(errText(e));
     } finally {
@@ -203,7 +218,7 @@ const QuestionsAndNotices = () => {
       });
       say("Saved.");
       setEditing(null);
-      load();
+      load("answers");
     } catch (e) {
       say(errText(e));
     } finally {
@@ -232,7 +247,7 @@ const QuestionsAndNotices = () => {
         say("Saved as a draft. Nobody sees it yet.");
       }
       setNotice(null);
-      load();
+      load("notices");
     } catch (e) {
       say(errText(e));
     } finally {
@@ -253,7 +268,7 @@ const QuestionsAndNotices = () => {
       else await createContentAffair(payload);
       say(affair?.id ? "Saved." : "Written. It is a draft until you publish it.");
       setAffair(null);
-      load();
+      load("affairs");
     } catch (e) {
       setAffairError(errText(e));
     } finally {
@@ -279,7 +294,7 @@ const QuestionsAndNotices = () => {
     try {
       await deleteContentFaq(row.id);
       say("Deleted.");
-      load();
+      load("answers");
     } catch (e) {
       say(errText(e));
     } finally {
