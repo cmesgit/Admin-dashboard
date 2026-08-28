@@ -142,13 +142,13 @@ const navGroups = [
 // ⚠ Every destination below is deliberately an existing route for now. Later
 // phases replace the screens behind them one at a time; keeping the old URLs
 // alive is what lets that happen without breaking bookmarks mid-rebuild.
-// ⚠ `soon: true` marks a destination whose screen is not built yet. Those
-// render as a dimmed row with a "Soon" tag and do NOT navigate. Pointing them
-// at /content?tab=<something ContentPanel doesn't know> would silently fall
-// back to the Blog Posts tab — the nav would look complete while four of ten
-// entries quietly went to the wrong screen. Each is un-marked by its phase:
-// History/Schedule get dedicated screens later. Pictures was un-marked in
-// Phase 4, Exams in Phase 8.
+// ⚠ `soon: true` used to mark a destination whose screen was not built yet:
+// dimmed, tagged "Soon", and NOT navigating. Pointing such a row at
+// /content?tab=<something ContentPanel doesn't know> would have silently
+// fallen back to Blog Posts — the nav would look complete while entries
+// quietly went to the wrong screen. Every entry is now a real screen and no
+// row carries the flag; the mechanism stays because the next unbuilt screen
+// will want it.
 const studioNavGroups = [
   {
     header: "Content",
@@ -160,7 +160,7 @@ const studioNavGroups = [
     header: "Write",
     items: [
       { to: "/content?tab=blogs", icon: FileText, label: "Posts & articles" },
-      { to: "/content?tab=affairs", icon: Newspaper, label: "Current affairs" },
+      { to: "/content/questions?tab=affairs", icon: Newspaper, label: "Current affairs" },
       { to: "/content/questions", icon: HelpCircle, label: "Questions & notices" },
     ],
   },
@@ -182,8 +182,8 @@ const studioNavGroups = [
   {
     header: "Keeping track",
     items: [
-      { to: "/content?tab=history", icon: History, label: "History", soon: true },
-      { to: "/content?tab=schedule", icon: CalendarClock, label: "Schedule", soon: true },
+      { to: "/content/history", icon: History, label: "History" },
+      { to: "/content/schedule", icon: CalendarClock, label: "Schedule" },
     ],
   },
 ];
@@ -203,7 +203,17 @@ const isStudioLinkActive = (to, location) => {
   if (location.pathname !== path) return false;
   const want = new URLSearchParams(query || "").get("tab") || DEFAULT_CONTENT_TAB;
   const have = new URLSearchParams(location.search).get("tab") || DEFAULT_CONTENT_TAB;
-  return want === have;
+  if (want === have) return true;
+
+  // Two entries share /content/questions: "Current affairs" owns ?tab=affairs,
+  // "Questions & notices" owns the rest of that screen's pills. Without this,
+  // switching to the Notices pill left NO nav row lit, because the row's own
+  // `to` has no ?tab= and so wants the default.
+  if (path === "/content/questions") {
+    const affairs = want === "affairs";
+    return affairs ? have === "affairs" : have !== "affairs";
+  }
+  return false;
 };
 
 /** Swap the single Content entry for the four Studio groups when the flag is on. */

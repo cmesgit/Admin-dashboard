@@ -22,6 +22,8 @@ const QuestionsAndNotices = lazy(() => import("./pages/content/QuestionsAndNotic
 const CourseCards = lazy(() => import("./pages/content/CourseCards"));
 const Labels = lazy(() => import("./pages/content/Labels"));
 const ExamReadiness = lazy(() => import("./pages/content/ExamReadiness"));
+const ContentHistory = lazy(() => import("./pages/content/ContentHistory"));
+const ContentSchedule = lazy(() => import("./pages/content/ContentSchedule"));
 const SkillCMSPanel = lazy(() => import("./pages/skillcms/SkillCMSPanel"));
 const ScholarshipPanel = lazy(() => import("./pages/scholarship/ScholarshipPanel"));
 const AcademyQuizzes = lazy(() => import("./pages/AcademyQuizzes"));
@@ -128,6 +130,8 @@ const App = () => {
             <Route path="content/cards" element={<CourseCards />} />
             <Route path="content/labels" element={<Labels />} />
             <Route path="content/exams" element={<ExamReadiness />} />
+            <Route path="content/history" element={<ContentHistory />} />
+            <Route path="content/schedule" element={<ContentSchedule />} />
             <Route path="content/blogs/new" element={<BlogEditor />} />
             <Route path="content/blogs/:id" element={<BlogEditor />} />
             <Route path="communication/reports" element={<CommunicationReports />} />
