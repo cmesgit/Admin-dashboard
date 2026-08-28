@@ -89,6 +89,9 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
     price_label: initial?.price_label || "",
     tutor_name: initial?.tutor_name || "",
     is_explore_card: initial?.is_explore_card ?? false,
+    use_own_details: initial?.use_own_details ?? false,
+    // null = follow the linked course. "" is the empty <select> value.
+    coming_soon_override: initial?.coming_soon_override ?? null,
     // Drop any stray/legacy value (old free-text typos, or the "all" sentinel)
     // that doesn't match a real category — the checkbox group below can only
     // ever write back known ids, so this also self-heals older rows on save.
@@ -138,8 +141,12 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
 
   const linkedToCourse = !!form.course;
   // Wider than linkedToCourse: title/price_label/image are derived once
-  // EITHER a course or a board is linked, not just a course.
-  const derivedFromLink = !!form.course || !!form.board;
+  // EITHER a course or a board is linked, not just a course …
+  const isLinked = !!form.course || !!form.board;
+  // … unless this card has opted out, which un-greys those three fields
+  // without unlinking (the link still drives the destination and the
+  // Coming Soon default).
+  const derivedFromLink = isLinked && !form.use_own_details;
 
   const set = (k) => (e) =>
     setForm((f) => ({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
@@ -178,6 +185,10 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
       price_label: form.price_label.trim(),
       tutor_name: form.tutor_name.trim(),
       is_explore_card: linkedToCourse ? false : form.is_explore_card,
+      use_own_details: form.use_own_details,
+      // "" from the <select> means "follow the course" -> null, not false.
+      coming_soon_override: form.coming_soon_override === "" ? null
+        : form.coming_soon_override,
       categories: form.categories,
       gradient_css: form.gradient_css.trim(),
       image_url: form.image_url.trim(),
@@ -280,6 +291,43 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
             </select>
           </label>
         </div>
+
+        {/* Escape hatches for a linked card. Only shown when a link exists,
+            because with nothing linked the card's own fields already win. */}
+        {isLinked && (
+          <>
+            <label className="cm-check">
+              <input
+                type="checkbox"
+                checked={form.use_own_details}
+                onChange={set("use_own_details")}
+              />
+              <span>Write my own title, price and picture</span>
+            </label>
+            <p className="cms-derived-note">
+              Off, this card copies the linked course or board and updates
+              automatically when it changes. On, the three fields above become
+              yours to type — check what they already say before turning it on,
+              since most cards still hold text from before they were linked.
+            </p>
+
+            <label className="cm-field">
+              <span>“Coming Soon” badge</span>
+              <select
+                value={form.coming_soon_override === null ? "" : String(form.coming_soon_override)}
+                onChange={(e) => setForm((f) => ({
+                  ...f,
+                  coming_soon_override: e.target.value === "" ? null
+                    : e.target.value === "true",
+                }))}
+              >
+                <option value="">Follow the linked course</option>
+                <option value="true">Always show it</option>
+                <option value="false">Never show it</option>
+              </select>
+            </label>
+          </>
+        )}
         <p className="cm-hint">
           When linked to a course, this card opens straight into that course and the link path/state
           below are derived automatically — you can leave them alone.
