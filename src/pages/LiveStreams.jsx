@@ -2,9 +2,10 @@
 // entry point to the Livestream Monitor. Data: GET /livestream/admin/streams/.
 import { Fragment, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Radio, Eye, MonitorPlay, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { Radio, Eye, MonitorPlay, AlertTriangle, ChevronDown, ChevronRight, Video } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import { getAdminStreams, getAdminWebhookEvents } from "../api/livestream";
+import { getSettings, updateSettings } from "../api/admin";
 import "../css/LiveStreams.css";
 
 const FILTERS = [
@@ -120,6 +121,93 @@ const fmt = (iso) => {
 
 const isLive = (s) => s.status === "LIVE" || s.status === "RECONNECTING";
 
+/* ── Automatic class recording, global default ──
+   `auto_record_classes` on the SAME GlobalSettings singleton the Payment
+   Settings and Live Session Rules screens edit — see api/admin_live_rules.js
+   for why there is no separate resource.
+
+   Deliberately NOT put on the Live Session Rules screen next to
+   `live_recording_enabled`, despite the similar names: that flag belongs to
+   Skill Dev private/group rooms (sessions_app), this one to academy live
+   classes. Two unrelated products, and a single screen showing both would
+   invite someone to assume one switch covers both.
+
+   Egress is billed per MINUTE of class time, so the copy below states that
+   plainly rather than presenting this as a harmless feature toggle. */
+function AutoRecordPanel() {
+  const [enabled, setEnabled] = useState(null);   // null = not loaded yet
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    getSettings()
+      .then((s) => alive && setEnabled(!!s.auto_record_classes))
+      .catch(() => alive && setErr("Could not load the current setting."));
+    return () => { alive = false; };
+  }, []);
+
+  const toggle = async (next) => {
+    setSaving(true);
+    setErr("");
+    /* Optimistic, then reconciled against what the server actually stored —
+       silently showing "on" for a save that failed would be worse here than
+       a moment of flicker, because the difference is a bill. */
+    setEnabled(next);
+    try {
+      const saved = await updateSettings({ auto_record_classes: next });
+      setEnabled(!!saved.auto_record_classes);
+    } catch {
+      setEnabled(!next);
+      setErr("Could not save. The setting is unchanged.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (enabled === null && !err) {
+    return <div className="dashboard-card ls-rec-card">Loading…</div>;
+  }
+
+  return (
+    <div className="dashboard-card ls-rec-card">
+      <div className="ls-rec-title"><Video size={16} /> Automatic class recording</div>
+
+      <p className="ls-rec-copy">
+        Records academy live classes to the recordings library automatically,
+        starting when the teacher joins. Recordings appear for students once
+        transcoding finishes.
+      </p>
+
+      <label className="ls-rec-toggle">
+        <input
+          type="checkbox"
+          checked={!!enabled}
+          disabled={saving}
+          onChange={(e) => toggle(e.target.checked)}
+        />
+        <span>Record live classes by default</span>
+      </label>
+
+      <p className="ls-rec-cost">
+        <AlertTriangle size={13} />
+        Billed per minute of class time. This is the default for every course —
+        individual courses can override it in Courses.
+      </p>
+
+      {/* Not a hypothetical: with no credentials the backend keeps recording
+          off regardless of this switch, and saying so here saves someone
+          debugging a toggle that looks on but does nothing. */}
+      <p className="ls-rec-note">
+        Requires LiveKit egress and Bunny storage credentials on the server. If
+        those are missing, recording stays off whatever this is set to.
+      </p>
+
+      {err && <p className="ls-rec-err">{err}</p>}
+    </div>
+  );
+}
+
 const LiveStreams = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -158,9 +246,12 @@ const LiveStreams = () => {
       <div className="ls-tabs">
         <button className={`ls-tab${tab === "streams" ? " active" : ""}`} onClick={() => setTab("streams")}>Streams</button>
         <button className={`ls-tab${tab === "webhooks" ? " active" : ""}`} onClick={() => setTab("webhooks")}>Webhook events</button>
+        <button className={`ls-tab${tab === "recording" ? " active" : ""}`} onClick={() => setTab("recording")}>Recording</button>
       </div>
 
-      {tab === "webhooks" ? (
+      {tab === "recording" ? (
+        <AutoRecordPanel />
+      ) : tab === "webhooks" ? (
         <WebhookEventsPanel />
       ) : (
         <>

@@ -276,9 +276,40 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
                 <input type="number" value={form.display_order ?? 0} onChange={set("display_order")} />
               </label>
             </div>
+            <div className="cm-row">
+              <label className="cm-field">
+                <span>Automatic class recording</span>
+                {/* Three states, not a checkbox. "Follow global default" is a
+                    REAL third value (null), distinct from "Never": a course
+                    left on the default follows the Live Streams → Recording
+                    switch, whereas an explicit Never keeps it off even when
+                    that switch is on. Collapsing this to a checkbox would
+                    make the global toggle unable to reach any course. */}
+                <select
+                  value={
+                    form.auto_record_enabled === true ? "on"
+                      : form.auto_record_enabled === false ? "off"
+                      : "inherit"
+                  }
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setForm((f) => ({
+                      ...f,
+                      auto_record_enabled:
+                        v === "on" ? true : v === "off" ? false : null,
+                    }));
+                  }}
+                >
+                  <option value="inherit">Follow global default</option>
+                  <option value="on">Always record</option>
+                  <option value="off">Never record</option>
+                </select>
+              </label>
+            </div>
             <p className="cm-hint">
               Only Published courses (with an open batch) appear in the public catalog.
               The platform is currently free — price applies only when a paid payment mode is switched on.
+              Recording live classes is billed per minute of class time.
             </p>
 
             <label className="cm-field">
@@ -1512,6 +1543,13 @@ const Courses = () => {
       badge: full?.badge || "",
       is_featured: full?.is_featured ?? false,
       display_order: full?.display_order ?? 0,
+      // ?? null, not ?? false: null is the real third state ("follow the
+      // global default"), so a missing value must not collapse to "Never".
+      // Omitting this line entirely is what made the field look unset on
+      // reopen even though the server had stored it — the select read
+      // undefined and rendered "Follow global default", so a second save
+      // would have silently reverted a deliberate choice.
+      auto_record_enabled: full?.auto_record_enabled ?? c.auto_record_enabled ?? null,
       seo_title: full?.seo_title || "",
       seo_description: full?.seo_description || "",
       promo_video_url: full?.promo_video_url || "",
@@ -1590,6 +1628,21 @@ const Courses = () => {
           ...basePayload,
           details: detailsPayload,
           categories: categoriesPayload,
+          // Read off request.data by AdminCourseDetailView / the create view,
+          // NOT a writable CourseSerializer field — it is read-only there
+          // because UpdateCourseView is teacher-facing and forwards its whole
+          // payload, and recording spends money.
+          //
+          // Sent as a STRING, including "null", deliberately: buildBody drops
+          // null and undefined entries when it builds a FormData, so a real
+          // null here would vanish whenever a thumbnail is attached — and
+          // "follow the global default" is a meaningful third state, not an
+          // absence. The backend accepts "true"/"false"/"null" in both JSON
+          // and multipart precisely because this form has two body shapes.
+          auto_record_enabled:
+            form.auto_record_enabled === true ? "true"
+              : form.auto_record_enabled === false ? "false"
+              : "null",
           // `nav.board?.id`, not `nav.board.id`. At the all-courses level
           // nav.board is null, so the bare deref threw a TypeError — and
           // because it fired before the request, creating a board-less

@@ -624,3 +624,130 @@
   color: #b91c1c;
   font-size: 12px;
 }
+
+/* ── Automatic recording panel (Livestream Monitor) ────────────────────── */
+.lm-rec-flag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #6b7280;
+  background: #f3f4f6;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.lm-rec-flag.on { color: #047857; background: #d1fae5; }
+
+.lm-rec-row {
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.lm-rec-row:last-child { border-bottom: none; }
+
+.lm-rec-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lm-rec-time { margin-left: auto; font-size: 12px; color: #9ca3af; }
+
+.lm-rec-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.lm-rec-note {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #6b7280;
+}
+/* Not decoration: an undeleted raw file is publicly readable. */
+.lm-rec-note.warn {
+  color: #92400e;
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  padding: 6px 8px;
+  border-radius: 0 4px 4px 0;
+}
+
+.lm-rec-err {
+  margin-top: 6px;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #b91c1c;
+  background: #fef2f2;
+  padding: 6px 8px;
+  border-radius: 4px;
+  word-break: break-word;
+}
+
+/* ── Automatic recording, global default (Live Streams → Recording tab) ── */
+.ls-rec-card { padding: 20px 22px; max-width: 640px; }
+
+.ls-rec-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.ls-rec-copy {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #4b5563;
+  margin: 0 0 14px;
+}
+
+.ls-rec-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  cursor: pointer;
+  padding: 10px 0;
+  border-top: 1px solid #f3f4f6;
+  border-bottom: 1px solid #f3f4f6;
+}
+.ls-rec-toggle input { width: 16px; height: 16px; cursor: pointer; }
+
+/* The cost line is a warning, not a footnote — egress is billed per minute. */
+.ls-rec-cost {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #92400e;
+  background: #fffbeb;
+  border-radius: 6px;
+  padding: 9px 11px;
+  margin: 14px 0 0;
+}
+.ls-rec-cost svg { flex: 0 0 auto; margin-top: 2px; }
+
+.ls-rec-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6b7280;
+  margin: 10px 0 0;
+}
+
+.ls-rec-err {
+  font-size: 12.5px;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 10px 0 0;
+}

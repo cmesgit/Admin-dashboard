@@ -4,7 +4,7 @@
 // Polls the admin endpoints (WS fallback per API_SPEC).
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, Radio, Send, Activity, Wifi, Users } from "lucide-react";
+import { ArrowLeft, Eye, Radio, Send, Activity, Wifi, Users, Video } from "lucide-react";
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
 import Toast from "../components/Toast";
@@ -259,7 +259,11 @@ function MonitorSingle({ id }) {
     </div>
   );
 
-  const { stream, attendance = [], chat = [], health, health_samples = [], viewer_samples = [] } = data;
+  const {
+    stream, attendance = [], chat = [], health, health_samples = [],
+    viewer_samples = [], egress = [], auto_record_enabled = false,
+    auto_record_state = "unknown",
+  } = data;
   const online = attendance.filter((a) => a.online).length;
 
   return (
@@ -409,6 +413,12 @@ function MonitorSingle({ id }) {
               )}
             </div>
           </div>
+
+          <RecordingPanel
+            egress={egress}
+            enabled={auto_record_enabled}
+            state={auto_record_state}
+          />
         </div>
       </div>
 
@@ -421,6 +431,138 @@ function MonitorSingle({ id }) {
         />
       )}
       <Toast message={toast} />
+    </div>
+  );
+}
+
+/* ── Automatic recording (LiveKit Egress → Bunny) ──
+   One row per ATTEMPT, not per class: a teacher's reconnect or a dead egress
+   worker produces more than one, and when a class ends up with no recording
+   the attempt history is the only place the reason is written down.
+
+   The states deliberately shown separately, because they fail differently:
+     · not enabled     — nothing was even tried, and that is correct
+     · START_FAILED    — LiveKit was never reached; `error` says why
+     · EGRESS_ACTIVE   — recording right now
+     · awaiting fetch  — mp4 is in Bunny Storage, not yet pulled into Stream
+     · Pending         — Bunny is transcoding; students cannot see it yet
+     · Published       — done
+   `raw_deleted_at` empty on a finished attempt means the raw mp4 is STILL on
+   the public pull zone, which is the one thing here worth chasing. */
+const EGRESS_TONE = {
+  REQUESTED: "gray",
+  START_FAILED: "red",
+  EGRESS_STARTING: "blue",
+  EGRESS_ACTIVE: "green",
+  EGRESS_ENDING: "blue",
+  EGRESS_COMPLETE: "green",
+  EGRESS_FAILED: "red",
+  EGRESS_ABORTED: "red",
+  EGRESS_LIMIT_REACHED: "red",
+};
+
+const fmtBytes = (n) => {
+  if (!n) return "—";
+  const mb = n / (1024 * 1024);
+  return mb >= 1024 ? `${(mb / 1024).toFixed(2)} GB` : `${Math.round(mb)} MB`;
+};
+
+/* The three ways recording can be OFF need three different actions, and a
+   single "recording is off" message sent admins to a toggle that could not
+   fix their problem. Found by browser-testing this panel against a backend
+   with no LiveKit credentials: it advised turning it on in Courses, which
+   would have changed nothing. */
+const OFF_COPY = {
+  no_infra:
+    "Recording is not configured on the server — LiveKit egress and Bunny " +
+    "storage credentials are missing. Until those are set, recording stays " +
+    "off regardless of the Courses or Live Streams settings.",
+  course_off:
+    "Recording is switched off for this course. Change it on the course in " +
+    "Courses → Automatic class recording.",
+  global_off:
+    "Recording is off by default and this course follows the default. Turn " +
+    "it on globally in Live Streams → Recording, or just for this course in " +
+    "Courses.",
+  unknown:
+    "Could not determine the recording setting, so nothing was recorded. " +
+    "This usually means the global settings row could not be read — check " +
+    "the server logs.",
+};
+
+function RecordingPanel({ egress, enabled, state }) {
+  return (
+    <div className="dashboard-card lm-attend">
+      <div className="lm-card-title">
+        <Video size={15} /> Automatic recording
+        <span className={`lm-rec-flag${enabled ? " on" : ""}`}>
+          {enabled
+            ? "enabled"
+            : state === "no_infra"
+              ? "not configured"
+              : "not enabled"}
+        </span>
+      </div>
+
+      {egress.length === 0 ? (
+        /* The two empty states are NOT the same problem, and saying "no
+           recordings" for both is what makes this class of failure invisible:
+           one is configuration, the other is a bug to chase. */
+        <p className="lm-empty">
+          {enabled
+            ? "Recording is enabled for this course but no attempt was started. If the class has run, this is a fault worth investigating — check the webhook events panel on the Live Streams page."
+            : (OFF_COPY[state] || OFF_COPY.unknown)}
+        </p>
+      ) : (
+        <div className="lm-attend-scroll">
+          {egress.map((e) => (
+            <div key={e.id} className="lm-rec-row">
+              <div className="lm-rec-head">
+                <StatusBadge color={EGRESS_TONE[e.status] || "gray"}>
+                  {e.status_display}
+                </StatusBadge>
+                <span className="lm-rec-time">{fmtTime(e.requested_at)}</span>
+              </div>
+
+              <div className="lm-rec-facts">
+                {e.duration_seconds ? (
+                  <span>{fmtDuration(e.duration_seconds)}</span>
+                ) : null}
+                {e.file_size_bytes ? <span>{fmtBytes(e.file_size_bytes)}</span> : null}
+                {e.recording_status ? (
+                  <span>
+                    Bunny: {e.recording_status}
+                    {e.recording_published ? " · published" : " · pending"}
+                  </span>
+                ) : null}
+                {e.fetch_attempts > 1 ? (
+                  <span title="Times the Bunny Stream handoff has been retried">
+                    {e.fetch_attempts} fetch attempts
+                  </span>
+                ) : null}
+              </div>
+
+              {e.awaiting_stream_fetch && (
+                <div className="lm-rec-note">
+                  Recorded, waiting to be pulled into Bunny Stream. The sweep
+                  retries every 2 minutes.
+                </div>
+              )}
+
+              {/* The security-relevant one: until this is purged the file is
+                  readable by anyone with the URL. */}
+              {e.storage_key && e.is_terminal && !e.raw_deleted_at && (
+                <div className="lm-rec-note warn">
+                  Raw file not yet deleted from storage — still reachable on the
+                  public pull zone.
+                </div>
+              )}
+
+              {e.error && <div className="lm-rec-err">{e.error}</div>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
