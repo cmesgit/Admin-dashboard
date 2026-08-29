@@ -596,7 +596,81 @@
    16:9 at every modal width. */
 .rec-playerFrame { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
 .rec-playerFrame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+/* The embed URL is fetched per-play (signed + expiring), so the frame has two
+   states before there is anything to show. Both sit in the same 16:9 box so
+   the modal doesn't resize under the pointer when the request settles. New
+   code — colours resolve through --admin-* rather than literal hex. */
+.rec-playerState {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 24px; text-align: center;
+  color: var(--admin-surface); font-size: 13px; line-height: 1.5;
+}
+.rec-playerState span { max-width: 420px; }
+.rec-playerState--error { color: var(--admin-warn-edge); }
+.rec-playerSpin { animation: rec-playerSpin 1s linear infinite; }
+@keyframes rec-playerSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .rec-playerSpin { animation: none; }
+}
+.rec-playerRetry {
+  margin-top: 2px; padding: 6px 14px; cursor: pointer;
+  border: 1px solid var(--admin-border-soft); border-radius: 7px;
+  background: var(--admin-surface); color: var(--admin-ink);
+  font-size: 12px; font-weight: 600;
+}
+.rec-playerRetry:hover { background: var(--admin-primary-tint); border-color: var(--admin-primary-edge); }
 .rec-playerMeta { padding: 12px 16px; font-size: 13px; color: #6b7280; }
+
+/* ── Row actions: View / Edit / Delete ────────────────────────────────
+   New code, so every colour resolves through --admin-* rather than the
+   literal hex the older rules in this file still use. The legacy hex above
+   is left alone deliberately — it is not being migrated here. */
+.rec-rowActions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.rec-rowBtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; cursor: pointer;
+  border: 1px solid var(--admin-border-soft); border-radius: 8px;
+  background: var(--admin-surface); color: var(--admin-ink);
+  font-size: 12px; font-weight: 600;
+}
+.rec-rowBtn:hover {
+  background: var(--admin-primary-tint);
+  border-color: var(--admin-primary-edge);
+  color: var(--admin-primary-deep);
+}
+.rec-rowBtn--danger { color: var(--admin-danger); }
+.rec-rowBtn--danger:hover {
+  background: var(--admin-danger-tint);
+  border-color: var(--admin-danger);
+  color: var(--admin-danger);
+}
+.rec-rowBtn:focus-visible,
+.rec-playerRetry:focus-visible {
+  outline: 2px solid var(--admin-primary);
+  outline-offset: 2px;
+}
+
+/* "The request failed" is a different statement from "there is nothing
+   here", so it gets a different block rather than reusing the empty copy. */
+.rec-loadError {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; text-align: center; color: var(--admin-danger);
+}
+.rec-loadError span { max-width: 520px; line-height: 1.5; }
+
+/* Explains a field the edit modal had to freeze (its option list was
+   refused), so a disabled <select> doesn't read as a broken form. */
+.rec-formNote {
+  margin: -6px 0 14px;
+  padding: 9px 11px;
+  border: 1px solid var(--admin-warn-edge);
+  border-radius: 8px;
+  background: var(--admin-warn-tint);
+  color: var(--admin-warn);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
 
 /* ── Admin live observation ──────────────────────────────────────────── */
 
