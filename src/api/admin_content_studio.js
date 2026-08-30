@@ -153,6 +153,24 @@ export const getExamReadiness = async () => {
   return data;
 };
 
+/** Everything the New exam form needs, resolved server-side: the competitive
+ *  categories (with whether each already carries a course), the status list
+ *  with its plain-language consequences, and the card icon keys. All three are
+ *  backend facts, so none of them is hardcoded on this side. */
+export const getExamOptions = async () => {
+  const { data } = await api.get(`${BASE}/exams/options/`);
+  return data;
+};
+
+/** Create a competitive exam end to end — category, course, detail page and
+ *  optionally the homepage card — in one transaction. Everything or nothing:
+ *  a half-built exam is indistinguishable on screen from a finished one that
+ *  simply isn't listed. */
+export const createExam = async (payload) => {
+  const { data } = await api.post(`${BASE}/exams/`, payload);
+  return data;
+};
+
 /** Create a label of either kind. 409s on a case-variant tag, because
  *  ContentTag.slug is unique and slugified from the name. */
 export const createLabel = async (kind, name, group) => {

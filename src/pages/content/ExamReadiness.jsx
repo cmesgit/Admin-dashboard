@@ -8,14 +8,16 @@
 // ⚠ An exam is a COURSE, not a board. `Add content` deep-links into the
 // existing course editor rather than rebuilding subject and chapter editing
 // inside the CMS.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight, BookOpen, Check, CircleAlert, EyeOff, GraduationCap, Layers,
-  Lock,
+  Lock, Plus,
 } from "lucide-react";
 import { getExamReadiness } from "../../api/admin_content_studio";
 import { errText } from "../../utils/errText";
+import Toast from "../../components/Toast";
+import NewExamDialog from "./NewExamDialog";
 import "../../css/ContentStudio.css";
 
 const SETUP_STEPS = [
@@ -32,20 +34,43 @@ const ExamReadiness = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const say = useCallback((m) => {
+    clearTimeout(toastTimer.current);
+    setToast(m);
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  }, []);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  // `quiet` skips the loading state. It has to exist: the whole screen
+  // early-returns "Loading…" while `loading` is true, which unmounts the
+  // create dialog along with it — so a refresh triggered from inside that
+  // dialog destroyed it and remounted a blank one at step 1, throwing away
+  // the confirmation screen the user had just earned.
+  const load = useCallback(async ({ quiet = false } = {}) => {
+    if (!quiet) setLoading(true);
     try {
       setData(await getExamReadiness());
       setError("");
     } catch (e) {
       setError(errText(e));
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // The dialog stays open on its own confirmation screen, so the list is
+  // refreshed underneath it rather than on close — by the time it is
+  // dismissed the new exam is already in the table behind it.
+  const handleCreated = useCallback((created) => {
+    say(`${created.course.title} created.`);
+    load({ quiet: true });
+  }, [load, say]);
 
   if (loading) {
     return <div className="dashboard-wrapper"><p className="cs-muted">Loading…</p></div>;
@@ -77,7 +102,16 @@ const ExamReadiness = () => {
 
   return (
     <div className="dashboard-wrapper">
-      <h1 className="dashboard-title">Competitive exams</h1>
+      <div className="cs-grouphead">
+        <h1 className="dashboard-title">Competitive exams</h1>
+        <button
+          type="button"
+          className="cs-btn-primary cs-btn-primary--sm"
+          onClick={() => setCreating(true)}
+        >
+          <Plus size={13} aria-hidden="true" /> New exam
+        </button>
+      </div>
       <p className="cs-home__sub">
         {summary.total === 0
           ? "No competitive exams exist yet."
@@ -108,6 +142,13 @@ const ExamReadiness = () => {
             <div className="cs-empty">
               <GraduationCap size={20} aria-hidden="true" />
               <p>No competitive exams are set up.</p>
+              <button
+                type="button"
+                className="cs-btn-primary cs-btn-primary--sm"
+                onClick={() => setCreating(true)}
+              >
+                <Plus size={13} aria-hidden="true" /> Add the first one
+              </button>
             </div>
           )}
 
@@ -188,6 +229,14 @@ const ExamReadiness = () => {
           </p>
         </aside>
       </div>
+
+      {creating && (
+        <NewExamDialog
+          onClose={() => setCreating(false)}
+          onCreated={handleCreated}
+        />
+      )}
+      <Toast message={toast} />
     </div>
   );
 };
