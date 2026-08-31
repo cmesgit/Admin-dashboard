@@ -1163,6 +1163,25 @@
   cursor: grab;
 }
 
+/* `cursor: grab` above was a lie until Phase 2b — the grip had no drag
+   handlers at all. Under any filter but "All" it still cannot drag, because
+   the reorder endpoint needs every card id and a filtered view is a subset,
+   so it says so instead of pretending. */
+.cs-coursecard__grip.is-disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.cs-coursecard[draggable="true"] {
+  cursor: grab;
+}
+
+.cs-coursecard.is-dragging {
+  opacity: .55;
+  outline: 2px dashed var(--admin-primary);
+  outline-offset: 2px;
+}
+
 .cs-coursecard__ribbon {
   position: absolute;
   top: 8px;
@@ -1443,4 +1462,65 @@
   display: flex;
   justify-content: center;
   margin-top: 16px;
+}
+
+/* ── Filter-tab manager (Featured grid) ────────────────────────────────
+   Sits above the card grid on the Course cards screen, because that is where
+   these tabs sit on the public homepage. All colours resolve through
+   --admin-* per the Admin token rule. */
+.cs-tabsmanager {
+  margin-bottom: 18px;
+}
+
+.cs-tabsmanager__add {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 10px;
+  background: var(--admin-surface-sunken);
+}
+
+.cs-tabsmanager__list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cs-tabrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 9px 12px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 10px;
+  background: var(--admin-surface);
+}
+
+.cs-tabrow.is-hidden {
+  background: var(--admin-surface-sunken);
+}
+
+/* The label carries the row; the two buttons are pushed to the end. */
+.cs-tabrow__label {
+  font-weight: 600;
+  color: var(--admin-ink);
+}
+
+.cs-tabrow__slug {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--admin-surface-sunken);
+  border: 1px solid var(--admin-border-soft);
+  font-size: 11.5px;
+  color: var(--admin-body-soft);
+}
+
+.cs-tabrow__meta {
+  margin-right: auto;
+  font-size: 12px;
+  color: var(--admin-body-soft);
 }

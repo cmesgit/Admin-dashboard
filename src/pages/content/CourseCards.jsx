@@ -18,8 +18,10 @@ import {
   createContentShowcase, deleteContentShowcase, fetchAllPages, getContentShowcase,
   updateContentShowcase,
 } from "../../api/admin";
+import { reorderShowcaseCards } from "../../api/admin_content_studio";
 import { buildBody } from "../../utils/buildBody";
 import CardFormModal from "./CardFormModal";
+import ShowcaseCategoryManager from "./ShowcaseCategoryManager";
 import { errText } from "../../utils/errText";
 import Toast from "../../components/Toast";
 import "../../css/ContentStudio.css";
@@ -137,6 +139,49 @@ const CourseCards = () => {
 
   const showingCount = cards.filter(isShowing).length;
 
+  // ── Drag to reorder ────────────────────────────────────────────────
+  //
+  // Only on the unfiltered view. The endpoint demands EVERY card id in one
+  // ordered list (and 400s otherwise, deliberately, so a stale tab cannot
+  // reshuffle the homepage) — but `visible` is a subset under any other
+  // filter, and "move this card up" has no single meaning when the cards
+  // between it and its neighbour are hidden from you. The grip says so rather
+  // than failing on drop.
+  //
+  // Until now `order` could only be changed by typing an integer into each
+  // card's edit form, one card at a time, while this grid rendered a grip with
+  // `cursor: grab` and no handlers at all.
+  const canReorder = filter === "all";
+  const [dragId, setDragId] = useState(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+
+  const onDropOn = async (targetId) => {
+    const sourceId = dragId;
+    setDragId(null);
+    if (!sourceId || sourceId === targetId || !canReorder) return;
+
+    const from = cards.findIndex((c) => c.id === sourceId);
+    const to = cards.findIndex((c) => c.id === targetId);
+    if (from < 0 || to < 0) return;
+
+    const next = cards.slice();
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+
+    const previous = cards;
+    setCards(next);           // optimistic
+    setSavingOrder(true);
+    try {
+      await reorderShowcaseCards(next.map((c) => c.id));
+      say("Order saved.");
+    } catch (e) {
+      setCards(previous);     // revert — same pattern as PageEditor's reorder
+      setError(errText(e));
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
   return (
     <div className="dashboard-wrapper">
       <div className="cs-home__head">
@@ -186,13 +231,25 @@ const CourseCards = () => {
         </div>
       )}
 
+      {/* The tabs that filter the grid below, on the same screen as the
+          grid they filter — which is how they appear on the public site. */}
+      <ShowcaseCategoryManager say={say} />
+
       <div className="cs-cardgrid">
         {visible.map((c) => {
           const showing = isShowing(c);
           return (
             <article
               key={c.id}
-              className={`cs-coursecard${showing ? "" : " is-hidden"}`}
+              className={`cs-coursecard${showing ? "" : " is-hidden"}`
+                + (dragId === c.id ? " is-dragging" : "")}
+              draggable={canReorder && !savingOrder}
+              onDragStart={() => setDragId(c.id)}
+              onDragEnd={() => setDragId(null)}
+              // Without preventDefault the drop event never fires — the
+              // browser's default is to reject the drag.
+              onDragOver={(e) => { if (canReorder) e.preventDefault(); }}
+              onDrop={(e) => { e.preventDefault(); onDropOn(c.id); }}
             >
               <div
                 className="cs-coursecard__banner"
@@ -209,8 +266,19 @@ const CourseCards = () => {
                     : undefined
                 }
               >
-                <span className="cs-coursecard__grip" aria-hidden="true">
-                  <GripVertical size={13} />
+                {/* Was aria-hidden with cursor:grab and no handlers — a
+                    control that looked draggable and was not. It now either
+                    drags or explains why it cannot. */}
+                <span
+                  className={`cs-coursecard__grip${canReorder ? "" : " is-disabled"}`}
+                  title={
+                    canReorder
+                      ? "Drag to reorder the homepage grid"
+                      : "Switch to the All filter to reorder — the homepage order "
+                        + "covers every card, including the ones this filter hides"
+                  }
+                >
+                  <GripVertical size={13} aria-hidden="true" />
                 </span>
                 {c.ribbon && <span className="cs-coursecard__ribbon">{c.ribbon}</span>}
                 {c.img && <img src={c.img} alt="" />}

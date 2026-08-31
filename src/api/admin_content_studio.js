@@ -179,3 +179,42 @@ export const createLabel = async (kind, name, group) => {
   });
   return data;
 };
+
+/* ── Showcase categories: the homepage Featured grid's filter tabs ──────────
+ *
+ * These were hardcoded in three repos at once until Phase 2a. `card_count` is
+ * served per row so the UI can warn before a delete: `ShowcaseCourse.categories`
+ * is a JSON list of slugs with no FK, so removing a tab cannot cascade — it
+ * orphans the slug in every tagged card and those cards then fail validation on
+ * their next save. The endpoint refuses that; switching `is_active` off is the
+ * non-destructive way to hide a tab.
+ *
+ * Not paginated (pagination_class = None), so this returns a plain array. */
+export const getShowcaseCategories = async () => {
+  const { data } = await api.get(`${BASE}/showcase-categories/`);
+  return Array.isArray(data) ? data : data?.results || [];
+};
+
+export const createShowcaseCategory = async (payload) => {
+  const { data } = await api.post(`${BASE}/showcase-categories/`, payload);
+  return data;
+};
+
+export const updateShowcaseCategory = async (id, payload) => {
+  const { data } = await api.patch(`${BASE}/showcase-categories/${id}/`, payload);
+  return data;
+};
+
+/** Rejects with 400 + card_count when cards still carry the slug. */
+export const deleteShowcaseCategory = async (id) => {
+  const { data } = await api.delete(`${BASE}/showcase-categories/${id}/`);
+  return data;
+};
+
+/** Reorder the Featured grid. `ids` must be EVERY card id in the desired
+ *  order — the endpoint 400s on a partial list, deliberately, so a stale tab
+ *  cannot silently reshuffle the homepage. */
+export const reorderShowcaseCards = async (ids) => {
+  const { data } = await api.post(`${BASE}/showcase/reorder/`, { cards: ids });
+  return data;
+};

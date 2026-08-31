@@ -11,6 +11,7 @@ import {
   Landmark, Shield, Medal, School,
 } from "lucide-react";
 import { getAcademicCourses, getBoards } from "../../api/admin";
+import { getShowcaseCategories } from "../../api/admin_content_studio";
 import ImageUploadField from "../../components/ImageUploadField";
 import FeaturedCardPreview from "./preview/FeaturedCardPreview";
 import PlacementBadge from "./preview/PlacementBadge";
@@ -28,10 +29,16 @@ import PlacementBadge from "./preview/PlacementBadge";
 import "../../css/Courses.css";
 import "../../css/Content.css";
 
-// Keys must match shiksha-frontend's homeData.js COURSE_TABS ids. "all" is
-// deliberately excluded — it's a reserved sentinel meaning "no filter applied"
-// (see FeaturedCourses.jsx), not a real category a card can be tagged with.
-const CATEGORY_CHOICES = [
+// FALLBACK ONLY. The real list is content.ShowcaseCategory, fetched below —
+// this used to be the third of three hardcoded copies (with the model's
+// CATEGORY_CHOICES and shiksha-frontend's COURSE_TABS), which is why adding a
+// tab took a three-repo deploy. Kept so the checkbox group is never empty if
+// the request fails; matches what migration content/0028 seeds.
+//
+// "all" is absent deliberately — a reserved sentinel meaning "no filter
+// applied", which the public grid renders itself and the model refuses as a
+// slug.
+const FALLBACK_CATEGORIES = [
   ["boards", "Boards"],
   ["class8-12", "Class 8–12"],
   ["competitive", "Competitive"],
@@ -92,10 +99,15 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
     use_own_details: initial?.use_own_details ?? false,
     // null = follow the linked course. "" is the empty <select> value.
     coming_soon_override: initial?.coming_soon_override ?? null,
-    // Drop any stray/legacy value (old free-text typos, or the "all" sentinel)
-    // that doesn't match a real category — the checkbox group below can only
-    // ever write back known ids, so this also self-heals older rows on save.
-    categories: (initial?.categories || []).filter((c) => CATEGORY_CHOICES.some(([id]) => id === c)),
+    // Kept VERBATIM — deliberately not filtered here any more.
+    //
+    // This used to prune against the hardcoded list above. Now that categories
+    // are CMS rows, that constant is only a fallback and can be missing tabs an
+    // admin has since added, so filtering against it would silently DROP valid
+    // tags the moment someone opened a card and saved it. The prune still
+    // happens (see the effect below) but against the real fetched list, which
+    // is the only thing that can tell a legacy typo from a new tab.
+    categories: initial?.categories || [],
     // Matches ShowcaseCourse.gradient_css's model default. It used to be a
     // near-transparent BLUE pair, so a card created here looked nothing like
     // one created through the API or Django admin, and at 0.15/0.05 alpha it
@@ -109,6 +121,35 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
     course: initial?.course || "",
     board: initial?.board || "",
   });
+
+  // The filter tabs, from the CMS. Seeded with the fallback so the checkbox
+  // group is never empty on first paint or if the request fails.
+  const [categoryChoices, setCategoryChoices] = useState(FALLBACK_CATEGORIES);
+
+  useEffect(() => {
+    let cancelled = false;
+    getShowcaseCategories()
+      .then((rows) => {
+        if (cancelled || !rows.length) return;
+        // Inactive tabs are still offered here on purpose: a card can legitimately
+        // stay tagged with a tab that is currently hidden from the public grid,
+        // and the label says so rather than the tag vanishing from the form.
+        setCategoryChoices(
+          rows.map((r) => [r.slug, r.is_active ? r.label : `${r.label} (hidden)`])
+        );
+        // Now — and only now — prune tags that match no real tab. Against the
+        // fetched list this removes genuine legacy typos and the old "all"
+        // sentinel, without touching a tab an admin added after this bundle
+        // was built.
+        const known = new Set(rows.map((r) => r.slug));
+        setForm((f) => {
+          const kept = f.categories.filter((c) => known.has(c));
+          return kept.length === f.categories.length ? f : { ...f, categories: kept };
+        });
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
   const [linkStateText, setLinkStateText] = useState(
     JSON.stringify(initial?.link_state && Object.keys(initial.link_state).length ? initial.link_state : {}, null, 2)
   );
@@ -255,7 +296,7 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
         <div className="cm-field">
           <span>Categories</span>
           <div className="cm-checkbox-group">
-            {CATEGORY_CHOICES.map(([id, label]) => (
+            {categoryChoices.map(([id, label]) => (
               <label className="cm-check cm-check--inline" key={id}>
                 <input
                   type="checkbox"
