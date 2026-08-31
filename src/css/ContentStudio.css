@@ -344,6 +344,27 @@
   overflow: hidden;
 }
 
+/* The library picker renders each asset as a <button> so it is keyboard
+   reachable and announces as clickable, where the Pictures screen uses a
+   <figure>. Resets the browser's button chrome and inherits the card look
+   from .cs-picture rather than restating it. */
+.cs-picture--pick {
+  display: block;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.cs-picture--pick:hover,
+.cs-picture--pick:focus-visible {
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px var(--admin-primary-tint);
+  outline: none;
+}
+
 .cs-picture__thumb {
   height: 112px;
   display: grid;

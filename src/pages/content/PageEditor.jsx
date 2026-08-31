@@ -22,6 +22,7 @@ import {
 // second copy in admin_content_studio.js.
 import { deleteHomeContentBlock, updateHomeSectionOrder } from "../../api/admin";
 import SectionPreview from "./SectionPreview";
+import MediaPickerDialog from "./MediaPickerDialog";
 import SectionListItems from "./SectionListItems";
 import SectionFloaters from "./SectionFloaters";
 import { errText } from "../../utils/errText";
@@ -90,6 +91,7 @@ const PageEditor = () => {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState("idle"); // idle | saving | saved
   const [checklist, setChecklist] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState(null);
@@ -528,7 +530,7 @@ const PageEditor = () => {
                 hint="Shown alongside this section."
                 url={previewValues.img || ""}
                 name={previewValues.img ? "Current picture" : ""}
-                onChoose={() => say("Choosing from the library lands in a later phase.")}
+                onChoose={() => setPickerOpen(true)}
                 onClear={() => {
                   edit("image_url", "");
                   edit("image", "");
@@ -692,6 +694,21 @@ const PageEditor = () => {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Sets `image_url` and clears `image` for the same reason onClear
+          clears both: a section whose picture is an uploaded `image` ignores
+          `image_url`, so setting one without clearing the other would look
+          like the pick silently did nothing. */}
+      {pickerOpen && (
+        <MediaPickerDialog
+          onClose={() => setPickerOpen(false)}
+          onPick={(asset) => {
+            edit("image_url", asset.url || "");
+            edit("image", "");
+            say(`Picture set to ${asset.name}.`);
+          }}
+        />
       )}
 
       <Toast message={toast} />
