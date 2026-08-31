@@ -96,7 +96,11 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
     // that doesn't match a real category — the checkbox group below can only
     // ever write back known ids, so this also self-heals older rows on save.
     categories: (initial?.categories || []).filter((c) => CATEGORY_CHOICES.some(([id]) => id === c)),
-    gradient_css: initial?.gradient_css || "rgba(79,109,245,0.15), rgba(109,140,255,0.05)",
+    // Matches ShowcaseCourse.gradient_css's model default. It used to be a
+    // near-transparent BLUE pair, so a card created here looked nothing like
+    // one created through the API or Django admin, and at 0.15/0.05 alpha it
+    // was barely visible at all.
+    gradient_css: initial?.gradient_css || "rgba(15,157,107,0.72),rgba(11,91,62,0.88)",
     image_url: initial?.image_url || "",
     icon: initial?.icon || "book",
     link_path: initial?.link_path || "/courses",
@@ -417,6 +421,7 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
             ribbon={form.ribbon}
             tutorName={form.tutor_name}
             isComingSoon={previewIsComingSoon}
+            gradientCss={form.gradient_css}
           />
           {form.board && !form.course && (
             <p className="cms-derived-note">

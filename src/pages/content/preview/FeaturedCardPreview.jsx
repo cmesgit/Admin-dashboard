@@ -15,21 +15,32 @@ const FeaturedCardPreview = ({
   ribbon,
   tutorName,
   isComingSoon,
+  gradientCss,
 }) => {
   return (
     <div className="cms-preview">
       <article className="hm-fc-card">
+        {/* This preview ignored `gradient_css` and always drew the same green,
+            so the one field an admin can type a colour into was the one thing
+            the preview could not show. The stops are wrapped here exactly as
+            the public card wraps them; the hardcoded pair is only the fallback
+            for a card that has no value stored yet (the model's own default). */}
         <div
           className="hm-fc-thumb"
           style={{
             background: thumbnailUrl
               ? `url('${thumbnailUrl}') center/cover`
-              : "linear-gradient(135deg,#0F9D6B,#0B5B3E)",
+              : `linear-gradient(135deg,${gradientCss || "#0F9D6B,#0B5B3E"})`,
           }}
         >
-          <span className="hm-fc-thumb-ic">
-            <BookOpen />
-          </span>
+          {/* The icon is the no-artwork fallback and the public card hides it
+              once a real picture exists — showing both here would preview a
+              card the site never renders. */}
+          {!thumbnailUrl && (
+            <span className="hm-fc-thumb-ic">
+              <BookOpen />
+            </span>
+          )}
           {ribbon && <span className="hm-fc-ribbon">{ribbon}</span>}
           <button className="hm-fc-heart" type="button" tabIndex={-1} aria-hidden="true">
             <Heart />

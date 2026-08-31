@@ -196,7 +196,18 @@ const CourseCards = () => {
             >
               <div
                 className="cs-coursecard__banner"
-                style={c.gradient_css ? { backgroundImage: c.gradient_css } : undefined}
+                // `gradient_css` stores the STOPS only ("rgba(...),rgba(...)"),
+                // not a complete CSS value — the public card supplies the
+                // `linear-gradient(135deg, …)` wrapper. Assigning the stops
+                // straight to backgroundImage is not a valid declaration, so
+                // this banner silently rendered no gradient at all and an
+                // admin could never see what the card would actually look
+                // like. Same wrapper and angle as the homepage.
+                style={
+                  c.gradient_css
+                    ? { backgroundImage: `linear-gradient(135deg,${c.gradient_css})` }
+                    : undefined
+                }
               >
                 <span className="cs-coursecard__grip" aria-hidden="true">
                   <GripVertical size={13} />
