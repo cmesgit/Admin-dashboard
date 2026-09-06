@@ -18,6 +18,7 @@ import {
 import StatusBadge from "../components/StatusBadge";
 import ConfirmModal from "../components/ConfirmModal";
 import ImageUploadField from "../components/ImageUploadField";
+import LibraryImageField from "../components/LibraryImageField";
 import FeaturedCardPreview from "./content/preview/FeaturedCardPreview";
 import NavMenuEntryPreview from "./content/preview/NavMenuEntryPreview";
 import PlacementBadge from "./content/preview/PlacementBadge";
@@ -82,6 +83,11 @@ const TABS = [
 function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board }) {
   const [form, setForm] = useState(initial || {});
   const [file, setFile] = useState(null);
+  // A course picture can also come from the CMS media library. undefined
+  // means untouched (the server leaves the picture alone), null means the
+  // editor cleared it, a number is a library asset id.
+  const [assetId, setAssetId] = useState(undefined);
+  const [assetUrl, setAssetUrl] = useState("");
   const [categoryOptions, setCategoryOptions] = useState([]);
   // Holds "PUBLISHED" while the confirm-to-override dialog is open for an
   // incomplete course; the status field itself isn't updated until confirmed.
@@ -283,7 +289,18 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
 
             <label className="cm-field">
               <span>Thumbnail (16:9)</span>
-              <ImageUploadField value={file} onChange={setFile} previewUrl={form.thumbnail} />
+              <LibraryImageField
+                file={file}
+                onFile={setFile}
+                assetId={assetId}
+                onAsset={(id, url) => { setAssetId(id); setAssetUrl(url); }}
+                previewUrl={form.thumbnail}
+              />
+              <small className="cm-hint" style={{ margin: "6px 0 0" }}>
+                This is the picture the public /courses catalog shows, and the one
+                the homepage grid prefers — so setting it here makes both surfaces
+                show the same image.
+              </small>
             </label>
 
             <label className="cm-field">
@@ -437,7 +454,7 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
                 priceLabel={form.price_rupees}
                 mrp={form.mrp_rupees || null}
                 discountLabel={form.discount_label}
-                thumbnailUrl={filePreviewUrl || form.thumbnail || null}
+                thumbnailUrl={filePreviewUrl || assetUrl || (assetId === null ? null : form.thumbnail) || null}
                 // No ribbon here on purpose. The homepage card's ribbon comes
                 // from ShowcaseCourse.ribbon, edited on the Showcase screen —
                 // /courses/public/featured/ reads card.ribbon and never looks at
@@ -462,7 +479,7 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
 
         <div className="confirm-actions">
           <button className="confirm-cancel" onClick={onCancel} disabled={busy}>Cancel</button>
-          <button className="confirm-ok" onClick={() => onSubmit(form, file)} disabled={busy}>
+          <button className="confirm-ok" onClick={() => onSubmit(form, file, assetId)} disabled={busy}>
             {busy ? "Saving…" : mode === "edit" ? "Save" : "Create"}
           </button>
         </div>
@@ -1526,7 +1543,7 @@ const Courses = () => {
     });
   };
 
-  const handleSubmit = async (form, file) => {
+  const handleSubmit = async (form, file, assetId) => {
     setBusy(true); setFormError("");
     try {
       if (modal.type === "board") {
@@ -1595,6 +1612,13 @@ const Courses = () => {
           // because it fired before the request, creating a board-less
           // (competitive) course from that view was impossible.
           ...(modal.mode !== "edit" && nav.board?.id ? { board_id: nav.board.id } : {}),
+          // Only sent when the editor actually touched the picture. `undefined`
+          // is "leave it alone" and MUST NOT be sent as an empty string, which
+          // the server reads as "clear it" — that would wipe the thumbnail on
+          // every unrelated edit to a course.
+          ...(assetId === undefined
+            ? {}
+            : { thumbnail_asset_id: assetId === null ? "" : assetId }),
         };
         const { data, isMultipart } = buildBody(fields, file, "thumbnail");
         if (modal.mode === "edit") await updateCourse(modal.initial.id, data, isMultipart);

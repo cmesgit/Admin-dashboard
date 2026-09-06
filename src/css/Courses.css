@@ -465,3 +465,59 @@
   .cm-assign-row,
   .cm-pool-row { flex-wrap: wrap; }
 }
+
+/* LibraryImageField — upload, or reuse a picture from the CMS library.
+   New rules, so these resolve through --admin-* tokens rather than the
+   literal hex the rest of this (legacy) file still uses. */
+.cm-imgfield {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cm-libpick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--admin-primary-edge);
+  border-radius: 8px;
+  background: var(--admin-primary-tint);
+  color: var(--admin-primary-deep);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cm-libpick:hover:not(:disabled) { background: var(--admin-surface); }
+.cm-libpick:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.cm-imgfield-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.cm-imgfield-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  background: var(--admin-surface);
+  color: var(--admin-body);
+  cursor: pointer;
+}
+.cm-imgfield-clear:hover:not(:disabled) {
+  color: var(--admin-danger);
+  border-color: var(--admin-danger);
+  background: var(--admin-danger-tint);
+}
+.cm-imgfield-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.76rem;
+  color: var(--admin-body-soft);
+}
