@@ -216,10 +216,26 @@ const isStudioLinkActive = (to, location) => {
   return false;
 };
 
-/** Swap the single Content entry for the four Studio groups when the flag is on. */
-const buildNav = (studioOn) => {
-  if (!studioOn) return navGroups;
-  return navGroups.flatMap((group) => {
+/** Swap the single Content entry for the four Studio groups when the flag is on,
+ *  and add the standalone bank to Question Bank when the Quiz Hub flag is on.
+ *
+ *  The bank entry is flag-gated rather than always-on because its endpoints
+ *  answer 503 while public_quiz_hub_enabled is off — a nav row that always
+ *  leads to "switched off" is just a dead link. */
+const buildNav = (studioOn, quizHubOn) => {
+  const withBank = !quizHubOn ? navGroups : navGroups.map((group) => (
+    group.header !== "Question Bank" ? group : {
+      ...group,
+      items: [
+        ...group.items,
+        { to: "/question-bank/bank", icon: BookCheck, label: "Question Bank", isNew: true },
+        { to: "/question-bank/labels", icon: Tag, label: "Question Labels", isNew: true },
+        { to: "/question-bank/sets", icon: ClipboardList, label: "Practice Sets", isNew: true },
+      ],
+    }
+  ));
+  if (!studioOn) return withBank;
+  return withBank.flatMap((group) => {
     if (group.header !== "Content & Comms") return [group];
     return [
       ...studioNavGroups,
@@ -251,7 +267,11 @@ const AdminLayout = () => {
   // because that file is generated from shared/src and editing it here would
   // be reverted by the next sync.
   const studioOn = !!user?.feature_flags?.content_studio_enabled;
-  const groups = buildNav(studioOn);
+  // ⚠ Like content_studio_enabled, this is frozen at login — AuthContext
+  // restores `user` from localStorage and never refetches /accounts/me/. An
+  // admin who flips the flag sees no new nav row until they sign out and in.
+  const quizHubOn = !!user?.feature_flags?.public_quiz_hub_enabled;
+  const groups = buildNav(studioOn, quizHubOn);
 
   // Close the mobile overlay on every navigation, so picking a nav link
   // doesn't leave the sidebar covering the page it just opened.

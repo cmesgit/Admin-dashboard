@@ -29,6 +29,14 @@ const ScholarshipPanel = lazy(() => import("./pages/scholarship/ScholarshipPanel
 const AcademyQuizzes = lazy(() => import("./pages/AcademyQuizzes"));
 // A1 · admin question-bank review queue (Phase 7).
 const QuestionReviewQueue = lazy(() => import("./pages/QuestionReviewQueue"));
+// The STANDALONE bank (public Quiz Hub Phase 2) — a different collection from
+// the queue above, and the only screen that can see imported questions.
+const QuestionBank = lazy(() => import("./pages/QuestionBank"));
+// The rails the public hub filters by — and the live/soon switch that decides
+// whether a subject appears there at all.
+const QuestionLabels = lazy(() => import("./pages/QuestionLabels"));
+// The public hub's quizzes. A set stores CRITERIA, not questions.
+const PracticeSets = lazy(() => import("./pages/PracticeSets"));
 const CommunicationReports = lazy(() => import("./pages/CommunicationReports"));
 const CommunicationBroadcast = lazy(() => import("./pages/CommunicationBroadcast"));
 const CommunicationSupport = lazy(() => import("./pages/CommunicationSupport"));
@@ -103,6 +111,9 @@ const App = () => {
             <Route path="courses" element={<Courses />} />
             <Route path="quizzes" element={<AcademyQuizzes />} />
             <Route path="question-bank/review" element={<QuestionReviewQueue />} />
+            <Route path="question-bank/bank" element={<QuestionBank />} />
+            <Route path="question-bank/labels" element={<QuestionLabels />} />
+            <Route path="question-bank/sets" element={<PracticeSets />} />
             <Route path="teachers" element={<Teachers />} />
             <Route path="students" element={<Students />} />
             <Route path="students/:id" element={<StudentDetail />} />
