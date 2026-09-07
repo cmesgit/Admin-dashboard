@@ -47,10 +47,16 @@ const CourseCards = () => {
   const [formError, setFormError] = useState("");
   const toastTimer = useRef(null);
 
-  const say = useCallback((m) => {
+  // `tone` defaults to "success" so existing callers (including the one
+  // passed down to ShowcaseCategoryManager) are unchanged. Errors linger:
+  // 2.6s is not long enough to read a server message naming a field you
+  // didn't touch, which is how a rejected toggle looked like a dead switch.
+  const say = useCallback((m, tone = "success") => {
     clearTimeout(toastTimer.current);
-    setToast(m);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
+    setToast({ message: m, tone });
+    toastTimer.current = setTimeout(
+      () => setToast(null), tone === "error" ? 7000 : 2600,
+    );
   }, []);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
@@ -85,7 +91,7 @@ const CourseCards = () => {
         : "Hidden from visitors. Nothing is deleted.");
     } catch (e) {
       setCards(before);
-      say(errText(e));
+      say(errText(e), "error");
     } finally {
       setBusy(null);
     }
@@ -95,7 +101,11 @@ const CourseCards = () => {
     setBusy("form");
     setFormError("");
     try {
-      const { data, isMultipart } = buildBody(payload, file, "image");
+      // clearNulls: this form uses `null` to mean "clear it" — `course`/`board`
+      // to unlink, `coming_soon_override` to follow the linked course. Dropping
+      // those keys (the default) made picking an image silently discard the
+      // very change the admin came to make.
+      const { data, isMultipart } = buildBody(payload, file, "image", false, true);
       if (modal.mode === "edit") {
         await updateContentShowcase(modal.initial.id, data, isMultipart);
       } else {
@@ -124,7 +134,7 @@ const CourseCards = () => {
       say(`Deleted “${card.title}”.`);
       setCards((cs) => cs.filter((c) => c.id !== card.id));
     } catch (e) {
-      say(errText(e));
+      say(errText(e), "error");
     } finally {
       setBusy(null);
     }
@@ -350,7 +360,7 @@ const CourseCards = () => {
         />
       )}
 
-      <Toast message={toast} />
+      <Toast message={toast?.message} tone={toast?.tone} />
     </div>
   );
 };

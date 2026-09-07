@@ -44,6 +44,10 @@
   --admin-warn-edge: #ecd080;
   --admin-danger: #c0392b;
   --admin-danger-tint: #fdf0ee;
+  /* For the dark toast surface only. --admin-danger is tuned for a white
+     background and goes muddy on #1e293b, where the paired success glyph is
+     already a light green. */
+  --admin-danger-on-dark: #f87171;
   --admin-accent: #e8590c;
   --admin-info: #2563eb;
   --admin-info-tint: #eff6ff;

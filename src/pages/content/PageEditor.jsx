@@ -63,8 +63,15 @@ const FIELDS = [
   { name: "heading", kind: "heading", label: "Main heading",
     hint: "The biggest line of text in this section." },
   { name: "heading_secondary", kind: "text", label: "Second half of the heading",
-    hint: "Only the top section uses this — it continues the heading on a new line.",
-    sections: ["hero"] },
+    hint: "The tail of the heading, shown in the accent colour. Leave it empty to use the main heading on its own.",
+    // Only the sections whose frontend actually renders a second half. The
+    // rest draw `heading` alone, so offering the field there would save text
+    // that never appears. Editing `heading` on one of these WITHOUT this
+    // input is what produced "Explore our <new words> popular courses".
+    sections: [
+      "hero", "featured_courses", "faq", "courses_hero", "contact_hero",
+      "about_hero", "about_vision", "about_mission", "about_values", "about_why",
+    ] },
   { name: "subhead", kind: "text", label: "Supporting line",
     hint: "One sentence under the heading, explaining it." },
   { name: "body", kind: "long", label: "Longer text",
