@@ -11,8 +11,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowRight, BookOpen, Check, CircleAlert, EyeOff, GraduationCap, Layers,
-  Lock, Plus,
+  ArrowRight, BookOpen, Check, CircleAlert, Clock, EyeOff, GraduationCap,
+  Layers, Lock, Plus,
 } from "lucide-react";
 import { getExamReadiness } from "../../api/admin_content_studio";
 import { errText } from "../../utils/errText";
@@ -23,12 +23,32 @@ import "../../css/ContentStudio.css";
 const SETUP_STEPS = [
   { n: 1, title: "Name the subjects", why: "An exam with no subjects has nothing to open." },
   { n: 2, title: "List one subject's chapters", why: "Enough to see the shape of it." },
-  { n: 3, title: "Add one piece of material", why: "This is what makes it stop saying “Coming soon”." },
+  // This used to read "This is what makes it stop saying “Coming soon”", which
+  // was not true: adding material changes no visitor-facing label at all. The
+  // “Coming soon” badge comes from `Course.status`, and the only thing that
+  // clears it is changing the status.
+  { n: 3, title: "Add one piece of material", why: "Until there is one, a student who opens the exam finds an empty shelf." },
   {
     n: 4, title: "Schedule one test", why: "Quiz scheduling doesn’t exist yet.",
     blocked: true,
   },
 ];
+
+// ⚠ “Published but empty” and “Coming soon” are different things, and this
+// screen used to print the second when it meant the first — the backend
+// derived the chip from content counts alone, so a PUBLISHED exam with an
+// enrolled student and no material was labelled “Coming soon” while visitors
+// saw an ordinary published course. `state` now carries four values and the
+// wording follows it; `visitor_coming_soon` is the separate, literal answer to
+// “does a visitor see the words Coming soon”.
+const STATE_CHIP = {
+  live: { label: "Live", tone: "cs-tone-ok" },
+  empty: { label: "No content yet", tone: "cs-tone-warn" },
+  coming_soon: { label: "Coming soon", tone: "cs-tone-info" },
+  // `hidden` deliberately has no chip — the "not published" chip beside it
+  // already says so, and a visitor-facing label is meaningless for a course no
+  // visitor can load.
+};
 
 const ExamReadiness = () => {
   const [data, setData] = useState(null);
@@ -82,6 +102,23 @@ const ExamReadiness = () => {
   const { exams = [], summary = {}, pipeline = [], suggested_id: suggested } = data || {};
   const focus = exams.find((e) => e.id === suggested);
 
+  const reachable = summary.in_navbar ?? summary.total ?? 0;
+  const empty = summary.empty ?? 0;
+  const soon = summary.coming_soon ?? 0;
+
+  // Built as sentences rather than one nested template: the old one-liner is
+  // how the false claim ("so they say Coming soon to visitors") stayed
+  // invisible in the middle of a ternary.
+  const headline = [
+    `${reachable} exam${reachable === 1 ? " is" : "s are"} already in the navbar and on the courses page.`,
+    empty && (
+      empty === reachable
+        ? `None of them has any content yet, so a student who opens ${reachable === 1 ? "it" : "one"} finds an empty shelf.`
+        : `${empty} of them ${empty === 1 ? "has" : "have"} no content yet, so a student who opens ${empty === 1 ? "it" : "them"} finds an empty shelf.`
+    ),
+    soon && `${soon} of them still show${soon === 1 ? "s" : ""} “Coming soon” to visitors.`,
+  ].filter(Boolean).join(" ");
+
   const tiles = [
     { icon: GraduationCap, value: summary.in_navbar ?? summary.total, label: "live in the navbar" },
     {
@@ -89,7 +126,10 @@ const ExamReadiness = () => {
       // "1 have any subjects" reads as a bug even though the number is right.
       label: summary.with_subjects === 1 ? "has any subjects" : "have any subjects",
     },
-    { icon: CircleAlert, value: summary.coming_soon, label: "showing “Coming soon”" },
+    // Two tiles, because they were one number pretending to be both. `empty`
+    // is the actionable one — reachable, not labelled, and nothing inside.
+    { icon: CircleAlert, value: summary.empty, label: "published with no content" },
+    { icon: Clock, value: summary.coming_soon, label: "showing “Coming soon”" },
     { icon: BookOpen, value: focus ? 1 : 0, label: "worth finishing first" },
     ...(summary.not_published
       ? [{
@@ -112,13 +152,12 @@ const ExamReadiness = () => {
           <Plus size={13} aria-hidden="true" /> New exam
         </button>
       </div>
+      {/* The old copy said the empty ones "say “Coming soon” to visitors",
+          which was the same conflation as the chip: a published exam with no
+          content says nothing of the kind — it just opens onto nothing. The
+          two facts are now reported separately, each in its own terms. */}
       <p className="cs-home__sub">
-        {summary.total === 0
-          ? "No competitive exams exist yet."
-          : `${summary.in_navbar ?? summary.total} exam${(summary.in_navbar ?? summary.total) === 1 ? " is" : "s are"} already in the navbar and on the courses page.` +
-            (summary.coming_soon
-              ? ` ${summary.coming_soon === summary.total ? "None of them has" : "Some have"} any content yet, so ${summary.coming_soon === 1 ? "it says" : "they say"} “Coming soon” to visitors.`
-              : "")}
+        {summary.total === 0 ? "No competitive exams exist yet." : headline}
       </p>
 
       <div className="cs-tilerow">
@@ -152,16 +191,29 @@ const ExamReadiness = () => {
             </div>
           )}
 
-          {exams.map((e) => (
+          {exams.map((e) => {
+            const chip = STATE_CHIP[e.state];
+            return (
             <div
               key={e.id}
               className={`cs-examrow${e.id === suggested ? " is-focus" : ""}`}
             >
               <div className="cs-examrow__head">
                 <span className="cs-examrow__name">{e.name}</span>
-                <span className={`cs-chip ${e.state === "live" ? "cs-tone-ok" : "cs-tone-warn"}`}>
-                  {e.state === "live" ? "Live" : "Coming soon"}
-                </span>
+                {chip && (
+                  <span
+                    className={`cs-chip ${chip.tone}`}
+                    title={
+                      e.state === "coming_soon"
+                        ? "Course status is COMING_SOON — that is what puts the badge on the public card."
+                        : e.state === "empty"
+                          ? "Published and reachable, but it has no subjects or no material. Visitors see an ordinary course that opens onto nothing."
+                          : undefined
+                    }
+                  >
+                    {chip.label}
+                  </span>
+                )}
                 {e.in_navbar === false && (
                   <span
                     className="cs-chip cs-tone-muted"
@@ -169,6 +221,23 @@ const ExamReadiness = () => {
                   >
                     <EyeOff size={11} aria-hidden="true" />
                     not published
+                  </span>
+                )}
+                {/* The card's `coming_soon_override` beats the course's own
+                    status on the homepage, so without this the fix for a wrong
+                    badge ("change the status") would appear to do nothing. */}
+                {e.coming_soon_overridden && (
+                  <span
+                    className="cs-chip cs-tone-warn"
+                    title={
+                      `Its showcase card overrides the badge, so visitors see ` +
+                      `${e.visitor_coming_soon ? "“Coming soon”" : "no badge"} ` +
+                      `regardless of the course status (${e.course_status}). ` +
+                      `Clear the override on the card to make the status count.`
+                    }
+                  >
+                    <CircleAlert size={11} aria-hidden="true" />
+                    card overrides the badge
                   </span>
                 )}
               </div>
@@ -190,7 +259,8 @@ const ExamReadiness = () => {
                 </Link>
               </div>
             </div>
-          ))}
+            );
+          })}
         </section>
 
         <aside className="cs-examrail">

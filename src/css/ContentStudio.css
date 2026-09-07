@@ -1087,6 +1087,9 @@
 /* Status tones. The chip says what a visitor experiences, not the enum. */
 .cs-tone-ok    { background: var(--admin-success-tint); color: var(--admin-success); }
 .cs-tone-warn  { background: var(--admin-warn-tint);    color: var(--admin-warn); }
+/* A deliberate state, not a problem — "Coming soon" is a launch choice, so it
+   reads as information rather than as the warning that "No content yet" is. */
+.cs-tone-info  { background: var(--admin-info-tint);    color: var(--admin-info); }
 .cs-tone-muted { background: var(--admin-surface-sunken); color: var(--admin-body-soft); }
 
 .cs-select--inline {
