@@ -98,7 +98,7 @@
 /* ── Teacher directory grid ── */
 .ns-teacher-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 14px;
 }
 .ns-teacher-card {
@@ -120,10 +120,19 @@
   align-items: center;
   margin-bottom: 10px;
 }
+/* min-width:0 or a long email stretches the grid column instead of ellipsing. */
+.ns-teacher-id {
+  min-width: 0;
+}
 .ns-teacher-name {
   font-weight: 700;
   color: #111827;
   font-size: 14px;
+}
+.ns-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ns-teacher-subjects {
   font-size: 13px;
@@ -457,4 +466,202 @@
   font-size: 12px;
   color: #9a3412;
   line-height: 1.55;
+}
+
+/* ── Search + filter chips ──
+   Teachers previously borrowed .rec-search / .ls-chip / .ls-chips from
+   LiveStreams.css without importing it. Every route is its own lazy chunk, so
+   on a hard refresh at /teachers those rules had not loaded and the controls
+   rendered unstyled. Defined here, in the stylesheet this screen owns. New
+   code, so colours resolve through --admin-* rather than literal hex. */
+.ns-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  color: var(--admin-body);
+  min-width: 240px;
+}
+.ns-search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13.5px;
+  color: var(--admin-ink);
+  width: 100%;
+}
+.ns-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ns-chip {
+  padding: 7px 14px;
+  border-radius: 100px;
+  cursor: pointer;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--admin-ink-2);
+}
+.ns-chip.sm {
+  padding: 4px 11px;
+  font-size: 12.5px;
+}
+.ns-chip.active {
+  border-color: var(--admin-primary);
+  background: var(--admin-primary-tint);
+  color: var(--admin-primary);
+}
+.ns-facets {
+  gap: 22px;
+  margin-top: -6px;
+}
+.ns-facet-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--admin-body-soft);
+  margin-right: 2px;
+}
+.ns-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--admin-body);
+}
+
+/* ── Course group ──
+   One block per COURSE, on both the card (dense) and the drawer. The board
+   badge is load-bearing, not decoration: "Class 10" is the title of two
+   different courses, so the title on its own names nothing. */
+.ns-teacher-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-bottom: 10px;
+  font-size: 12.5px;
+  color: var(--admin-body);
+}
+.ns-teacher-scope span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ns-teacher-courses {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+  min-height: 20px;
+}
+.ns-teacher-courses.empty {
+  font-size: 12.5px;
+  color: var(--admin-body-faint);
+  font-style: italic;
+}
+.ns-cg {
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--admin-surface-muted);
+  margin-bottom: 8px;
+}
+.ns-cg.dense {
+  padding: 6px 9px;
+  margin-bottom: 0;
+}
+.ns-cg-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ns-board-badge {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--admin-primary-tint);
+  border: 1px solid var(--admin-primary-edge);
+  color: var(--admin-primary-deep);
+}
+.ns-cg-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--admin-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.ns-cg-count {
+  margin-left: auto;
+  flex: none;
+  font-size: 11.5px;
+  color: var(--admin-body-soft);
+}
+.ns-cg-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--admin-warn-tint);
+  border: 1px solid var(--admin-warn-edge);
+  color: var(--admin-warn);
+}
+.ns-cg-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 7px;
+  font-size: 11.5px;
+  color: var(--admin-body);
+}
+.ns-cg-meta > span {
+  background: var(--admin-surface-sunken);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+.ns-cg-cat {
+  background: var(--admin-info-tint) !important;
+  border: 1px solid var(--admin-info-edge);
+  color: var(--admin-info);
+}
+.ns-cg-subjects {
+  margin-top: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ns-cg-subject {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--admin-ink-2);
+}
+.ns-cg-subject-name {
+  min-width: 0;
+}
+.ns-cg-subject .ns-muted {
+  flex: none;
+  text-align: right;
+}
+.ns-cg-more {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-primary);
+  padding: 2px 2px 0;
 }
