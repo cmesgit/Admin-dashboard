@@ -44,7 +44,36 @@ const STATUS_LABEL = {
 const coverage = (s) =>
   [s.course_wide ? "Course-wide" : null, ...(s.batches || [])].filter(Boolean).join(" + ") || "—";
 
-const CourseGroup = ({ group, dense = false }) => (
+// Chips that only repeat the title or the badge next to them. The CBSE course
+// titled "Class 10" carries a CourseCategory also called "Class 10", and
+// "Class 11 (Arts)" carries stream ARTS — printed verbatim the row reads
+// "Class 10 · Central Boards · Class 10", which looks like a rendering bug.
+// Everything dropped here is still visible elsewhere in the same block.
+const metaChips = (g) => {
+  const title = (g.course_title || "").toLowerCase();
+  const seen = new Set([(g.board || "").toLowerCase()]);
+  // A chip is redundant if the title already contains it, or an earlier chip
+  // already said it. Marking it seen even when skipped matters: the class
+  // level is dropped for "Class 11 (Commerce)" because the title covers it,
+  // and the category ALSO named "Class 11" has to drop for the same reason.
+  const take = (text) => {
+    const key = (text || "").trim().toLowerCase();
+    const redundant = !key || seen.has(key) || title.includes(key);
+    seen.add(key);
+    return !redundant;
+  };
+  const plain = [];
+  if (g.class_level != null && take(`Class ${g.class_level}`)) plain.push(`Class ${g.class_level}`);
+  if (g.stream) {
+    const s = g.stream.charAt(0) + g.stream.slice(1).toLowerCase();
+    if (take(s)) plain.push(s);
+  }
+  return { plain, categories: (g.categories || []).filter(take) };
+};
+
+const CourseGroup = ({ group, dense = false }) => {
+  const meta = dense ? null : metaChips(group);
+  return (
   <div className={`ns-cg${dense ? " dense" : ""}`}>
     <div className="ns-cg-head">
       <span className="ns-board-badge">{boardLabel(group)}</span>
@@ -58,13 +87,14 @@ const CourseGroup = ({ group, dense = false }) => (
     </div>
     {!dense && (
       <>
-        <div className="ns-cg-meta">
-          {group.class_level != null && <span>Class {group.class_level}</span>}
-          {group.stream && <span>{group.stream}</span>}
-          {(group.categories || []).map((c) => (
-            <span key={c} className="ns-cg-cat">{c}</span>
-          ))}
-        </div>
+        {(meta.plain.length > 0 || meta.categories.length > 0) && (
+          <div className="ns-cg-meta">
+            {meta.plain.map((c) => <span key={c}>{c}</span>)}
+            {meta.categories.map((c) => (
+              <span key={c} className="ns-cg-cat">{c}</span>
+            ))}
+          </div>
+        )}
         <div className="ns-cg-subjects">
           {group.subjects.map((s) => (
             <div key={s.subject_id} className="ns-cg-subject">
@@ -78,7 +108,8 @@ const CourseGroup = ({ group, dense = false }) => (
       </>
     )}
   </div>
-);
+  );
+};
 
 const TeacherDrawer = ({ userId, onClose }) => {
   const [data, setData] = useState(null);
