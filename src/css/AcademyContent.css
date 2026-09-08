@@ -1,0 +1,157 @@
+/* Academy content (admin). Only what ContentStudio.css does not already
+ * cover — the filter bar, the two extra row columns, and the type picker in
+ * the create dialog.
+ *
+ * Every colour resolves through an --admin-* token, per src/css/index.css's
+ * policy for new code. The `.acc-` prefix is unique in this app (checked
+ * against every existing stylesheet) so nothing here can collide with a
+ * lazily-loaded chunk that happens to be on screen at the same time.
+ */
+
+.acc-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.acc-filters__icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--admin-body-faint);
+}
+
+.acc-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  color: var(--admin-body-faint);
+}
+
+.acc-search input {
+  width: 180px;
+  border: 0;
+  padding: 6px 0;
+  background: transparent;
+}
+
+.acc-search input:focus { outline: none; }
+
+/* The two optional columns on a row. Fixed widths, so the title keeps the
+ * remainder: on the teacher-side version of this list the optional columns
+ * squeezed the title down to 71px at a narrow viewport before the fold was
+ * raised. Both are hidden well before that can happen here.
+ */
+.acc-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--admin-font-body);
+  font-size: 12.5px;
+  color: var(--admin-body-soft);
+}
+
+.acc-when {
+  flex: none;
+  width: 96px;
+  text-align: right;
+  font-family: var(--admin-font-body);
+  font-size: 12.5px;
+  color: var(--admin-body-faint);
+}
+
+.acc-pad { padding: 14px 16px; }
+
+.acc-pager {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--admin-border-soft);
+}
+
+/* ── create dialog: the material/assignment choice ─────────────────── */
+
+.acc-typerow {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.acc-typecard {
+  display: flex;
+  flex: 1 1 200px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 13px;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-surface);
+  color: var(--admin-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.acc-typecard:hover { border-color: var(--admin-primary-edge); }
+
+.acc-typecard.is-on {
+  border-color: var(--admin-primary);
+  background: var(--admin-primary-tint);
+}
+
+.acc-typecard__label {
+  font-family: var(--admin-font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--admin-ink);
+}
+
+.acc-typecard__hint {
+  font-family: var(--admin-font-body);
+  font-size: 12px;
+  color: var(--admin-body-soft);
+}
+
+.acc-filerow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--admin-border-soft);
+  color: var(--admin-body-soft);
+}
+
+.acc-filerow:last-of-type { border-bottom: 0; }
+
+.acc-filerow__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--admin-font-body);
+  font-size: 12.5px;
+  color: var(--admin-ink);
+}
+
+/* Below this the owner and date columns cost the title more than they are
+ * worth — both facts are recoverable by filtering.
+ */
+@media (max-width: 900px) {
+  .acc-owner,
+  .acc-when { display: none; }
+}
+
+@media (max-width: 640px) {
+  .acc-search input { width: 120px; }
+}

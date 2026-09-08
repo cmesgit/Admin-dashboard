@@ -41,6 +41,7 @@ import {
   History,
   Layout,
   Tag,
+  Paperclip,
 } from "lucide-react";
 import { getEnrollmentRequests } from "../api/admin";
 import CommandPalette from "./CommandPalette";
@@ -83,6 +84,9 @@ const navGroups = [
       { to: "/enrollment-requests", icon: FileCheck, label: "Enrollments", badgeKey: "enroll" },
       { to: "/enrollments", icon: ClipboardList, label: "Enrollment Mgmt" },
       { to: "/quizzes", icon: ListChecks, label: "Academy Quizzes" },
+      // Directly under Academy Quizzes: both are "what students are given",
+      // and this one is the only place an admin can ADD any of it.
+      { to: "/academy-content", icon: Paperclip, label: "Content & Materials", isNew: true },
       { to: "/analytics", icon: BarChart3, label: "Analytics", isNew: true },
     ],
   },

@@ -27,6 +27,7 @@ const ContentSchedule = lazy(() => import("./pages/content/ContentSchedule"));
 const SkillCMSPanel = lazy(() => import("./pages/skillcms/SkillCMSPanel"));
 const ScholarshipPanel = lazy(() => import("./pages/scholarship/ScholarshipPanel"));
 const AcademyQuizzes = lazy(() => import("./pages/AcademyQuizzes"));
+const AcademyContent = lazy(() => import("./pages/academy/AcademyContent"));
 // A1 · admin question-bank review queue (Phase 7).
 const QuestionReviewQueue = lazy(() => import("./pages/QuestionReviewQueue"));
 // The STANDALONE bank (public Quiz Hub Phase 2) — a different collection from
@@ -110,6 +111,7 @@ const App = () => {
             <Route path="users/:id" element={<UserDetail />} />
             <Route path="courses" element={<Courses />} />
             <Route path="quizzes" element={<AcademyQuizzes />} />
+            <Route path="academy-content" element={<AcademyContent />} />
             <Route path="question-bank/review" element={<QuestionReviewQueue />} />
             <Route path="question-bank/bank" element={<QuestionBank />} />
             <Route path="question-bank/labels" element={<QuestionLabels />} />
