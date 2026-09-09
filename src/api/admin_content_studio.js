@@ -218,3 +218,37 @@ export const reorderShowcaseCards = async (ids) => {
   const { data } = await api.post(`${BASE}/showcase/reorder/`, { cards: ids });
   return data;
 };
+
+/* ── Live ticker (design_handoff_live_ticker Phase 2) ─────────────────
+ *
+ * The ticker queue is `content.Announcement` — it was already ~70% of a
+ * ticker item and already rendered the navbar strip, so the feature extended
+ * it rather than adding a second table.
+ *
+ * ⚠ Deliberately NOT reusing `getContentAnnouncements` from api/admin.js.
+ * That one goes through `safe()`, which turns a failed request into `[]` and
+ * sets `__failed` — so a backend outage renders as "the queue is empty",
+ * which is exactly how a dead backend once got read as missing content. These
+ * throw, and the screen shows the reason.
+ */
+
+/** The whole queue, newest slots included. Throws on failure. */
+export const getTickerItems = async (params, { signal } = {}) => {
+  const { data } = await api.get(`${BASE}/announcements/`, { params, signal });
+  return data;
+};
+
+export const createTickerItem = async (payload) => {
+  const { data } = await api.post(`${BASE}/announcements/`, payload);
+  return data;
+};
+
+export const updateTickerItem = async (id, payload) => {
+  const { data } = await api.patch(`${BASE}/announcements/${id}/`, payload);
+  return data;
+};
+
+export const deleteTickerItem = async (id) => {
+  const { data } = await api.delete(`${BASE}/announcements/${id}/`);
+  return data;
+};

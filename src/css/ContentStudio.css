@@ -1248,6 +1248,16 @@
 
 .cs-qrow__spacer { flex: 1; }
 
+/* Live ticker: the consequence label beside a row's show/hide switch.
+   Named for the state a visitor is in ("Showing" / "Hidden from visitors"),
+   not for the control, matching .cs-coursecard__state on the cards screen. */
+.cs-qrow__state {
+  flex: none;
+  min-width: 118px;
+  font-size: 12px;
+  color: var(--admin-body-soft);
+}
+
 .cs-labelrow__usage {
   flex: none;
   font-size: 12.5px;
