@@ -4,35 +4,26 @@
 // The left panel is the eight slots with live counts; picking one filters the
 // queue to what would appear there.
 //
-// Phase 2a is read + toggle + filter. The create/edit modal (including the
-// display window) is 2b — until then, items are authored on Questions &
-// notices, which is where announcements have always lived.
+// Authoring lives here too (2b): this is the first screen anywhere in the CMS
+// that can set an item's display window — `starts_at`/`ends_at` existed on the
+// model all along, but the notice modal on Questions & notices never sent
+// either field, so a notice could not be scheduled at all.
 //
 // ⚠ Moderator.css is imported ON PURPOSE. `.mod-toast` is defined only there,
 // every route is its own lazy chunk, and a screen that renders <Toast> without
 // it shows an unstyled toast in normal flow on a hard refresh. Most Studio
 // screens have this bug; this one does not.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { Megaphone } from "lucide-react";
-import { getTickerItems, updateTickerItem } from "../../api/admin_content_studio";
+import {
+  createTickerItem, getTickerItems, updateTickerItem,
+} from "../../api/admin_content_studio";
+import TickerItemModal from "./TickerItemModal";
+import { TICKER_SLOTS as SLOTS, slotsOf } from "./tickerSlots";
 import { errText } from "../../utils/errText";
 import Toast from "../../components/Toast";
 import "../../css/ContentStudio.css";
 import "../../css/Moderator.css";
-
-// Mirrors content.models.TickerSlot. Order matches the enum so the panel
-// reads the same as the API's error message.
-const SLOTS = [
-  { id: "navbar", label: "Navbar strip", where: "Every page, under the menu" },
-  { id: "hero", label: "Homepage hero", where: "Cards inside the circle" },
-  { id: "home_band", label: "Homepage band", where: "Between sections" },
-  { id: "courses", label: "Courses rail", where: "Course listing pages" },
-  { id: "dashboard", label: "Student dashboard", where: "The right-hand rail" },
-  { id: "footer", label: "Footer strip", where: "Bottom of every page" },
-  { id: "auth_login", label: "Login screen", where: "Under the sign-in form" },
-  { id: "auth_signup", label: "Signup screen", where: "Under the join form" },
-];
 
 // Mirrors content.models.TickerKind — the eight the design actually draws.
 const KIND_LABEL = {
@@ -49,11 +40,6 @@ const KIND_LABEL = {
 const asList = (r) => (Array.isArray(r) ? r : r?.results || []);
 const isShowing = (it) => it.status === "published";
 
-/** The server treats an empty `slots` as navbar-only (AnnouncementQuerySet
- *  .for_slot). The panel counts have to apply the SAME rule, or an item
- *  created without slots shows on the strip while this screen reports the
- *  navbar as empty — the two disagreeing is worse than either being wrong. */
-const slotsOf = (it) => (it.slots?.length ? it.slots : ["navbar"]);
 
 /** Read-only prose for the display window.
  *
@@ -79,6 +65,8 @@ const LiveTicker = () => {
   const [slot, setSlot] = useState(null);       // null = every slot
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(null);
+  const [modal, setModal] = useState(null);      // { initial } | null
+  const [formError, setFormError] = useState("");
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
   const reqRef = useRef(0);
@@ -155,6 +143,38 @@ const LiveTicker = () => {
     }
   };
 
+  /** Refetch without the whole screen flashing "Loading…" — the modal is a
+   *  child of this component, so an early-return spinner would unmount it and
+   *  throw away what the admin just typed. */
+  const reload = useCallback(async () => {
+    try {
+      setItems(asList(await getTickerItems()));
+      setError("");
+    } catch (e) {
+      setError(errText(e));
+    }
+  }, []);
+
+  const submit = async (payload) => {
+    setBusy("form");
+    setFormError("");
+    try {
+      if (modal?.initial?.id) {
+        await updateTickerItem(modal.initial.id, payload);
+        say("Saved.");
+      } else {
+        await createTickerItem(payload);
+        say("Saved as a draft. Switch it on when you are ready.");
+      }
+      setModal(null);
+      await reload();
+    } catch (e) {
+      setFormError(errText(e));     // stays in the dialog, next to the fields
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const showingCount = items.filter(isShowing).length;
 
   return (
@@ -175,9 +195,13 @@ const LiveTicker = () => {
           onChange={(e) => setQ(e.target.value)}
           aria-label="Search ticker items"
         />
-        <Link to="/content/questions" className="cs-btn-primary cs-btn-primary--sm">
+        <button
+          type="button"
+          className="cs-btn-primary cs-btn-primary--sm"
+          onClick={() => { setFormError(""); setModal({ initial: null }); }}
+        >
           Add an item
-        </Link>
+        </button>
       </header>
 
       <div className="cs-editor__body">
@@ -286,6 +310,13 @@ const LiveTicker = () => {
                     <span className="cs-qrow__state">
                       {showing ? "Showing" : "Hidden from visitors"}
                     </span>
+                    <button
+                      type="button"
+                      className="cs-btn-ghost"
+                      onClick={() => { setFormError(""); setModal({ initial: it }); }}
+                    >
+                      Edit
+                    </button>
                   </div>
                 );
               })}
@@ -293,6 +324,16 @@ const LiveTicker = () => {
           )}
         </main>
       </div>
+
+      {modal && (
+        <TickerItemModal
+          initial={modal.initial}
+          busy={busy === "form"}
+          error={formError}
+          onCancel={() => setModal(null)}
+          onSubmit={submit}
+        />
+      )}
 
       <Toast message={toast?.message} tone={toast?.tone} />
     </div>
