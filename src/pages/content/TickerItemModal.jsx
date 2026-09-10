@@ -6,6 +6,7 @@
 // Questions & notices never sent either field — so until now an admin could not
 // schedule a notice at all, and there was nothing on screen to say so.
 import { useMemo, useState } from "react";
+import ImageUploadField from "../../components/ImageUploadField";
 import { isoToLocalInput, localInputToIso } from "../../utils/datetimeLocal";
 import { TICKER_SLOTS, unbuiltSlots } from "./tickerSlots";
 
@@ -25,7 +26,7 @@ const KINDS = [
 const blank = {
   message: "", body: "", kind: "", slots: [], level: "info",
   link_label: "", link_url: "", metric_value: "", metric_label: "",
-  pinned: false, starts_at: "", ends_at: "",
+  pinned: false, starts_at: "", ends_at: "", image_url: "",
 };
 
 /** Row -> form state. Kept out of the component so the initial state can be
@@ -46,6 +47,9 @@ const fromRow = (row) => {
 
 const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
   const [f, setF] = useState(() => fromRow(initial));
+  /* The picked File is kept OUT of form state: it cannot be JSON-encoded, and
+     the request only becomes multipart when one exists (see buildBody). */
+  const [file, setFile] = useState(null);
 
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
@@ -121,7 +125,10 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
       // step anywhere. Editing never sends status — the row's own switch
       // owns that, and silently re-drafting a live item would be worse.
       ...(isEdit ? {} : { status: "draft" }),
-    });
+      // `image_url` is sent as typed; the File (if any) rides alongside as
+      // multipart and the server prefers it. Sending "" clears the URL.
+      image_url: f.image_url.trim(),
+    }, file);
   };
 
   return (
@@ -268,6 +275,29 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
             someone loads the page — so it is never out of date.
           </p>
         )}
+
+        <div className="cs-field">
+          <span className="cs-field__label">{L.image}</span>
+          <ImageUploadField
+            value={file}
+            onChange={setFile}
+            previewUrl={initial?.img || null}
+            previewClassName="cs-thumb"
+          />
+          <input
+            className="cs-input cs-input--block"
+            value={f.image_url}
+            onChange={(e) => set("image_url", e.target.value)}
+            placeholder="…or paste an image link"
+            aria-label="Image link"
+          />
+          <p className="cs-field__hint">
+            {isMentor
+              ? "A head-and-shoulders photo works best — it is shown as a rounded square."
+              : "Shown full width on the homepage hero and band, and as a thumbnail "
+                + "on the courses card. The navbar strip is text-only, so it is ignored there."}
+          </p>
+        </div>
 
         <div className="cs-field">
           <label className="cs-field__label" htmlFor="t-level">How it looks</label>

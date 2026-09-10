@@ -7,6 +7,7 @@
 // One file per feature area, matching this app's existing api/ convention
 // (admin_scholarship.js, admin_question_bank.js, …).
 import api from "./apiClient";
+import { buildBody } from "../utils/buildBody";
 
 const BASE = "/content/admin";
 
@@ -238,13 +239,22 @@ export const getTickerItems = async (params, { signal } = {}) => {
   return data;
 };
 
-export const createTickerItem = async (payload) => {
-  const { data } = await api.post(`${BASE}/announcements/`, payload);
+/* `file` is an optional picked image. buildBody turns the payload into
+ * FormData only when one is present — arrays like `slots` are JSON-encoded
+ * per field, which is what the content admin endpoints expect alongside a
+ * multipart file. Without a file it stays plain JSON, so nothing changes for
+ * the common case. */
+export const createTickerItem = async (payload, file) => {
+  const { data: body, isMultipart } = buildBody(payload, file, "image");
+  const { data } = await api.post(`${BASE}/announcements/`, body,
+    isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined);
   return data;
 };
 
-export const updateTickerItem = async (id, payload) => {
-  const { data } = await api.patch(`${BASE}/announcements/${id}/`, payload);
+export const updateTickerItem = async (id, payload, file) => {
+  const { data: body, isMultipart } = buildBody(payload, file, "image");
+  const { data } = await api.patch(`${BASE}/announcements/${id}/`, body,
+    isMultipart ? { headers: { "Content-Type": "multipart/form-data" } } : undefined);
   return data;
 };
 

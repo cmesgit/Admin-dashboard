@@ -155,15 +155,15 @@ const LiveTicker = () => {
     }
   }, []);
 
-  const submit = async (payload) => {
+  const submit = async (payload, file) => {
     setBusy("form");
     setFormError("");
     try {
       if (modal?.initial?.id) {
-        await updateTickerItem(modal.initial.id, payload);
+        await updateTickerItem(modal.initial.id, payload, file);
         say("Saved.");
       } else {
-        await createTickerItem(payload);
+        await createTickerItem(payload, file);
         say("Saved as a draft. Switch it on when you are ready.");
       }
       setModal(null);
