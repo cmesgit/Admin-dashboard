@@ -278,12 +278,14 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
 
         <div className="cs-field">
           <span className="cs-field__label">{L.image}</span>
-          <ImageUploadField
-            value={file}
-            onChange={setFile}
-            previewUrl={initial?.img || null}
-            previewClassName="cs-thumb"
-          />
+          <div className="cs-picker">
+            <ImageUploadField
+              value={file}
+              onChange={setFile}
+              previewUrl={initial?.img || null}
+              previewClassName="cs-thumb"
+            />
+          </div>
           <input
             className="cs-input cs-input--block"
             value={f.image_url}
