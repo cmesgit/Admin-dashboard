@@ -175,6 +175,7 @@ const studioNavGroups = [
       { to: "/content/cards", icon: LayoutDashboard, label: "Course cards" },
       { to: "/content/exams", icon: GraduationCap, label: "Exams" },
       { to: "/content/ticker", icon: Megaphone, label: "Live ticker" },
+      { to: "/content/menu", icon: Menu, label: "Courses menu" },
     ],
   },
   {

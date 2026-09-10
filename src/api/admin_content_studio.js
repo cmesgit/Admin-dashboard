@@ -262,3 +262,40 @@ export const deleteTickerItem = async (id) => {
   const { data } = await api.delete(`${BASE}/announcements/${id}/`);
   return data;
 };
+
+/* ── Navbar mega-menu curation ────────────────────────────────────────
+ * REPLACE, PER COLUMN: a column with no active rows keeps the menu the
+ * catalogue derives today. `getNavMenu` returns both, so the screen can
+ * show what visitors see now next to what you've curated.
+ */
+
+export const getNavMenu = async ({ signal } = {}) => {
+  const { data } = await api.get(`${BASE}/nav-menu/`, { signal });
+  return data;
+};
+
+export const createNavMenuLink = async (payload) => {
+  const { data } = await api.post(`${BASE}/nav-menu/`, payload);
+  return data;
+};
+
+export const updateNavMenuLink = async (id, payload) => {
+  const { data } = await api.patch(`${BASE}/nav-menu/${id}/`, payload);
+  return data;
+};
+
+export const deleteNavMenuLink = async (id) => {
+  await api.delete(`${BASE}/nav-menu/${id}/`);
+};
+
+/* The server refuses a partial list — send every id in the column. */
+export const reorderNavMenu = async (group, ids) => {
+  const { data } = await api.post(`${BASE}/nav-menu/reorder/`, { group, ids });
+  return data;
+};
+
+/* Copy the derived menu into editable rows. A no-op for visitors. */
+export const adoptNavMenu = async (group) => {
+  const { data } = await api.post(`${BASE}/nav-menu/adopt/`, { group });
+  return data;
+};

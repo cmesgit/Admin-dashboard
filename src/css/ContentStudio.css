@@ -1572,3 +1572,81 @@
   font-size: 12px;
   color: var(--admin-body-soft);
 }
+
+/* ── Courses-menu curation (pages/content/NavMenu.jsx) ─────────────── */
+
+/* A dead link is a visitor-facing failure, not a warning about one, so it
+   gets the danger tone rather than riding on cs-tone-warn. */
+.cs-tone-danger { background: var(--admin-danger-tint); color: var(--admin-danger); }
+
+.cs-fields__subtitle {
+  margin: 24px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--admin-body-soft);
+}
+
+.cs-navmenu__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.cs-navmenu__headactions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cs-navmenu__form {
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cs-navmenu__formactions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* The grip is a drag affordance on a row that is already draggable whole —
+   it marks the row as movable rather than being the only handle. */
+.cs-qrow__grip {
+  flex-shrink: 0;
+  color: var(--admin-body-soft);
+  cursor: grab;
+}
+
+/* Hidden, not deleted: dimmed but still legible, because the admin still has
+   to be able to read what they turned off. */
+.cs-qrow.is-dim { opacity: .58; }
+
+.cs-navmenu__derived {
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px dashed var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-surface-sunken);
+}
+
+.cs-navmenu__dgroup + .cs-navmenu__dgroup { margin-top: 10px; }
+
+.cs-navmenu__dheading {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-ink);
+}
+
+@media (max-width: 720px) {
+  .cs-navmenu__head { flex-direction: column; }
+  .cs-navmenu__headactions { margin-left: 0; }
+}
