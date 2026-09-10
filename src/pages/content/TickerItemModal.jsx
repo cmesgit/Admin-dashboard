@@ -56,6 +56,22 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
   const isEdit = Boolean(initial?.id);
   const pending = useMemo(() => unbuiltSlots(f.slots), [f.slots]);
 
+  /* A mentor spotlight reuses the queue's generic fields for a person —
+     name/subject/photo/link — rather than needing its own table (README §5).
+     The one real cost of that reuse is the labels: "What it says" over a
+     field you type a person's name into is confusing. So the labels follow
+     the kind. */
+  const isMentor = f.kind === "mentor_spotlight";
+  const L = isMentor
+    ? { message: "Mentor’s name", messageHint: "Shown in bold on the card.",
+        messagePlaceholder: "e.g. Esther Lalrinpuii",
+        body: "Subject", bodyPlaceholder: "e.g. Chemistry",
+        image: "Their photo" }
+    : { message: "What it says", messageHint: "",
+        messagePlaceholder: "e.g. Class 10 Science · MBSE",
+        body: "Second line (optional)", bodyPlaceholder: "e.g. Now enrolling",
+        image: "Picture" };
+
   const toggleSlot = (id) => setF((p) => ({
     ...p,
     slots: p.slots.includes(id) ? p.slots.filter((s) => s !== id) : [...p.slots, id],
@@ -119,14 +135,14 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
         </p>
 
         <div className="cs-field">
-          <label className="cs-field__label" htmlFor="t-message">What it says</label>
+          <label className="cs-field__label" htmlFor="t-message">{L.message}</label>
           <input
             id="t-message"
             className="cs-input cs-input--block"
             value={f.message}
             autoFocus
             onChange={(e) => set("message", e.target.value)}
-            placeholder="e.g. Class 10 Science · MBSE"
+            placeholder={L.messagePlaceholder}
           />
         </div>
 
@@ -190,17 +206,29 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
           )}
         </div>
 
+        {isMentor && (
+          <p className="cs-field__hint">
+            A mentor card shows a photo, a name and a subject, with a link to
+            meet them. Add one item per mentor and pick the login and signup
+            places — the card steps through them.
+          </p>
+        )}
+
         {f.kind && (
           <div className="cs-field">
-            <label className="cs-field__label" htmlFor="t-body">Second line (optional)</label>
+            <label className="cs-field__label" htmlFor="t-body">{L.body}</label>
             <input
               id="t-body"
               className="cs-input cs-input--block"
               value={f.body}
               onChange={(e) => set("body", e.target.value)}
-              placeholder="e.g. Now enrolling"
+              placeholder={L.bodyPlaceholder}
             />
-            <p className="cs-field__hint">The navbar strip ignores this.</p>
+            <p className="cs-field__hint">
+              {isMentor
+                ? "Shown under the name."
+                : "The navbar strip ignores this."}
+            </p>
           </div>
         )}
 
