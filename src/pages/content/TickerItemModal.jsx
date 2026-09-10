@@ -7,7 +7,7 @@
 // schedule a notice at all, and there was nothing on screen to say so.
 import { useMemo, useState } from "react";
 import { isoToLocalInput, localInputToIso } from "../../utils/datetimeLocal";
-import { TICKER_SLOTS } from "./tickerSlots";
+import { TICKER_SLOTS, unbuiltSlots } from "./tickerSlots";
 
 // Mirrors content.models.TickerKind, and the two rules its clean() enforces.
 const KINDS = [
@@ -54,6 +54,7 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
     () => f.slots.filter((s) => s !== "navbar"), [f.slots],
   );
   const isEdit = Boolean(initial?.id);
+  const pending = useMemo(() => unbuiltSlots(f.slots), [f.slots]);
 
   const toggleSlot = (id) => setF((p) => ({
     ...p,
@@ -139,10 +140,14 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
                   key={s.id}
                   type="button"
                   aria-pressed={on}
+                  /* Deliberately NOT disabled when unbuilt: queueing an item
+                     ahead of its surface is a legitimate thing to do, and the
+                     server accepts it. It is labelled, not blocked. */
+                  title={s.built ? s.where : `${s.where} — not built yet`}
                   className={`cs-chip ${on ? "cs-tone-ok" : "cs-tone-muted"}`}
                   onClick={() => toggleSlot(s.id)}
                 >
-                  {s.label}
+                  {s.label}{s.built ? "" : " · soon"}
                 </button>
               );
             })}
@@ -152,6 +157,16 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
               ? "Nothing picked — it will show on the navbar strip only."
               : `Appears in ${f.slots.length} place${f.slots.length === 1 ? "" : "s"}.`}
           </p>
+          {pending.length > 0 && (
+            <p className="cs-field__warn">
+              {pending.length === 1 ? "This place isn’t" : "These places aren’t"}
+              {" "}built yet, so nothing will appear there for now:{" "}
+              {pending.map((id) =>
+                TICKER_SLOTS.find((s) => s.id === id)?.label).join(", ")}.
+              You can still save it — it will start showing the day that
+              screen ships.
+            </p>
+          )}
         </div>
 
         <div className="cs-field">

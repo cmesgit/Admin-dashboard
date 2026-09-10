@@ -228,8 +228,13 @@ const LiveTicker = () => {
                 {s.label}
                 <small className="cs-muted"> · {s.where}</small>
               </span>
-              <span className={`cs-chip ${counts[s.id] ? "cs-tone-ok" : "cs-tone-muted"}`}>
-                {counts[s.id]}
+              {/* An unbuilt surface reports "soon", not "0". A zero here
+                  reads as "nothing is scheduled", when the truth is that
+                  nothing CAN appear yet however much is scheduled. */}
+              <span className={`cs-chip ${
+                !s.built ? "cs-tone-warn" : counts[s.id] ? "cs-tone-ok" : "cs-tone-muted"
+              }`}>
+                {s.built ? counts[s.id] : "soon"}
               </span>
             </button>
           ))}
@@ -237,7 +242,9 @@ const LiveTicker = () => {
           <p className="cs-sectionlist__note">
             Counts are what a visitor would see right now — items that are
             hidden, or outside their display window, are not counted. An item
-            with no places chosen shows on the navbar strip.
+            with no places chosen shows on the navbar strip. Places marked
+            “soon” aren’t built yet: you can queue items for them now and they
+            will start showing the day that screen ships.
           </p>
         </aside>
 
