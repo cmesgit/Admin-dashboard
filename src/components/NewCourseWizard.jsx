@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X, Plus, Trash2, Check } from "lucide-react";
 import {
   getBoards,
@@ -27,6 +27,44 @@ import "../css/NewCourseWizard.css";
  * (NEET/JEE/UPSC/... — courses/admin/categories/, filtered client-side since
  * the endpoint has no ?group= support).
  */
+/*
+ * Board picker groups. The boards list arrives flat (30 rows on a seeded DB),
+ * so CBSE and 24 dormant state boards sat in one undifferentiated <select> and
+ * you had to already know which was which. Grouping them puts CBSE/ICSE under
+ * a National heading and the state boards under their own.
+ *
+ * `type` is the STORED Board.board_type and stays "CENTRAL" — only the label
+ * reads "National", which is what this catalogue actually calls it. Renaming
+ * the stored value would mean a migration plus every string comparison across
+ * the backend and three frontends; there is no user-visible gain, because the
+ * raw value is never shown.
+ */
+const BOARD_GROUPS = [
+  { type: "CENTRAL", label: "National Boards" },
+  { type: "STATE", label: "State Boards" },
+  // Zero rows today (competitive courses hang off a CourseCategory, not a
+  // Board) so this group renders only if someone creates one — see the
+  // Type dropdown in Courses.jsx, which does offer it.
+  { type: "COMPETITIVE", label: "Competitive exams" },
+];
+
+/*
+ * Bucket boards by type, dropping empty groups. Anything whose board_type is
+ * not in BOARD_GROUPS falls into "Other" rather than vanishing: the flat list
+ * this replaces at least showed every board, and a picker that silently omits
+ * one is worse than an ugly heading. (Courses.jsx:32 documents the same class
+ * of bug — a ternary that mislabelled every non-STATE value as "Central".)
+ */
+function groupBoards(boards) {
+  const known = new Set(BOARD_GROUPS.map((g) => g.type));
+  const groups = BOARD_GROUPS
+    .map((g) => ({ label: g.label, items: boards.filter((b) => b.board_type === g.type) }))
+    .filter((g) => g.items.length);
+  const other = boards.filter((b) => !known.has(b.board_type));
+  if (other.length) groups.push({ label: "Other", items: other });
+  return groups;
+}
+
 const emptyCourse = {
   board_id: "",
   category_id: "",
@@ -49,8 +87,14 @@ const NewCourseWizard = ({ onClose, onCreated }) => {
 
   useEffect(() => {
     getBoards().then((b) => {
-      setBoards(b || []);
-      if (b && b.length) setCourse((c) => ({ ...c, board_id: String(b[0].id) }));
+      const rows = b || [];
+      setBoards(rows);
+      // Prefer an active board. The list is ordered by (board_type, name) and
+      // includes dormant boards, so the first row can be one that renders as
+      // "Coming Soon" on the public site — a silent default onto a hidden
+      // board publishes the new course nowhere visible.
+      const preferred = rows.find((x) => x.is_active !== false) || rows[0];
+      if (preferred) setCourse((c) => ({ ...c, board_id: String(preferred.id) }));
     });
     getCourseCategories().then((cats) => {
       const competitive = (cats || []).filter((c) => c.group === "competitive");
@@ -60,6 +104,8 @@ const NewCourseWizard = ({ onClose, onCreated }) => {
       }
     });
   }, []);
+
+  const boardGroups = useMemo(() => groupBoards(boards), [boards]);
 
   const setC = (k, v) => setCourse((c) => ({ ...c, [k]: v }));
   const setB = (k, v) => setBatch((b) => ({ ...b, [k]: v }));
@@ -174,10 +220,15 @@ const NewCourseWizard = ({ onClose, onCreated }) => {
                   <span>Board</span>
                   <select value={course.board_id} onChange={(e) => setC("board_id", e.target.value)}>
                     {boards.length === 0 && <option value="">No boards — create one in Courses first</option>}
-                    {boards.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
+                    {boardGroups.map((g) => (
+                      <optgroup key={g.label} label={g.label}>
+                        {g.items.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                            {b.is_active === false ? " (hidden)" : ""}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </label>
