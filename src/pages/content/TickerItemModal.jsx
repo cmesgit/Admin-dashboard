@@ -84,6 +84,11 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
     // a stale value here would 400 on a field the admin can no longer see.
     metric_value: KINDS.find((k) => k.id === id)?.metric ? p.metric_value : "",
     metric_label: KINDS.find((k) => k.id === id)?.metric ? p.metric_label : "",
+    // A mentor card renders no link — /about has no mentors section, so the
+    // design's "Meet the mentors" CTA led nowhere and was dropped. Clear the
+    // fields rather than keep a value nothing will ever render, which is the
+    // same silently-ignored-data trap the metric pair avoids.
+    ...(id === "mentor_spotlight" ? { link_label: "", link_url: "" } : {}),
   }));
 
   // Mirrors Announcement.clean() so the admin is told before the round trip.
@@ -208,9 +213,10 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
 
         {isMentor && (
           <p className="cs-field__hint">
-            A mentor card shows a photo, a name and a subject, with a link to
-            meet them. Add one item per mentor and pick the login and signup
-            places — the card steps through them.
+            A mentor card shows a photo, a name and a subject — no link, since
+            there is no mentors page to send anyone to yet. Add one item per
+            mentor and pick the login and signup places; the card steps
+            through them.
           </p>
         )}
 
@@ -277,29 +283,35 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
           </select>
         </div>
 
-        <div className="cs-field">
-          <label className="cs-field__label" htmlFor="t-label">Button words (optional)</label>
-          <input
-            id="t-label"
-            className="cs-input cs-input--block"
-            value={f.link_label}
-            onChange={(e) => set("link_label", e.target.value)}
-          />
-        </div>
+        {/* A mentor card renders no link (see AuthTicker.jsx), so the fields
+            are hidden rather than offered and silently ignored. */}
+        {!isMentor && (
+          <>
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="t-label">Button words (optional)</label>
+              <input
+                id="t-label"
+                className="cs-input cs-input--block"
+                value={f.link_label}
+                onChange={(e) => set("link_label", e.target.value)}
+              />
+            </div>
 
-        <div className="cs-field">
-          <label className="cs-field__label" htmlFor="t-url">Where it goes (optional)</label>
-          <input
-            id="t-url"
-            className="cs-input cs-input--block"
-            value={f.link_url}
-            onChange={(e) => set("link_url", e.target.value)}
-            placeholder="/courses"
-          />
-          {f.link_label && !f.link_url && (
-            <p className="cs-field__warn">The button has words but nowhere to go.</p>
-          )}
-        </div>
+            <div className="cs-field">
+              <label className="cs-field__label" htmlFor="t-url">Where it goes (optional)</label>
+              <input
+                id="t-url"
+                className="cs-input cs-input--block"
+                value={f.link_url}
+                onChange={(e) => set("link_url", e.target.value)}
+                placeholder="/courses"
+              />
+              {f.link_label && !f.link_url && (
+                <p className="cs-field__warn">The button has words but nowhere to go.</p>
+              )}
+            </div>
+          </>
+        )}
 
         <div className="cs-field">
           <label className="cs-field__label" htmlFor="t-start">Show from</label>
