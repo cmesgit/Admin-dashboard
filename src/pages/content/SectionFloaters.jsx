@@ -121,8 +121,9 @@ const SectionFloaters = ({ section, slots = [], onNotify }) => {
 
       {!loading && (
         <p className="cs-field__hint">
-          Each badge has one fixed position, so there is nothing to drag. Leave
-          one empty to hide it.
+          Each badge has one fixed position, so there is nothing to drag.
+          Remove a badge to hide it from the site — but leave at least one in
+          place, because a section with none falls back to its built-in badges.
         </p>
       )}
 
