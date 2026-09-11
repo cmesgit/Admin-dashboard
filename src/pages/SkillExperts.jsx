@@ -22,6 +22,60 @@ const pill = (color) => ({
   background: `${color}22`, color,
 });
 
+/* The expert's intro clip.
+   The Skill track lists directly with no approval step, so this is here for
+   MODERATION, not screening: learners can already see this clip, and an admin
+   needs to be able to watch it in order to decide whether to suspend it.
+   Before this, the video existed only on learner-facing endpoints and no
+   admin surface could play it at all. */
+function IntroVideo({ data }) {
+  const url = data.intro_video_embed_url;
+  const secs = data.intro_video_duration;
+  // 5 = Bunny reported an error, or the clip was refused for length.
+  const failed = data.intro_video_status === 5;
+
+  if (!url) {
+    return (
+      <>
+        <h4 style={{ margin: "16px 0 6px" }}>Intro video</h4>
+        <p style={{ color: "var(--admin-body-soft)", margin: 0, fontSize: 13 }}>
+          {failed
+            ? "The uploaded clip could not be processed, so nothing is public."
+            : data.intro_video_status != null
+              ? "Uploaded — still processing, not visible to learners yet."
+              : "None uploaded."}
+        </p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <h4 style={{ margin: "16px 0 6px" }}>
+        Intro video
+        {secs != null && (
+          <span style={{ fontWeight: 500, color: "var(--admin-body-soft)", fontSize: 13 }}>
+            {" "}· {secs}s
+          </span>
+        )}
+      </h4>
+      <iframe
+        src={url}
+        title={`${data.name} — intro video`}
+        style={{
+          width: "100%", aspectRatio: "16/9", borderRadius: 8,
+          border: "1px solid var(--admin-border)", display: "block",
+        }}
+        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+        allowFullScreen
+      />
+      <p style={{ color: "var(--admin-body-soft)", margin: "6px 0 0", fontSize: 12 }}>
+        Live to learners now. Suspend the expert to take it down.
+      </p>
+    </>
+  );
+}
+
 function ExpertModal({ id, onClose }) {
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
@@ -49,6 +103,7 @@ function ExpertModal({ id, onClose }) {
               <div><span>Skills</span><b>{(data.skill_tags || []).join(", ") || "—"}</b></div>
             </div>
             {data.bio && <><h4 style={{ margin: "16px 0 6px" }}>Bio</h4><p style={{ color: "#374151", margin: 0 }}>{data.bio}</p></>}
+            <IntroVideo data={data} />
             <div style={{ marginTop: 18 }}>
               <a href={`${HOME_URL}/experts/${data.id}`} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>
                 View public profile →
