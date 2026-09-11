@@ -47,7 +47,7 @@ const coverage = (s) =>
 // Chips that only repeat the title or the badge next to them. The CBSE course
 // titled "Class 10" carries a CourseCategory also called "Class 10", and
 // "Class 11 (Arts)" carries stream ARTS — printed verbatim the row reads
-// "Class 10 · Central Boards · Class 10", which looks like a rendering bug.
+// "Class 10 · National Boards · Class 10", which looks like a rendering bug.
 // Everything dropped here is still visible elsewhere in the same block.
 const metaChips = (g) => {
   const title = (g.course_title || "").toLowerCase();

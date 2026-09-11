@@ -77,7 +77,7 @@ const LinkForm = ({ draft, setDraft, courses, onSave, onCancel, busy, error }) =
         className="cs-input"
         value={draft.heading}
         maxLength={60}
-        placeholder="e.g. Central Boards"
+        placeholder="e.g. National Boards"
         onChange={(e) => setDraft({ ...draft, heading: e.target.value })}
       />
       <span className="cs-field__hint">
