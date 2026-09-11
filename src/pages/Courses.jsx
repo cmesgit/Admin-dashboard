@@ -33,8 +33,13 @@ import "../css/Content.css"; // for the collapsible SEO section (cms-details) + 
 // `board_type === "STATE" ? "State" : "Central"`, so every value that was not
 // STATE rendered as "Central" — meaning the moment a third type existed it
 // would have been silently mislabelled rather than shown as unknown.
+//
+// CENTRAL reads as "National" — the stored value is deliberately unchanged.
+// Renaming it would need a migration plus a sweep of every string comparison
+// on board_type across the backend and three frontends, and buys nothing: the
+// raw value is never shown to anyone.
 const BOARD_TYPE_LABELS = {
-  CENTRAL: "Central",
+  CENTRAL: "National",
   STATE: "State",
   COMPETITIVE: "Competitive exam",
 };
@@ -162,11 +167,11 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
             <label className="cm-field">
               <span>Type</span>
               <select value={form.board_type || "CENTRAL"} onChange={set("board_type")}>
-                <option value="CENTRAL">Central</option>
+                <option value="CENTRAL">National</option>
                 <option value="STATE">State</option>
                 {/* A competitive exam is a syllabus authority a course hangs
-                    off, same as a board — but it is neither central nor
-                    state, and labelling MPSC or NEET as a "Central board" on
+                    off, same as a board — but it is neither national nor
+                    state, and labelling MPSC or NEET as a "National board" on
                     a public catalog page is simply wrong. */}
                 <option value="COMPETITIVE">Competitive exam</option>
               </select>
