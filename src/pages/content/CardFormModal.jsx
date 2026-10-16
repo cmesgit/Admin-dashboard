@@ -15,6 +15,9 @@ import { getShowcaseCategories } from "../../api/admin_content_studio";
 import ImageUploadField from "../../components/ImageUploadField";
 import FeaturedCardPreview from "./preview/FeaturedCardPreview";
 import PlacementBadge from "./preview/PlacementBadge";
+// Course cards is a lazy route: load its backdrop and action styles here so
+// opening the form never depends on visiting another modal screen first.
+import "../../css/ConfirmModal.css";
 // ⚠ The cm-* classes this form is built from live here. The old Showcase
 // screen got this stylesheet from ContentPanel, its parent; CourseCards does
 // not, so without this the whole form renders unstyled and inline instead of
