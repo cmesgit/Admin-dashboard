@@ -1,9 +1,17 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import api from "../api/apiClient";
+import { adminSessionLoader } from "../utils/adminSession";
 
 const AuthContext = createContext(null);
 
 const STORAGE_KEY = "shiksha_admin_session";
+const loadCurrentAdmin = adminSessionLoader(api);
+const rememberSession = (current) => {
+  try {
+    if (current) localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch { /* Cookie authentication still works when browser storage is unavailable. */ }
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -11,16 +19,21 @@ export const AuthProvider = ({ children }) => {
 
   const isAuthenticated = !!user;
 
-  const bootstrap = useCallback(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setUser(JSON.parse(saved));
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-      }
+  const [sessionError, setSessionError] = useState("");
+  const bootstrap = useCallback(async () => {
+    setLoading(true);
+    setSessionError("");
+    try {
+      const current = await loadCurrentAdmin();
+      setUser(current);
+      rememberSession(current);
+    } catch {
+      // A transient outage is not a logout. Keep the cookies and show retry;
+      // do not render cached roles as if they were the current server identity.
+      setSessionError("We couldn’t check your session. Check your connection and try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -37,14 +50,14 @@ export const AuthProvider = ({ children }) => {
       await api.post("/accounts/logout/").catch(() => { });
       throw { message: "Not authorized for admin access." };
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    rememberSession(data);
     setUser(data);
     return data;
   };
 
   const logout = async () => {
     try { await api.post("/accounts/logout/"); } catch { }
-    localStorage.removeItem(STORAGE_KEY);
+    rememberSession(null);
     setUser(null);
   };
 
@@ -76,6 +89,7 @@ export const AuthProvider = ({ children }) => {
         hasRole,
         hasPermission,
         bootstrap,
+        sessionError,
       }}
     >
       {children}

@@ -32,7 +32,7 @@ const Login = () => {
     setSubmitting(true);
 
     try {
-      const data = await login(email, password);
+      const data = await login(email.trim(), password);
       const roles = Array.isArray(data.roles) ? data.roles.map((r) => String(r).toUpperCase()) : [];
       // A moderator-only account (no ADMIN role) has nothing to see at "/" —
       // Overview's stats are admin-only — so send them straight to their panel.
@@ -54,9 +54,12 @@ const Login = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="login-form-group">
-            <label>Email</label>
+            <label htmlFor="admin-email">Email</label>
             <input
+              id="admin-email"
               type="email"
+              autoComplete="username"
+              autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -65,10 +68,12 @@ const Login = () => {
           </div>
 
           <div className="login-form-group">
-            <label>Password</label>
+            <label htmlFor="admin-password">Password</label>
             <div className="password-wrapper">
               <input
+                id="admin-password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -77,6 +82,9 @@ const Login = () => {
               <button
                 type="button"
                 className="toggle-password"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                disabled={submitting}
                 onClick={() => setShowPassword((p) => !p)}
               >
                 {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -84,7 +92,7 @@ const Login = () => {
             </div>
           </div>
 
-          {error && <p className="login-error">{error}</p>}
+          {error && <p className="login-error" role="alert">{error}</p>}
 
           <button type="submit" className="login-submit-btn" disabled={submitting}>
             {submitting ? "Please wait..." : "Login"}
