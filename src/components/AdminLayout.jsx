@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -49,7 +49,7 @@ import "../css/ContentStudioChrome.css";
 import { getAdminSupportTickets } from "../api/admin_communication";
 import { getReviewQueue } from "../api/admin_question_bank";
 import { getScholarshipStats } from "../api/admin_scholarship";
-import NewCourseWizard from "./NewCourseWizard";
+const NewCourseWizard = lazy(() => import("./NewCourseWizard"));
 import "../css/AdminLayout.css";
 
 // 7-group nav mirroring the LMS Admin Console handoff. `isNew` renders the
@@ -466,6 +466,7 @@ const AdminLayout = () => {
       </div>
 
       {wizardOpen && (
+        <Suspense fallback={<p role="status">Opening course form…</p>}>
         <NewCourseWizard
           onClose={() => setWizardOpen(false)}
           onCreated={(course) => {
@@ -473,6 +474,7 @@ const AdminLayout = () => {
             if (course?.id) navigate("/courses");
           }}
         />
+        </Suspense>
       )}
     </div>
   );
