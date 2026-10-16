@@ -356,8 +356,8 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
           <p className="cs-field__hint">
             {isMentor
               ? "A head-and-shoulders photo works best — it is shown as a rounded square."
-              : "Shown as a card image on the homepage hero, band and footer; "
-                + "as a thumbnail on login, signup and courses; and on the student "
+              : "Shown as a card image on the homepage hero, band, footer and login’s "
+                + "left panel; as a thumbnail below login, on signup and courses; and on the student "
                 + "dashboard. The navbar strip is text-only."}
           </p>
         </div>

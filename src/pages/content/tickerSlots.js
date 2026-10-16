@@ -32,7 +32,7 @@ export const TICKER_SLOTS = [
   { id: "courses", label: "Courses rail", where: "Course listing pages", built: true },
   { id: "dashboard", label: "Student dashboard", where: "The right-hand rail", built: true },
   { id: "footer", label: "Footer strip", where: "Bottom of every page", built: true },
-  { id: "auth_login", label: "Login screen", where: "Below Create one, on both login steps", built: true },
+  { id: "auth_login", label: "Login screen", where: "Left panel and below Create one; below the form on phones", built: true },
   { id: "auth_signup", label: "Signup screen", where: "Brand panel; mentor cards below the join form", built: true },
 ];
 
