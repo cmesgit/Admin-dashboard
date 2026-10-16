@@ -26,11 +26,11 @@
 // `content.TickerSlot` ships as a pickable id before its surface exists, and
 // this is the only place that can say so.
 export const TICKER_SLOTS = [
-  { id: "navbar", label: "Navbar strip", where: "Every page, under the menu", built: true },
-  { id: "hero", label: "Homepage hero", where: "Cards inside the circle", built: true },
-  { id: "home_band", label: "Homepage band", where: "Between sections", built: true },
-  { id: "courses", label: "Courses rail", where: "Course listing pages", built: true },
-  { id: "dashboard", label: "Student dashboard", where: "The right-hand rail", built: true },
+  { id: "navbar", label: "Top notice strip", where: "Every page, under the menu", built: true },
+  { id: "hero", label: "Homepage circle", where: "Cards inside the circle", built: true },
+  { id: "home_band", label: "Homepage between sections", where: "Between sections", built: true },
+  { id: "courses", label: "Courses page", where: "Course listing pages", built: true },
+  { id: "dashboard", label: "Student dashboard", where: "Right side on desktop; hidden on phones", built: true },
   { id: "footer", label: "Footer strip", where: "Bottom of every page", built: true },
   { id: "auth_login", label: "Login screen", where: "Left panel and below Create one; below the form on phones", built: true },
   { id: "auth_signup", label: "Signup screen", where: "Brand panel; mentor cards below the join form", built: true },
