@@ -1,0 +1,10 @@
+.ticker-item-editor { display: grid; gap: 20px; }
+.ticker-item-form { width: 100%; max-width: 880px; }
+.ticker-item-form__fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.ticker-item-form .cs-field { margin-top: 20px; }
+.ticker-item-form .cs-input { max-width: 100%; }
+.ticker-item-form .cs-confirm__actions {
+  flex-wrap: wrap;
+  padding-top: 18px;
+  border-top: 1px solid var(--admin-border-soft);
+}
