@@ -5,7 +5,7 @@
 // `utils/datetimeLocal.js` was written to convert them, but the notice modal on
 // Questions & notices never sent either field — so until now an admin could not
 // schedule a notice at all, and there was nothing on screen to say so.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ImageUploadField from "../../components/ImageUploadField";
 import { isoToLocalInput, localInputToIso } from "../../utils/datetimeLocal";
 import { TICKER_SLOTS, unbuiltSlots } from "./tickerSlots";
@@ -44,6 +44,30 @@ const fromRow = (row) => {
     ends_at: isoToLocalInput(row.ends_at),
   };
 };
+
+function AdPreview({ form, file, imageUrl, kindLabel }) {
+  const imageRef = useRef(null);
+  useEffect(() => {
+    if (!file || !imageRef.current) return;
+    const url = URL.createObjectURL(file);
+    imageRef.current.src = url;
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+  return (
+    <section className="ticker-ad-preview" aria-label="Advertisement preview">
+      <p className="cs-field__hint">Content preview · Placement controls the final card size.</p>
+      <div className="ticker-ad-preview__card">
+        {(file || imageUrl) && <img ref={imageRef} src={file ? undefined : imageUrl} alt="Advertisement preview" />}
+        <div>
+          <span className="cs-chip cs-tone-info">{kindLabel || "Plain text"}</span>
+          <strong>{form.message || "Your advertisement title"}</strong>
+          {form.body && <p>{form.body}</p>}
+          {form.link_url && <span className="cs-muted">{form.link_label || "Explore"} ↗ {form.link_url}</span>}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChange }) => {
   const [savedForm] = useState(() => fromRow(initial));
@@ -100,11 +124,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
     // a stale value here would 400 on a field the admin can no longer see.
     metric_value: KINDS.find((k) => k.id === id)?.metric ? p.metric_value : "",
     metric_label: KINDS.find((k) => k.id === id)?.metric ? p.metric_label : "",
-    // A mentor card renders no link — /about has no mentors section, so the
-    // design's "Meet the mentors" CTA led nowhere and was dropped. Clear the
-    // fields rather than keep a value nothing will ever render, which is the
-    // same silently-ignored-data trap the metric pair avoids.
-    ...(id === "mentor_spotlight" ? { link_label: "", link_url: "" } : {}),
+
   }));
 
   // Mirrors Announcement.clean() so the admin is told before the round trip.
@@ -154,6 +174,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
     >
       <fieldset className="ticker-item-form__fields" disabled={busy}>
         <h2 className="cs-card__title" id="ticker-details-title">Advertisement details</h2>
+        <AdPreview form={f} file={file} imageUrl={(!imageRemoved && initial?.image) || f.image_url || ""} kindLabel={kindDef?.label} />
         <p className="cs-field__hint cs-field__hint--tight">
           {isEdit
             ? "Changing the words doesn’t change who can see it."
@@ -234,10 +255,8 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
 
         {isMentor && (
           <p className="cs-field__hint">
-            A mentor card shows a photo, a name and a subject — no link, since
-            there is no mentors page to send anyone to yet. Add one item per
-            mentor and pick the login and signup places; the card steps
-            through them.
+            Add the teacher’s public profile link below so visitors can meet
+            them. Login and signup show their photo, name and subject.
           </p>
         )}
 
@@ -322,11 +341,19 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
             placeholder="…or paste an image link"
             aria-label="Image link"
           />
+          {/* Names every surface, because the previous wording listed three
+              and an editor could only find out about the rest by trying.
+              It also claimed the band shows a picture "full width" when the
+              band and footer share one card component, and omitted the auth
+              screens entirely — which is how a signup picture came to be
+              uploaded against a surface that dropped it. Keep this in step
+              with the render branches if a surface changes. */}
           <p className="cs-field__hint">
             {isMentor
               ? "A head-and-shoulders photo works best — it is shown as a rounded square."
-              : "Shown full width on the homepage hero and band, and as a thumbnail "
-                + "on the courses card. The navbar strip is text-only, so it is ignored there."}
+              : "Shown as a card image on the homepage hero, band and footer; "
+                + "as a thumbnail on login, signup and courses; and on the student "
+                + "dashboard. The navbar strip is text-only."}
           </p>
         </div>
 
@@ -344,10 +371,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
           </select>
         </div>
 
-        {/* A mentor card renders no link (see AuthTicker.jsx), so the fields
-            are hidden rather than offered and silently ignored. */}
-        {!isMentor && (
-          <>
+        <>
             <div className="cs-field">
               <label className="cs-field__label" htmlFor="t-label">Button words (optional)</label>
               <input
@@ -371,8 +395,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
                 <p className="cs-field__warn">The button has words but nowhere to go.</p>
               )}
             </div>
-          </>
-        )}
+        </>
 
         <div className="cs-field">
           <label className="cs-field__label" htmlFor="t-start">Show from</label>
