@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import AdminLayout from "./components/AdminLayout";
+const AdminLayout = lazy(() => import("./components/AdminLayout"));
 import Login from "./pages/Login";
 
 // Every route below is its own chunk, not part of the initial bundle — this

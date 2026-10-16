@@ -180,23 +180,23 @@ const LiveTicker = () => {
         <div className="cs-publishbar__id">
           <span className="cs-publishbar__name">Advertisements</span>
           <span className="cs-publishbar__url">
-            Create, preview, publish and schedule advertisements across your website.
+            Create and save a draft, then turn on the advertisement’s switch. Display dates control when it appears.
           </span>
         </div>
         {/* .cs-publishbar__id carries margin-right:auto, so no spacer here. */}
         <input
           type="search"
           className="cs-input"
-          placeholder="Search the queue"
+          placeholder="Search advertisements"
           value={q}
           onChange={(e) => setFilter("q", e.target.value)}
-          aria-label="Search ticker items"
+          aria-label="Search advertisements"
         />
         <Link
           className="cs-btn-primary cs-btn-primary--sm"
           to={`/content/ticker/new${location.search}`}
         >
-          Add an item
+          Create advertisement
         </Link>
       </header>
 
@@ -238,7 +238,7 @@ const LiveTicker = () => {
           <p className="cs-sectionlist__note">
             Counts are what a visitor would see right now — items that are
             hidden, or outside their display window, are not counted. An item
-            with no places chosen shows on the navbar strip.
+            with no places chosen shows on the top notice strip.
             {/* Only worth saying while a "soon" chip can actually appear.
                 All eight surfaces are built today, so stating the rule
                 unconditionally would have the panel explain a marker that is
@@ -267,8 +267,8 @@ const LiveTicker = () => {
               <Megaphone size={20} aria-hidden="true" />
               <p>
                 {items.length === 0
-                  ? "Nothing in the queue yet."
-                  : "Nothing appears in this place yet."}
+                  ? "No advertisements yet. Select Create advertisement to add one."
+                  : "No advertisements are assigned to this location."}
               </p>
             </div>
           )}

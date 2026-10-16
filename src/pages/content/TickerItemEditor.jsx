@@ -48,7 +48,7 @@ function Editor({ id }) {
       setDirty(false);
       if (leaveForQueue) guard.navigateAfterSave(navigate, queueUrl, {
         replace: true,
-        state: { tickerNotice: id ? "Saved." : "Saved as a draft. Switch it on when you are ready." },
+        state: { tickerNotice: id ? "Saved." : "Saved as a draft. Turn on the advertisement’s switch when you are ready." },
       });
       return true;
     } catch (e) {

@@ -15,6 +15,16 @@
 
 .cs-home { display: flex; flex-direction: column; gap: 16px; }
 
+.cs-publish-guide {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  max-width: 80ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--admin-body);
+}
+.cs-publish-guide li + li { margin-top: 8px; }
+
 .cs-home__head {
   display: flex;
   align-items: flex-start;

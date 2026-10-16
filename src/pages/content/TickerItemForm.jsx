@@ -55,7 +55,7 @@ function AdPreview({ form, file, imageUrl, kindLabel }) {
   }, [file]);
   return (
     <section className="ticker-ad-preview" aria-label="Advertisement preview">
-      <p className="cs-field__hint">Content preview · Placement controls the final card size.</p>
+      <p className="cs-field__hint">Preview · The selected location controls the final size.</p>
       <div className="ticker-ad-preview__card">
         {(file || imageUrl) && <img ref={imageRef} src={file ? undefined : imageUrl} alt="Advertisement preview" />}
         <div>
@@ -107,7 +107,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
         messagePlaceholder: "e.g. Esther Lalrinpuii",
         body: "Subject", bodyPlaceholder: "e.g. Chemistry",
         image: "Their photo" }
-    : { message: "What it says", messageHint: "",
+    : { message: "Advertisement title", messageHint: "",
         messagePlaceholder: "e.g. Class 10 Science · MBSE",
         body: "Second line (optional)", bodyPlaceholder: "e.g. Now enrolling",
         image: "Picture" };
@@ -129,9 +129,9 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
 
   // Mirrors Announcement.clean() so the admin is told before the round trip.
   const localProblem =
-    !f.message.trim() ? "An item needs something to say."
+    !f.message.trim() ? "Enter an advertisement title."
       : cardSlots.length && !f.kind
-        ? `Pick how it looks as a card — it appears on ${cardSlots.length} place${cardSlots.length === 1 ? "" : "s"} other than the navbar strip.`
+        ? `Choose a card style — this advertisement appears in ${cardSlots.length} location${cardSlots.length === 1 ? "" : "s"} outside the top notice strip.`
         : f.ends_at && f.starts_at && new Date(f.ends_at) <= new Date(f.starts_at)
           ? "The end time must be after the start time."
           : "";
@@ -179,8 +179,8 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
         <AdPreview form={f} file={file} imageUrl={(!imageRemoved && initial?.image) || f.image_url || ""} kindLabel={kindDef?.label} />
         <p className="cs-field__hint cs-field__hint--tight">
           {isEdit
-            ? (initial.status === "published" ? "This advertisement is published. Saving updates its live content." : "Saving keeps this advertisement’s current visibility.")
-            : "It saves as a draft — nothing appears until you switch it on."}
+            ? (initial.status === "published" ? "This advertisement is published. Saving updates it wherever its display dates allow it to appear." : "Saving keeps this advertisement’s current visibility.")
+            : "Save as a draft, then return to Advertisements and turn on the advertisement’s switch when ready."}
         </p>
 
         <div className="cs-field">
@@ -197,7 +197,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
         </div>
 
         <div className="cs-field">
-          <span className="cs-field__label">Where it can show</span>
+          <span className="cs-field__label">Where to show this advertisement</span>
           <div className="cs-steps">
             {TICKER_SLOTS.map((s) => {
               const on = f.slots.includes(s.id);
@@ -220,8 +220,8 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
           </div>
           <p className="cs-field__hint">
             {f.slots.length === 0
-              ? "Nothing picked — it will show on the navbar strip only."
-              : `Appears in ${f.slots.length} place${f.slots.length === 1 ? "" : "s"}.`}
+              ? "No locations selected. It will use the top notice strip only."
+              : `Selected for ${f.slots.length} location${f.slots.length === 1 ? "" : "s"}. It appears there when published and within its display dates.`}
           </p>
           {pending.length > 0 && (
             <p className="cs-field__warn">
@@ -236,22 +236,21 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
         </div>
 
         <div className="cs-field">
-          <label className="cs-field__label" htmlFor="t-kind">How it looks as a card</label>
+          <label className="cs-field__label" htmlFor="t-kind">Card style</label>
           <select
             id="t-kind"
             className="cs-input cs-input--block"
             value={f.kind}
             onChange={(e) => onKind(e.target.value)}
           >
-            <option value="">Plain text — navbar strip only</option>
+            <option value="">Plain text — top notice strip only</option>
             {KINDS.map((k) => (
               <option key={k.id} value={k.id}>{k.label}</option>
             ))}
           </select>
           {cardSlots.length > 0 && !f.kind && (
             <p className="cs-field__warn">
-              Every place except the navbar strip renders a card, and the card’s
-              look comes from this.
+              Choose a card style for the locations selected above.
             </p>
           )}
         </div>
@@ -276,14 +275,14 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
             <p className="cs-field__hint">
               {isMentor
                 ? "Shown under the name."
-                : "The navbar strip ignores this."}
+                : "This line appears on cards, but not in the top notice strip."}
             </p>
           </div>
         )}
 
         {kindDef?.metric && (
           <div className="cs-field">
-            <label className="cs-field__label" htmlFor="t-metric">The big number</label>
+            <label className="cs-field__label" htmlFor="t-metric">Featured number (optional)</label>
             <input
               id="t-metric"
               className="cs-input"
@@ -297,7 +296,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
               value={f.metric_label}
               onChange={(e) => set("metric_label", e.target.value)}
               placeholder="STUDENTS"
-              aria-label="Unit for the big number"
+              aria-label="Label for the featured number"
             />
             <p className="cs-field__hint">
               Typed as text, so “2,400” keeps its comma.
@@ -359,14 +358,14 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
           <p className="cs-field__hint">
             {isMentor
               ? "A head-and-shoulders photo works best — it is shown as a rounded square."
-              : "Shown as a card image on the homepage hero, band, footer and login’s "
+              : "Shown as a card image in the homepage circle, between homepage sections, in the footer and in login’s "
                 + "left panel; as a thumbnail below login, on signup and courses; and on the student "
-                + "dashboard. The navbar strip is text-only."}
+                + "dashboard. The top notice strip is text-only."}
           </p>
         </div>
 
         <div className="cs-field">
-          <label className="cs-field__label" htmlFor="t-level">How it looks</label>
+          <label className="cs-field__label" htmlFor="t-level">Highlight colour</label>
           <select
             id="t-level"
             className="cs-input cs-input--block"
@@ -381,7 +380,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
 
         <>
             <div className="cs-field">
-              <label className="cs-field__label" htmlFor="t-label">Button words (optional)</label>
+              <label className="cs-field__label" htmlFor="t-label">Button text (optional)</label>
               <input
                 id="t-label"
                 className="cs-input cs-input--block"
@@ -391,14 +390,15 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
             </div>
 
             <div className="cs-field">
-              <label className="cs-field__label" htmlFor="t-url">Where it goes (optional)</label>
+              <label className="cs-field__label" htmlFor="t-url">Destination link (optional)</label>
               <input
                 id="t-url"
                 className="cs-input cs-input--block"
                 value={f.link_url}
                 onChange={(e) => set("link_url", e.target.value)}
-                placeholder="/courses"
+                placeholder="/courses or https://example.com"
               />
+              <p className="cs-field__hint">Enter a website path such as /courses, or a full link beginning with https://. Leave empty for an advertisement without a link.</p>
               {f.link_label && !f.link_url && (
                 <p className="cs-field__warn">The button has words but nowhere to go.</p>
               )}
@@ -415,8 +415,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
             onChange={(e) => set("starts_at", e.target.value)}
           />
           <p className="cs-field__hint">
-            Leave empty to start as soon as it is switched on. Times are yours,
-            not the server’s.
+            Leave empty to start when published. Dates and times use your device’s time zone.
           </p>
         </div>
 
@@ -442,7 +441,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
               checked={f.pinned}
               onChange={(e) => set("pinned", e.target.checked)}
             />{" "}
-            Pin it ahead of everything else
+            Show this advertisement before unpinned advertisements
           </label>
         </div>
 

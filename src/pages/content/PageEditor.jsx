@@ -466,11 +466,11 @@ const PageEditor = () => {
         )}
 
         <span className="cs-savestate">
-          {saving === "saving" && "Saving…"}
-          {saving === "saved" && (<><CloudCheck size={14} aria-hidden="true" /> Saved just now</>)}
+          {saving === "saving" && "Saving draft…"}
+          {saving === "saved" && (<><CloudCheck size={14} aria-hidden="true" /> Draft saved</>)}
         </span>
 
-        <Link to="/content/home" className="cs-btn-ghost">
+        <Link to="/content/history" className="cs-btn-ghost">
           <History size={13} aria-hidden="true" /> Version history
         </Link>
         {changeCount > 0 && (

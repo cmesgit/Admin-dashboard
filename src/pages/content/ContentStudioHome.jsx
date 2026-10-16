@@ -128,16 +128,25 @@ const ContentStudioHome = () => {
         </div>
         <Link to="/content/blogs/new" className="cs-btn-primary">
           <PenLine size={15} aria-hidden="true" />
-          Write something
+          Write a post
         </Link>
       </header>
 
+      <section className="cs-card" aria-labelledby="content-start-guide">
+        <h2 className="cs-card__title" id="content-start-guide">How changes reach your website</h2>
+        <ul className="cs-publish-guide">
+          <li><strong>Website pages:</strong> Text and picture edits save as drafts. Select Publish changes when you are ready for visitors to see them.</li>
+          <li><strong>Advertisements:</strong> Save a draft, then turn on its switch in Advertisements. Check the display dates. Saving an already published advertisement updates it within those dates.</li>
+          <li><strong>Course cards:</strong> Choose the visibility in the form. Saving a card marked Showing on the homepage makes it live immediately.</li>
+        </ul>
+      </section>
+
       <Panel
-        title="Needs you"
+        title="Needs attention"
         count={inboxItems.length}
         state={inbox}
         onRetry={reloadInbox}
-        empty="Nothing is waiting. Everything is published or deliberately hidden."
+        empty="No items need attention right now."
       >
         <ul className="cs-list">
           {inboxItems.map((item, i) => {
@@ -167,7 +176,7 @@ const ContentStudioHome = () => {
 
       <section className="cs-card">
         <header className="cs-card__head">
-          <h2 className="cs-card__title">Start something</h2>
+          <h2 className="cs-card__title">Choose what to update</h2>
         </header>
         <div className="cs-start-grid">
           {START_ACTIONS.map(({ to, icon: Icon, title, sub }) => (
