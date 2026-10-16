@@ -23,6 +23,7 @@ const CourseCards = lazy(() => import("./pages/content/CourseCards"));
 const Labels = lazy(() => import("./pages/content/Labels"));
 const ExamReadiness = lazy(() => import("./pages/content/ExamReadiness"));
 const LiveTicker = lazy(() => import("./pages/content/LiveTicker"));
+const TickerItemEditor = lazy(() => import("./pages/content/TickerItemEditor"));
 const ContentHistory = lazy(() => import("./pages/content/ContentHistory"));
 const ContentSchedule = lazy(() => import("./pages/content/ContentSchedule"));
 const SkillCMSPanel = lazy(() => import("./pages/skillcms/SkillCMSPanel"));
@@ -145,6 +146,8 @@ const App = () => {
             <Route path="content/labels" element={<Labels />} />
             <Route path="content/exams" element={<ExamReadiness />} />
             <Route path="content/ticker" element={<LiveTicker />} />
+            <Route path="content/ticker/new" element={<TickerItemEditor />} />
+            <Route path="content/ticker/:id/edit" element={<TickerItemEditor />} />
             <Route path="content/history" element={<ContentHistory />} />
             <Route path="content/schedule" element={<ContentSchedule />} />
             <Route path="content/blogs/new" element={<BlogEditor />} />

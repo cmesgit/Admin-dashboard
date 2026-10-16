@@ -4,10 +4,8 @@
 // The left panel is the eight slots with live counts; picking one filters the
 // queue to what would appear there.
 //
-// Authoring lives here too (2b): this is the first screen anywhere in the CMS
-// that can set an item's display window — `starts_at`/`ends_at` existed on the
-// model all along, but the notice modal on Questions & notices never sent
-// either field, so a notice could not be scheduled at all.
+// Create and Edit are regular links to dedicated editor routes, so they also
+// support opening in another tab. Search and placement filters live in the URL.
 //
 // ⚠ Moderator.css is imported ON PURPOSE. `.mod-toast` is defined only there,
 // every route is its own lazy chunk, and a screen that renders <Toast> without
@@ -15,10 +13,10 @@
 // screens have this bug; this one does not.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Megaphone } from "lucide-react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  createTickerItem, getTickerItems, updateTickerItem,
+  getTickerItems, updateTickerItem,
 } from "../../api/admin_content_studio";
-import TickerItemModal from "./TickerItemModal";
 import { TICKER_SLOTS as SLOTS, slotsOf } from "./tickerSlots";
 import { errText } from "../../utils/errText";
 import Toast from "../../components/Toast";
@@ -62,11 +60,19 @@ const LiveTicker = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [slot, setSlot] = useState(null);       // null = every slot
-  const [q, setQ] = useState("");
+  const [params, setParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const slot = SLOTS.some((s) => s.id === params.get("slot")) ? params.get("slot") : null;
+  const q = params.get("q") || "";
+  const setFilter = (key, value) => setParams((previous) => {
+    const next = new URLSearchParams(previous);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    return next;
+  }, { replace: true });
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [busy, setBusy] = useState(null);
-  const [modal, setModal] = useState(null);      // { initial } | null
-  const [formError, setFormError] = useState("");
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
   const reqRef = useRef(0);
@@ -82,6 +88,24 @@ const LiveTicker = () => {
     );
   }, []);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  useEffect(() => {
+    if (!location.state?.tickerNotice) return;
+    say(location.state.tickerNotice);
+    navigate(location.pathname + location.search, { replace: true, state: null });
+  }, [location, navigate, say]);
+
+  // Reflect saves from another browser tab when the admin returns to the queue.
+  useEffect(() => {
+    const refresh = () => setRefreshVersion((version) => version + 1);
+    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
   // Debounced search with an AbortController, per Labels.jsx. The `seq` guard
   // matters as much as the abort: a slow first response can still resolve
@@ -108,7 +132,7 @@ const LiveTicker = () => {
     };
     const t = setTimeout(run, q ? 250 : 0);
     return () => { clearTimeout(t); controller.abort(); };
-  }, [q]);
+  }, [q, refreshVersion]);
 
   const counts = useMemo(() => {
     const out = {};
@@ -143,38 +167,6 @@ const LiveTicker = () => {
     }
   };
 
-  /** Refetch without the whole screen flashing "Loading…" — the modal is a
-   *  child of this component, so an early-return spinner would unmount it and
-   *  throw away what the admin just typed. */
-  const reload = useCallback(async () => {
-    try {
-      setItems(asList(await getTickerItems()));
-      setError("");
-    } catch (e) {
-      setError(errText(e));
-    }
-  }, []);
-
-  const submit = async (payload, file) => {
-    setBusy("form");
-    setFormError("");
-    try {
-      if (modal?.initial?.id) {
-        await updateTickerItem(modal.initial.id, payload, file);
-        say("Saved.");
-      } else {
-        await createTickerItem(payload, file);
-        say("Saved as a draft. Switch it on when you are ready.");
-      }
-      setModal(null);
-      await reload();
-    } catch (e) {
-      setFormError(errText(e));     // stays in the dialog, next to the fields
-    } finally {
-      setBusy(null);
-    }
-  };
-
   const showingCount = items.filter(isShowing).length;
 
   return (
@@ -192,16 +184,15 @@ const LiveTicker = () => {
           className="cs-input"
           placeholder="Search the queue"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => setFilter("q", e.target.value)}
           aria-label="Search ticker items"
         />
-        <button
-          type="button"
+        <Link
           className="cs-btn-primary cs-btn-primary--sm"
-          onClick={() => { setFormError(""); setModal({ initial: null }); }}
+          to={`/content/ticker/new${location.search}`}
         >
           Add an item
-        </button>
+        </Link>
       </header>
 
       <div className="cs-editor__body">
@@ -211,7 +202,7 @@ const LiveTicker = () => {
           <button
             type="button"
             className={`cs-sectionrow${slot === null ? " is-selected" : ""}`}
-            onClick={() => setSlot(null)}
+            onClick={() => setFilter("slot", null)}
           >
             <span>Everywhere</span>
             <span className="cs-chip cs-tone-muted">{items.length}</span>
@@ -222,7 +213,7 @@ const LiveTicker = () => {
               key={s.id}
               type="button"
               className={`cs-sectionrow${slot === s.id ? " is-selected" : ""}`}
-              onClick={() => setSlot(slot === s.id ? null : s.id)}
+              onClick={() => setFilter("slot", slot === s.id ? null : s.id)}
             >
               <span>
                 {s.label}
@@ -317,13 +308,13 @@ const LiveTicker = () => {
                     <span className="cs-qrow__state">
                       {showing ? "Showing" : "Hidden from visitors"}
                     </span>
-                    <button
-                      type="button"
+                    <Link
                       className="cs-btn-ghost"
-                      onClick={() => { setFormError(""); setModal({ initial: it }); }}
+                      to={`/content/ticker/${it.id}/edit${location.search}`}
+                      aria-label={`Edit “${it.message}”`}
                     >
                       Edit
-                    </button>
+                    </Link>
                   </div>
                 );
               })}
@@ -331,16 +322,6 @@ const LiveTicker = () => {
           )}
         </main>
       </div>
-
-      {modal && (
-        <TickerItemModal
-          initial={modal.initial}
-          busy={busy === "form"}
-          error={formError}
-          onCancel={() => setModal(null)}
-          onSubmit={submit}
-        />
-      )}
 
       <Toast message={toast?.message} tone={toast?.tone} />
     </div>
