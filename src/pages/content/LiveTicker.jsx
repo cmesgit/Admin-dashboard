@@ -102,9 +102,11 @@ const LiveTicker = () => {
   useEffect(() => {
     const refresh = () => setRefreshVersion((version) => version + 1);
     const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    const timer = setInterval(onVisible, 60000);
     window.addEventListener("focus", refresh);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
+      clearInterval(timer);
       window.removeEventListener("focus", refresh);
       document.removeEventListener("visibilitychange", onVisible);
     };
