@@ -178,9 +178,9 @@ const LiveTicker = () => {
     <div className="cs-editor">
       <header className="cs-publishbar">
         <div className="cs-publishbar__id">
-          <span className="cs-publishbar__name">Live ticker</span>
+          <span className="cs-publishbar__name">Advertisements</span>
           <span className="cs-publishbar__url">
-            One queue. Each item picks the places it appears.
+            Create, preview, publish and schedule advertisements across your website.
           </span>
         </div>
         {/* .cs-publishbar__id carries margin-right:auto, so no spacer here. */}
