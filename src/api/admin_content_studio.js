@@ -239,6 +239,11 @@ export const getTickerItems = async (params, { signal } = {}) => {
   return data;
 };
 
+export const getTickerItem = async (id, { signal } = {}) => {
+  const { data } = await api.get(`${BASE}/announcements/${id}/`, { signal });
+  return data;
+};
+
 /* `file` is an optional picked image. buildBody turns the payload into
  * FormData only when one is present — arrays like `slots` are JSON-encoded
  * per field, which is what the content admin endpoints expect alongside a

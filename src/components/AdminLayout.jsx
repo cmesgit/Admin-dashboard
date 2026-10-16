@@ -206,6 +206,7 @@ const DEFAULT_CONTENT_TAB = "blogs";
  */
 const isStudioLinkActive = (to, location) => {
   const [path, query] = to.split("?");
+  if (path === "/content/ticker" && location.pathname.startsWith(`${path}/`)) return true;
   if (location.pathname !== path) return false;
   const want = new URLSearchParams(query || "").get("tab") || DEFAULT_CONTENT_TAB;
   const have = new URLSearchParams(location.search).get("tab") || DEFAULT_CONTENT_TAB;

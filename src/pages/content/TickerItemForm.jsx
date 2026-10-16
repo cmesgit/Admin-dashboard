@@ -1,11 +1,11 @@
-// Create/edit a ticker item (design_handoff_live_ticker Phase 2b).
+// Shared fields for the dedicated ticker advertisement editor.
 //
 // This is the first screen anywhere in the CMS that can set an announcement's
 // DISPLAY WINDOW. `starts_at`/`ends_at` have existed on the model all along and
 // `utils/datetimeLocal.js` was written to convert them, but the notice modal on
 // Questions & notices never sent either field — so until now an admin could not
 // schedule a notice at all, and there was nothing on screen to say so.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ImageUploadField from "../../components/ImageUploadField";
 import { isoToLocalInput, localInputToIso } from "../../utils/datetimeLocal";
 import { TICKER_SLOTS, unbuiltSlots } from "./tickerSlots";
@@ -30,8 +30,8 @@ const blank = {
 };
 
 /** Row -> form state. Kept out of the component so the initial state can be
- *  computed lazily, with no effect involved: the parent unmounts this dialog
- *  between opens, so `initial` never changes while it is mounted, and syncing
+ *  computed lazily, with no effect involved: the editor keys this form by item,
+ *  so `initial` never changes while it is mounted, and syncing
  *  it in an effect would just be a cascading re-render. */
 const fromRow = (row) => {
   if (!row) return blank;
@@ -45,13 +45,16 @@ const fromRow = (row) => {
   };
 };
 
-const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
-  const [f, setF] = useState(() => fromRow(initial));
+const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChange }) => {
+  const [savedForm] = useState(() => fromRow(initial));
+  const [f, setF] = useState(savedForm);
   /* The picked File is kept OUT of form state: it cannot be JSON-encoded, and
      the request only becomes multipart when one exists (see buildBody). */
   const [file, setFile] = useState(null);
   const [imageRemoved, setImageRemoved] = useState(false);
   const [imageInputKey, setImageInputKey] = useState(0);
+  const dirty = JSON.stringify(f) !== JSON.stringify(savedForm) || Boolean(file) || imageRemoved;
+  useEffect(() => { onDirtyChange(dirty); }, [dirty, onDirtyChange]);
 
   const removePicture = () => {
     setFile(null);
@@ -144,14 +147,13 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
   };
 
   return (
-    <div
-      className="cs-palette-overlay"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+    <form
+      className="cs-card ticker-item-form"
+      aria-labelledby="ticker-details-title"
+      onSubmit={(e) => { e.preventDefault(); if (!busy) submit(); }}
     >
-      <div className="cs-confirm" role="dialog" aria-modal="true">
-        <h2 className="cs-card__title">
-          {isEdit ? "Edit ticker item" : "New ticker item"}
-        </h2>
+      <fieldset className="ticker-item-form__fields" disabled={busy}>
+        <h2 className="cs-card__title" id="ticker-details-title">Advertisement details</h2>
         <p className="cs-field__hint cs-field__hint--tight">
           {isEdit
             ? "Changing the words doesn’t change who can see it."
@@ -422,17 +424,16 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
             Cancel
           </button>
           <button
-            type="button"
+            type="submit"
             className="cs-btn-primary cs-btn-primary--sm"
             disabled={busy || Boolean(localProblem)}
-            onClick={submit}
           >
             {busy ? "Saving…" : (isEdit ? "Save" : "Save as draft")}
           </button>
         </div>
-      </div>
-    </div>
+      </fieldset>
+    </form>
   );
 };
 
-export default TickerItemModal;
+export default TickerItemForm;
