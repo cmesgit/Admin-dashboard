@@ -1,3 +1,4 @@
+import CollectionDisplayChoice from "./CollectionDisplayChoice";
 // The repeatable rows inside a homepage section.
 //
 // A section is two different things: its own copy (heading, buttons — the
@@ -8,7 +9,7 @@
 //
 // "List item" is deliberately never said out loud here. To a writer these are
 // just the points, cards or stats in this section.
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useImperativeHandle, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import {
   createHomeListItem, deleteHomeListItem, getHomeListItems, updateHomeListItem,
@@ -30,7 +31,7 @@ const VARIANT_LABEL = {
 
 const asList = (r) => (Array.isArray(r) ? r : r?.results || []);
 
-const SectionListItems = ({ section, sectionLabel, onNotify }) => {
+const SectionListItems = ({ section, sectionLabel, onNotify, blockId, displaySettings = {}, onDisplayUpdated, editorRef, onDraftChange, onBusyChange }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -62,14 +63,17 @@ const SectionListItems = ({ section, sectionLabel, onNotify }) => {
   }, [section, reloadKey]);
 
   const save = async () => {
+    if (!editing) return true;
+    if (busy) return false;
     const { id, ...payload } = editing;
     if (!payload.title.trim() && !payload.body.trim()) {
-      return onNotify("Give it a title or some words first.");
+      onNotify("Give it a title or some words first."); return false;
     }
     setBusy("save");
     try {
       if (id) await updateHomeListItem(id, payload);
       else await createHomeListItem({ ...payload, section, order: items.length });
+      onDisplayUpdated?.({ items: "custom" });
       onNotify(id ? "Saved." : "Added.");
       setEditing(null);
       // Refetch rather than splice the response in: `order` is assigned
@@ -77,8 +81,10 @@ const SectionListItems = ({ section, sectionLabel, onNotify }) => {
       // so an in-place insert can show a position the server didn't agree to.
       // One request on an infrequent action is the cheaper mistake.
       load();
+      return true;
     } catch (e) {
       onNotify(errText(e));
+      return false;
     } finally {
       setBusy(null);
     }
@@ -88,6 +94,7 @@ const SectionListItems = ({ section, sectionLabel, onNotify }) => {
     setBusy(`del-${item.id}`);
     try {
       await deleteHomeListItem(item.id);
+      onDisplayUpdated?.({ items: "custom" });
       onNotify("Removed.");
       setItems((xs) => xs.filter((x) => x.id !== item.id));
     } catch (e) {
@@ -104,6 +111,10 @@ const SectionListItems = ({ section, sectionLabel, onNotify }) => {
     status: "published",
   };
 
+  useEffect(() => { onDraftChange?.(Boolean(editing)); }, [editing, onDraftChange]);
+  useEffect(() => { onBusyChange?.(Boolean(busy)); }, [busy, onBusyChange]);
+  useEffect(() => () => { onDraftChange?.(false); onBusyChange?.(false); }, [onDraftChange, onBusyChange]);
+  useImperativeHandle(editorRef, () => ({ save, cancel: () => setEditing(null) }));
   return (
     <section className="cs-subcard cs-items">
       <div className="cs-items__head">
@@ -118,6 +129,8 @@ const SectionListItems = ({ section, sectionLabel, onNotify }) => {
           <Plus size={13} aria-hidden="true" /> Add one
         </button>
       </div>
+
+      <CollectionDisplayChoice blockId={blockId} collection="items" label="Cards and points" mode={displaySettings.items || (items.length ? "custom" : "default")} onUpdated={onDisplayUpdated} onNotify={onNotify} busy={Boolean(busy)} />
 
       {loading && <p className="cs-muted">Loading…</p>}
       {error && <p className="cs-error" role="alert">{error}</p>}

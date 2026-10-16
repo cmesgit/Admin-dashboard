@@ -1572,3 +1572,8 @@
   font-size: 12px;
   color: var(--admin-body-soft);
 }
+
+/* Explicit content display controls. */
+.cs-mode-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.cs-mode-fields:disabled { opacity: .7; }
+.cs-display-choice { padding-top: 12px; border-top: 1px solid var(--admin-border-soft); }

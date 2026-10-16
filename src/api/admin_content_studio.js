@@ -7,6 +7,7 @@
 // One file per feature area, matching this app's existing api/ convention
 // (admin_scholarship.js, admin_question_bank.js, …).
 import api from "./apiClient";
+import { assertDraftAccepted } from "../utils/draftSaveQueue";
 import { buildBody } from "../utils/buildBody";
 
 const BASE = "/content/admin";
@@ -50,7 +51,7 @@ export const getPageDraft = async (key) => {
 /** Autosave. `sections` is { sectionKey: { field: value } }. */
 export const savePageDraft = async (key, sections) => {
   const { data } = await api.put(`${BASE}/pages/${key}/draft/`, { sections });
-  return data;
+  return assertDraftAccepted(data);
 };
 
 export const discardPageDraft = async (key) => {
