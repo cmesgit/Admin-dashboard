@@ -1,3 +1,5 @@
+import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
+import UnsavedChangesDialog from "../../components/UnsavedChangesDialog";
 // The card create/edit form, lifted verbatim out of the old Showcase screen.
 //
 // design_handoff_content_studio. CourseCards was the browse-and-triage view and
@@ -5,7 +7,7 @@
 // card screens and a dead-end link. The form is 300 lines of genuinely useful
 // editor — image upload, live preview, course linking, placement — so it was
 // MOVED here rather than reimplemented, and CourseCards now owns it.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen, FlaskConical, Calculator, Compass, Activity, Target,
   Landmark, Shield, Medal, School,
@@ -216,14 +218,21 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
   const previewIsComingSoon = !previewPriceLabel && !!form.tutor_name;
   const previewThumbnailUrl = filePreviewUrl || initial?.image || form.image_url || null;
 
-  const submit = () => {
+  const initialSnapshot = useRef(JSON.stringify(form));
+  const initialLinkText = useRef(linkStateText);
+  const dirty = JSON.stringify(form) !== initialSnapshot.current || linkStateText !== initialLinkText.current || file !== null;
+  const guard = useUnsavedChangesGuard(dirty, { busy, onSave: () => submit(false) });
+  const cancel = () => guard.requestAction(onCancel);
+
+  const submit = (close = true) => {
+    if (busy || !form.title.trim()) return false;
     let link_state;
     try {
       link_state = linkStateText.trim() ? JSON.parse(linkStateText) : {};
       setLinkStateInvalid(false);
     } catch {
       setLinkStateInvalid(true);
-      return;
+      return false;
     }
     const payload = {
       title: form.title.trim(),
@@ -250,11 +259,13 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
       order: parseInt(form.order, 10) || 0,
       status: form.status,
     };
-    onSubmit(payload, file);
+    return onSubmit(payload, file, close);
   };
 
   return (
-    <div className="confirm-overlay" onClick={busy ? undefined : onCancel}>
+    <>
+    <UnsavedChangesDialog guard={guard} />
+    <div className="confirm-overlay" onClick={busy ? undefined : cancel}>
       <div className="cm-form-card cm-form-card--wide cm-form-card--with-preview" onClick={(e) => e.stopPropagation()}>
         <h3>{mode === "edit" ? "Edit Showcase Card" : "New Showcase Card"}</h3>
 
@@ -479,12 +490,13 @@ export default function CardFormModal({ mode, initial, busy, error, onSubmit, on
         {error && <div className="cm-form-error">{error}</div>}
 
         <div className="confirm-actions">
-          <button className="confirm-cancel" onClick={onCancel} disabled={busy}>Cancel</button>
-          <button className="confirm-ok" onClick={submit} disabled={busy || !form.title.trim()}>
+          <button className="confirm-cancel" onClick={cancel} disabled={busy}>Cancel</button>
+          <button className="confirm-ok" onClick={() => submit()} disabled={busy || !form.title.trim()}>
             {busy ? "Saving…" : mode === "edit" ? "Save" : "Create"}
           </button>
         </div>
       </div>
     </div>
+    </>
   );
 }

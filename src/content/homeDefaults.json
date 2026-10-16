@@ -1,0 +1,129 @@
+{
+  "hero": {
+    "eyebrow": "Empowerment Through Education",
+    "heading": "Empowering Students Through",
+    "heading_secondary": "Better Learning.",
+    "subhead": "ShikshaCom combines quality education, expert mentorship, collaborative learning, and trusted resources to help every student reach their academic goals.",
+    "cta_primary_label": "Explore Courses",
+    "cta_primary_href": "/courses",
+    "cta_secondary_label": "Book a Tutor",
+    "cta_secondary_href": "/skill/browse"
+  },
+  "cta": {
+    "eyebrow": "Start Your Journey",
+    "heading": "Your learning starts here",
+    "body": "Create your free account, or look through the full course catalogue first \u2014 no sign-up needed.",
+    "cta_primary_label": "Create free account",
+    "cta_primary_href": "/register",
+    "cta_secondary_label": "Browse courses",
+    "cta_secondary_href": "/courses"
+  },
+  "faq": {
+    "eyebrow": "Frequently Asked Questions",
+    "heading": "Have questions?",
+    "heading_secondary": "We've got answers."
+  },
+  "featured_courses": {
+    "eyebrow": "Featured Courses",
+    "heading": "Explore our",
+    "heading_secondary": "popular courses",
+    "subhead": "Some of our most popular academic and competitive programs, built to help learners succeed with structured guidance."
+  },
+  "resources": {
+    "eyebrow": "Resources & Support",
+    "heading": "Beyond the classroom",
+    "subhead": "Extra resources, guidance and opportunities to support students throughout their academic journey."
+  },
+  "teachers_students": {
+    "eyebrow": "Teachers & Students",
+    "heading": "What are you looking for?"
+  },
+  "browse_categories": {
+    "eyebrow": "Browse Categories",
+    "heading": "Explore our learning categories",
+    "subhead": "Choose the path that matches your academic goals \u2014 programs designed by experienced educators.",
+    "cta_primary_label": "All categories",
+    "cta_primary_href": "/courses"
+  },
+  "collaborate": {
+    "eyebrow": "Live Collaboration",
+    "heading": "Learn together, anywhere",
+    "subhead": "Host or join secure live sessions for classes, meetings, workshops, mentoring, interviews, study groups, and collaborative discussions \u2014 all from one platform.",
+    "cta_primary_label": "Join Session",
+    "cta_primary_href": "/live",
+    "cta_secondary_label": "Host Session",
+    "cta_secondary_href": "/live?new=1"
+  },
+  "why_choose": {
+    "eyebrow": "Why ShikshaCom",
+    "heading": "Why choose ShikshaCom?",
+    "body": "ShikshaCom brings structured learning, expert mentorship and flexible digital education together \u2014 an engaging way to learn for school and everything after it.",
+    "cta_primary_label": "More details",
+    "cta_primary_href": "/why-shiksha",
+    "img": ""
+  },
+  "why_shiksha": {
+    "heading": "Why learners choose Shiksha",
+    "subhead": "Everything a student needs to learn, practise and grow \u2014 in one place."
+  },
+  "courses_hero": {
+    "eyebrow": "Courses",
+    "heading": "Discover the Right Course for Your",
+    "heading_secondary": "Learning Journey.",
+    "subhead": "Explore expertly designed courses with structured lessons, live classes, quizzes, assignments and progress tracking \u2014 all in one place.",
+    "cta_primary_label": "Explore Courses",
+    "cta_secondary_label": "Browse Categories",
+    "img": ""
+  },
+  "contact_hero": {
+    "eyebrow": "Contact ShikshaCom",
+    "heading": "We would love to\nhear",
+    "subhead": "Whether it is a question about a course, help with your account, or a partnership you would like to discuss \u2014 send us a message and a real person from our team will get back to you, usually within one working day.",
+    "heading_secondary": "from you."
+  },
+  "about_hero": {
+    "eyebrow": "About ShikshaCom",
+    "heading": "Building better learning\nfor",
+    "heading_secondary": "every student.",
+    "subhead": "Through innovative technology, our intelligent platform empowers individuals to achieve their full potential and contribute positively to society \u2014 bringing structured, accessible education within reach of every learner.",
+    "cta_primary_label": "Why choose us",
+    "cta_primary_href": "#ap-why",
+    "cta_secondary_label": "Our vision",
+    "cta_secondary_href": "#ap-vision"
+  },
+  "about_vision": {
+    "eyebrow": "Our Vision",
+    "heading": "A future where learning\nreaches",
+    "heading_secondary": "everyone.",
+    "subhead": "At ShikshaCom, our vision is to provide learners with the skills and knowledge they need to thrive in the modern world. We aim to make education accessible, engaging, and effective for everyone, regardless of their background or location.",
+    "img": null
+  },
+  "about_mission": {
+    "eyebrow": "Our Mission",
+    "heading": "What drives",
+    "heading_secondary": "everything we do",
+    "subhead": "At ShikshaCom, our mission is to deliver high-quality, accessible education using innovative technology and expert guidance. We are committed to empowering learners of all ages and backgrounds to achieve their full potential."
+  },
+  "about_values": {
+    "eyebrow": "Our Value",
+    "heading": "What we believe shapes",
+    "heading_secondary": "how we teach.",
+    "subhead": "At ShikshaCom, our values are the foundation of everything we do. These values guide our decisions and inspire our team to create a positive impact in the world of education.",
+    "img": null
+  },
+  "about_why": {
+    "eyebrow": "Why ShikshaCom",
+    "heading": "Why choose",
+    "heading_secondary": "ShikshaCom?",
+    "subhead": "At ShikshaCom, we offer a unique learning experience designed to meet the needs of modern learners. Choose ShikshaCom for education that is effective, enjoyable, and accessible from anywhere."
+  },
+  "about_cta": {
+    "eyebrow": "Join ShikshaCom",
+    "heading": "Ready to learn with ShikshaCom?",
+    "subhead": "Explore our courses and find the learning path that fits you \u2014 accessible, engaging and built for how you learn.",
+    "cta_primary_label": "Explore courses",
+    "cta_primary_href": "/courses",
+    "cta_secondary_label": "Create free account",
+    "cta_secondary_href": "/register"
+  }
+}

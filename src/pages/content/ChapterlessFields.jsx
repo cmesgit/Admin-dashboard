@@ -84,7 +84,7 @@ export const HeadingField = ({ id, label, hint, value, onChange }) => {
  * href is how a homepage button ends up pointing at a 404, and the person
  * typing it has no way to know. */
 export const ButtonField = ({
-  idPrefix, label, hint, textValue, hrefValue, onText, onHref, targets,
+  idPrefix, label, hint, textValue, hrefValue, onText, onHref, targets, fixedDestination = false,
 }) => {
   const known = (targets || []).some((g) =>
     g.options.some((o) => o.value === hrefValue),
@@ -103,6 +103,7 @@ export const ButtonField = ({
             onChange={(e) => onText(e.target.value)}
           />
         </Field>
+        {!fixedDestination && (
         <Field label="Where it goes" htmlFor={`${idPrefix}-href`}>
           <div className="cs-select-wrap">
             <Link2 size={14} aria-hidden="true" />
@@ -128,8 +129,10 @@ export const ButtonField = ({
             </select>
           </div>
         </Field>
+        )}
       </div>
-      {textValue && !hrefValue && (
+      {fixedDestination && <p className="cs-field__hint">This button scrolls to its course-page section; its destination is fixed.</p>}
+      {!fixedDestination && textValue && !hrefValue && (
         <p className="cs-field__warn">
           This button has words but nowhere to go — it won’t do anything when
           someone clicks it.

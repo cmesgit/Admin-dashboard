@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { createTickerItem, getTickerItem, updateTickerItem } from "../../api/admin_content_studio";
-import ConfirmModal from "../../components/ConfirmModal";
+import UnsavedChangesDialog from "../../components/UnsavedChangesDialog";
 import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
 import { errText } from "../../utils/errText";
 import TickerItemForm from "./TickerItemForm";
@@ -18,7 +18,8 @@ function Editor({ id }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
-  const { pendingNav, guardedNavigate, confirmLeave, cancelLeave } = useUnsavedChangesGuard(dirty);
+  const formRef = useRef(null);
+  const guard = useUnsavedChangesGuard(dirty, { busy, onSave: () => formRef.current?.save(false) ?? false });
 
   useEffect(() => {
     if (!id) return;
@@ -36,20 +37,24 @@ function Editor({ id }) {
     return () => controller.abort();
   }, [id, attempt]);
 
-  const cancel = () => guardedNavigate(navigate, queueUrl);
-  const save = async (payload, file) => {
-    if (busy) return;
+  const cancel = () => guard.guardedNavigate(navigate, queueUrl);
+  const save = async (payload, file, leaveForQueue = true) => {
+    if (busy) return false;
     setBusy(true);
     setError("");
     try {
       if (id) await updateTickerItem(id, payload, file);
       else await createTickerItem(payload, file);
-      navigate(queueUrl, {
+      setDirty(false);
+      if (leaveForQueue) guard.navigateAfterSave(navigate, queueUrl, {
         replace: true,
         state: { tickerNotice: id ? "Saved." : "Saved as a draft. Switch it on when you are ready." },
       });
+      return true;
     } catch (e) {
       setError(errText(e));
+      return false;
+    } finally {
       setBusy(false);
     }
   };
@@ -78,6 +83,7 @@ function Editor({ id }) {
       )}
       {!loaded.loading && !loaded.error && (
         <TickerItemForm
+          submitRef={formRef}
           initial={loaded.item}
           busy={busy}
           error={error}
@@ -86,14 +92,7 @@ function Editor({ id }) {
           onDirtyChange={setDirty}
         />
       )}
-      {pendingNav && (
-        <ConfirmModal
-          title="Discard unsaved changes?"
-          message="Your advertisement has changes that have not been saved."
-          onConfirm={confirmLeave}
-          onCancel={cancelLeave}
-        />
-      )}
+      <UnsavedChangesDialog guard={guard} />
     </div>
   );
 }

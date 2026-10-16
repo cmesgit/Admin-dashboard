@@ -12,7 +12,7 @@ import {
   duplicateTranslationContentBlog,
   publishContentBlog, unpublishContentBlog,
 } from "../../api/admin";
-import ConfirmModal from "../../components/ConfirmModal";
+import UnsavedChangesDialog from "../../components/UnsavedChangesDialog";
 import TagChipInput from "../../components/TagChipInput";
 import ImageUploadField from "../../components/ImageUploadField";
 import HtmlToolbar from "../../components/HtmlToolbar";
@@ -470,7 +470,12 @@ const BlogEditor = () => {
     [form, savedVersion]
   );
 
-  const { pendingNav, guardedNavigate, confirmLeave, cancelLeave } = useUnsavedChangesGuard(isDirty);
+  const guard = useUnsavedChangesGuard(isDirty, {
+    busy: busy || autosaveState === "saving",
+    onSave: () => handleSave({ navigateOnCreate: false }),
+    onDiscard: () => { clearLocalDraft(); return true; },
+  });
+  const { guardedNavigate } = guard;
 
   /* ─────────────────────────────────────────────────────────────────────
      AUTOSAVE — server-side, drafts/scheduled only, never for published.
@@ -550,8 +555,8 @@ const BlogEditor = () => {
   };
 
   /* ───────────────────────── Manual save ───────────────────────── */
-  const handleSave = async () => {
-    if (busy || !form.title.trim()) return;
+  const handleSave = async ({ navigateOnCreate = true } = {}) => {
+    if (busy || autosavingRef.current || !form.title.trim()) return false;
     setBusy(true);
     setSaveError("");
     try {
@@ -580,12 +585,14 @@ const BlogEditor = () => {
       setFile(null);
       setLastSavedAt(Date.now());
 
-      if (!savedId) {
+      if (!savedId && navigateOnCreate) {
         skipNextLoadRef.current = String(saved.id);
-        navigate(`/content/blogs/${saved.id}`, { replace: true });
+        guard.navigateAfterSave(navigate, `/content/blogs/${saved.id}`, { replace: true });
       }
+      return true;
     } catch (e) {
       setSaveError(errText(e));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -1188,14 +1195,7 @@ const BlogEditor = () => {
         )}
       </div>
 
-      {pendingNav && (
-        <ConfirmModal
-          title="Discard unsaved changes?"
-          message="You have unsaved changes on this post. Leave without saving?"
-          onConfirm={confirmLeave}
-          onCancel={cancelLeave}
-        />
-      )}
+      <UnsavedChangesDialog guard={guard} />
     </div>
   );
 };

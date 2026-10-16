@@ -5,7 +5,7 @@
 // `utils/datetimeLocal.js` was written to convert them, but the notice modal on
 // Questions & notices never sent either field — so until now an admin could not
 // schedule a notice at all, and there was nothing on screen to say so.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import ImageUploadField from "../../components/ImageUploadField";
 import { isoToLocalInput, localInputToIso } from "../../utils/datetimeLocal";
 import { TICKER_SLOTS, unbuiltSlots } from "./tickerSlots";
@@ -69,7 +69,7 @@ function AdPreview({ form, file, imageUrl, kindLabel }) {
   );
 }
 
-const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChange }) => {
+const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChange, submitRef }) => {
   const [savedForm] = useState(() => fromRow(initial));
   const [f, setF] = useState(savedForm);
   /* The picked File is kept OUT of form state: it cannot be JSON-encoded, and
@@ -136,9 +136,9 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
           ? "The end time must be after the start time."
           : "";
 
-  const submit = () => {
-    if (localProblem) return;
-    onSubmit({
+  const submit = (leaveForQueue = true) => {
+    if (localProblem || busy) return false;
+    return onSubmit({
       message: f.message.trim(),
       body: f.body.trim(),
       kind: f.kind,
@@ -163,8 +163,10 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
       // Omitting image preserves the upload. Clear it explicitly, unless a
       // replacement File is about to be sent under the same field name.
       ...(imageRemoved && !file ? { image: null } : {}),
-    }, file);
+    }, file, leaveForQueue);
   };
+
+  useImperativeHandle(submitRef, () => ({ save: submit }));
 
   return (
     <form

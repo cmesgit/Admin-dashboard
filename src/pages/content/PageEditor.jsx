@@ -23,6 +23,9 @@ import {
 // second copy in admin_content_studio.js.
 import { deleteHomeContentBlock, updateHomeSectionOrder } from "../../api/admin";
 import SectionPreview from "./SectionPreview";
+import DisplayChoice from "./DisplayChoice";
+import { HOME_DEFAULTS, homeField, previewContent } from "../../content/homeDisplay";
+import UnsavedChangesDialog from "../../components/UnsavedChangesDialog";
 import MediaPickerDialog from "./MediaPickerDialog";
 import SectionListItems from "./SectionListItems";
 import SectionFloaters from "./SectionFloaters";
@@ -31,7 +34,6 @@ import { useUnsavedChangesGuard } from "../../hooks/useUnsavedChangesGuard";
 import Toast from "../../components/Toast";
 import {
   ButtonField, HeadingField, LongTextField, PictureField, TextField,
-  VisibilitySwitch,
 } from "./ChapterlessFields";
 import "../../css/ContentStudio.css";
 import "../../css/Moderator.css";
@@ -99,6 +101,15 @@ const PageEditor = () => {
   const toastTimer = useRef(null);
   const saveTimer = useRef(null);
   const pending = useRef({});
+  const liveCollectionSettings = useRef({});
+  const itemsEditor = useRef(null);
+  const floatersEditor = useRef(null);
+  const [childDirty, setChildDirty] = useState({ items: false, floaters: false });
+  const [childBusy, setChildBusy] = useState({ items: false, floaters: false });
+  const itemsDirtyChanged = useCallback((value) => setChildDirty((old) => ({ ...old, items: value })), []);
+  const floatersDirtyChanged = useCallback((value) => setChildDirty((old) => ({ ...old, floaters: value })), []);
+  const itemsBusyChanged = useCallback((value) => setChildBusy((old) => ({ ...old, items: value })), []);
+  const floatersBusyChanged = useCallback((value) => setChildBusy((old) => ({ ...old, floaters: value })), []);
   const [queueSave] = useState(createSaveQueue);
 
   const say = useCallback((message, tone = "success") => {
@@ -129,7 +140,7 @@ const PageEditor = () => {
 
   const applyServerState = useCallback((data) => {
     setPage(data.page);
-    setSections(data.sections);
+    setSections(data.sections.map((section) => ({ ...section, values: { ...section.values, display_settings: { ...(section.values?.display_settings || {}), ...(liveCollectionSettings.current[section.key] || {}) } } })));
     setDraft(data.draft || {});
     setSelected((cur) => cur || data.sections.find((s) => s.has_content)?.key || null);
   }, []);
@@ -165,7 +176,7 @@ const PageEditor = () => {
     if (mounted.current) setSaving("saving");
     try {
       const data = await savePageDraft(pageKey, payload);
-      if (!mounted.current) return;
+      if (!mounted.current) return false;
       applyServerState(data);
       // Anything typed while the request was in flight is NEWER than the copy
       // the server just echoed back, so it goes back on top. Without this the
@@ -178,6 +189,7 @@ const PageEditor = () => {
       // A stale checklist is worse than none — it would green-light an edit
       // that has since broken something.
       setChecklist(null);
+      return true;
     } catch (e) {
       // Put the edits back in the queue. They were taken out before the
       // request, so without this the fields still show the new text and the bar
@@ -185,7 +197,7 @@ const PageEditor = () => {
       // reports "no unpublished edits" and a reload loses the work silently.
       pending.current = mergeSections(payload, pending.current);
       if (!mounted.current) return false;
-      setSaving("idle");
+      setSaving("error");
       say(`Couldn’t save — ${errText(e)}. Your changes are still here; keep
         typing or press Publish to retry.`.replace(/\s+/g, " "), "error");
       return false;
@@ -216,14 +228,14 @@ const PageEditor = () => {
   // laid over it. Neither half alone is what the page would look like.
   const previewValues = useMemo(() => {
     const d = draft[selected] || {};
-    const merged = { ...(current?.values || {}), ...d };
+    const merged = { ...(current?.values || {}), ...d, display_settings: { ...(current?.values?.display_settings || {}), ...(d.display_settings || {}) } };
     // The preview reads `img`, but the editable fields are `image_url` and the
     // uploaded `image` — so a picture change used to show in neither the
     // thumbnail nor the pane captioned "as it would look".
     if ("image_url" in d || "image" in d) {
       merged.img = d.image_url || (d.image ? merged.img : "");
     }
-    return merged;
+    return { ...merged, ...previewContent(selected, merged) };
   }, [current, draft, selected]);
 
   // The cap reads out of the block's `extra` dict, draft-aware like every
@@ -233,9 +245,22 @@ const PageEditor = () => {
     return v === undefined || v === null ? "" : String(v);
   })();
 
-  // Covers tab close / reload. It cannot intercept a sidebar-link click — see
-  // the hook's own note on useBlocker — which is why unmount flushes instead.
-  useUnsavedChangesGuard(saving !== "saved" && changeCount > 0);
+  const guard = useUnsavedChangesGuard(saving === "saving" || saving === "error" || childDirty.items || childDirty.floaters, {
+    busy: publishing || childBusy.items || childBusy.floaters,
+    onSave: async () => {
+      clearTimeout(saveTimer.current);
+      if ((await itemsEditor.current?.save()) === false) return false;
+      if ((await floatersEditor.current?.save()) === false) return false;
+      if (!(await flush())) return false;
+      while (Object.keys(pending.current).length) if (!(await flush())) return false;
+      return true;
+    },
+    onDiscard: async () => {
+      if (!(await discard(false))) return false;
+      itemsEditor.current?.cancel(); floatersEditor.current?.cancel();
+      return true;
+    },
+  });
 
   /** Drag-reorder, optimistic with a revert on failure.
    *
@@ -336,21 +361,25 @@ const PageEditor = () => {
    * The endpoint has existed since Phase 1b but nothing reached it, so an
    * editor who changed their mind had no way out: the edits sat in the bar
    * forever and the only escape was publishing them. */
-  const discard = async () => {
-    if (!window.confirm(
+  const discard = async (ask = true) => {
+    if (ask && !window.confirm(
       `Throw away ${changeCount} unpublished edit${changeCount === 1 ? "" : "s"}? `
       + "What's live on the site now won't change.",
-    )) return;
+    )) return false;
     clearTimeout(saveTimer.current);
-    pending.current = {};
     try {
+      // Wait for an active save before deleting the draft, so it cannot recreate it.
+      await queueSave(async () => {});
+      pending.current = {};
       await discardPageDraft(pageKey);
       applyServerState(await getPageDraft(pageKey));
       setChecklist(null);
       setSaving("idle");
       say("Unpublished edits discarded.");
+      return true;
     } catch (e) {
       say(`Couldn’t discard — ${errText(e)}`, "error");
+      return false;
     }
   };
 
@@ -382,12 +411,48 @@ const PageEditor = () => {
   if (loading) return <div className="dashboard-wrapper"><p className="cs-muted">Loading…</p></div>;
   if (error) return <div className="dashboard-wrapper"><p className="cs-error">{error}</p></div>;
 
-  const visibleFields = FIELDS.filter(
-    (f) => !f.sections || f.sections.includes(selected),
+  const defaults = HOME_DEFAULTS[selected] || {};
+  const rawValues = { ...(current?.values || {}), ...(draft[selected] || {}) };
+  const display = { ...(current?.values?.display_settings || {}), ...(draft[selected]?.display_settings || {}) };
+  const modeFor = (field) => display[field] || (
+    field === "image" ? (rawValues.img ? "custom" : "default")
+      : field.startsWith("cta_") ? (rawValues[`${field}_label`] ? "custom" : "default")
+      : field === "heading_secondary" && selected?.startsWith("about_") ? "custom"
+      : rawValues[field] ? "custom" : "default"
   );
+  const setMode = (field, mode) => {
+    if (mode === "custom") {
+      const keys = field.startsWith("cta_") ? [`${field}_label`, `${field}_href`] : [field];
+      for (const key of keys) {
+        if (field !== "image" && !valueOf(key)) edit(key, homeField(selected, { ...rawValues, display_settings: display }, key));
+      }
+    }
+    const edited = pending.current[selected]?.display_settings || draft[selected]?.display_settings || {};
+    edit("display_settings", { ...edited, [field]: mode });
+  };
+  const editCustom = (field, value) => {
+    const key = field.startsWith("cta_primary_") ? "cta_primary" : field.startsWith("cta_secondary_") ? "cta_secondary" : field;
+    if (key.startsWith("cta_") && !display[key]) {
+      for (const sibling of [`${key}_label`, `${key}_href`]) {
+        if (sibling !== field && !valueOf(sibling)) edit(sibling, homeField(selected, rawValues, sibling));
+      }
+    }
+    edit(field, value);
+    const edited = pending.current[selected]?.display_settings || draft[selected]?.display_settings || {};
+    edit("display_settings", { ...edited, [key]: "custom" });
+  };
+  const visibleFields = FIELDS.filter((field) => field.name in defaults
+    || (field.name === "body" && selected?.startsWith("about_")));
+  const liveDisplayChanged = (next) => {
+    liveCollectionSettings.current[selected] = { ...(liveCollectionSettings.current[selected] || {}), ...next };
+    setSections((xs) => xs.map((section) => section.key === selected
+      ? { ...section, values: { ...section.values, display_settings: { ...(section.values?.display_settings || {}), ...next } } } : section));
+  };
+
 
   return (
     <div className="cs-editor">
+      <UnsavedChangesDialog guard={guard} saveLabel="Save draft and leave" message="Save your latest edits as an unpublished draft, or discard this page’s unpublished changes and leave. Published content will stay as it is." />
       <header className="cs-publishbar">
         <div className="cs-publishbar__id">
           <span className="cs-publishbar__name">{page?.label}</span>
@@ -409,7 +474,7 @@ const PageEditor = () => {
           <History size={13} aria-hidden="true" /> Version history
         </Link>
         {changeCount > 0 && (
-          <button type="button" className="cs-btn-ghost" onClick={discard}>
+          <button type="button" className="cs-btn-ghost" onClick={() => discard()}>
             Discard changes
           </button>
         )}
@@ -450,11 +515,12 @@ const PageEditor = () => {
                 <button
                   type="button"
                   className="cs-sectionrow__btn"
-                  onClick={() => setSelected(s.key)}
+                  onClick={() => guard.requestAction(() => setSelected(s.key))}
                   disabled={!s.has_content}
                 >
                   {s.label}
                 </button>
+                {s.order_id && (
                 <button
                   type="button"
                   className="cs-sectionrow__eye"
@@ -470,6 +536,7 @@ const PageEditor = () => {
                     ? <Eye size={13} aria-hidden="true" />
                     : <EyeOff size={13} aria-hidden="true" />}
                 </button>
+                )}
                 {edited && <i className="cs-editeddot" title="Edited, not yet published" />}
               </div>
             );
@@ -493,40 +560,58 @@ const PageEditor = () => {
                   id: `f-${f.name}`,
                   label: f.label,
                   hint: f.hint,
-                  value: valueOf(f.name),
-                  onChange: (v) => edit(f.name, v),
+                  value: modeFor(f.name) === "default" ? (defaults[f.name] || "") : valueOf(f.name),
+                  onChange: (v) => editCustom(f.name, v),
                 };
-                if (f.kind === "heading") return <HeadingField key={f.name} {...common} />;
-                if (f.kind === "long") return <LongTextField key={f.name} {...common} />;
-                return <TextField key={f.name} {...common} placeholder={f.placeholder} />;
+                const control = f.kind === "heading" ? <HeadingField {...common} />
+                  : f.kind === "long" ? <LongTextField {...common} /> : <TextField {...common} placeholder={f.placeholder} />;
+                return <div key={f.name}>
+                  <DisplayChoice label={f.label} value={modeFor(f.name)} onChange={(mode) => setMode(f.name, mode)} required={f.name === "heading"} />
+                  {modeFor(f.name) !== "hidden" && <fieldset className="cs-mode-fields" disabled={modeFor(f.name) !== "custom"}>{control}</fieldset>}
+                </div>;
               })}
 
+              {defaults.cta_primary_label !== undefined && <div>
+                <DisplayChoice label="Main button" value={modeFor("cta_primary")} onChange={(mode) => setMode("cta_primary", mode)} />
+                {modeFor("cta_primary") !== "hidden" && <fieldset className="cs-mode-fields" disabled={modeFor("cta_primary") !== "custom"}>
               <ButtonField
                 idPrefix="cta-main"
                 label="Main button"
                 hint="The one thing you most want a visitor to do next."
-                textValue={valueOf("cta_primary_label")}
-                hrefValue={valueOf("cta_primary_href")}
-                onText={(v) => edit("cta_primary_label", v)}
-                onHref={(v) => edit("cta_primary_href", v)}
+                textValue={modeFor("cta_primary") === "default" ? defaults.cta_primary_label : valueOf("cta_primary_label")}
+                hrefValue={modeFor("cta_primary") === "default" ? defaults.cta_primary_href : valueOf("cta_primary_href")}
+                onText={(v) => editCustom("cta_primary_label", v)}
+                onHref={(v) => editCustom("cta_primary_href", v)}
                 targets={targets}
+                fixedDestination={selected === "courses_hero"}
               />
+                </fieldset>}
+              </div>}
+              {defaults.cta_secondary_label !== undefined && <div>
+                <DisplayChoice label="Second button" value={modeFor("cta_secondary")} onChange={(mode) => setMode("cta_secondary", mode)} />
+                {modeFor("cta_secondary") !== "hidden" && <fieldset className="cs-mode-fields" disabled={modeFor("cta_secondary") !== "custom"}>
               <ButtonField
                 idPrefix="cta-second"
                 label="Second button"
                 hint="An alternative for someone not ready for the main one. Optional."
-                textValue={valueOf("cta_secondary_label")}
-                hrefValue={valueOf("cta_secondary_href")}
-                onText={(v) => edit("cta_secondary_label", v)}
-                onHref={(v) => edit("cta_secondary_href", v)}
+                textValue={modeFor("cta_secondary") === "default" ? defaults.cta_secondary_label : valueOf("cta_secondary_label")}
+                hrefValue={modeFor("cta_secondary") === "default" ? defaults.cta_secondary_href : valueOf("cta_secondary_href")}
+                onText={(v) => editCustom("cta_secondary_label", v)}
+                onHref={(v) => editCustom("cta_secondary_href", v)}
                 targets={targets}
+                fixedDestination={selected === "courses_hero"}
               />
+                </fieldset>}
+              </div>}
 
               {/* Both read the pending edit, not the live row. Reading `current`
                   meant clicking either control changed nothing on screen for
                   1.5s — and Remove appeared to do nothing at all, because
                   clearing `image_url` on a section whose picture is an uploaded
                   `image` is a no-op the server correctly dedupes away. */}
+              {"img" in defaults && <div>
+                <DisplayChoice label="Picture" value={modeFor("image")} onChange={(mode) => setMode("image", mode)} />
+                {modeFor("image") === "custom" && <>
               <PictureField
                 label="Picture"
                 hint="Shown alongside this section."
@@ -536,13 +621,12 @@ const PageEditor = () => {
                 onClear={() => {
                   edit("image_url", "");
                   edit("image", "");
+                  setMode("image", "hidden");
                 }}
               />
-
-              <VisibilitySwitch
-                status={draft[selected]?.status || current.status}
-                onChange={(next) => edit("status", next)}
-              />
+                </>}
+              </div>}
+              <p className="cs-field__hint">Text and picture choices go live when you publish. Use the eye beside a homepage section to hide the whole section.</p>
 
               {/* The rows listed beneath this section's own copy. Without
                   this the editor showed a section with six live bullet
@@ -590,7 +674,14 @@ const PageEditor = () => {
 
               {current.supports_list_items ? (
                 <SectionListItems
+                  key={current.key}
+                  editorRef={itemsEditor}
+                  onDraftChange={itemsDirtyChanged}
+                  onBusyChange={itemsBusyChanged}
                   section={current.key}
+                  blockId={current.block_id}
+                  displaySettings={current.values?.display_settings || {}}
+                  onDisplayUpdated={liveDisplayChanged}
                   sectionLabel={current.label}
                   onNotify={say}
                 />
@@ -611,8 +702,15 @@ const PageEditor = () => {
               {/* The badges pinned on this section's artwork. Renders nothing
                   for the fourteen sections that have no slots. */}
               <SectionFloaters
+                key={current.key}
+                editorRef={floatersEditor}
+                onDraftChange={floatersDirtyChanged}
+                onBusyChange={floatersBusyChanged}
                 section={current.key}
                 slots={current.floater_slots}
+                blockId={current.block_id}
+                displaySettings={current.values?.display_settings || {}}
+                onDisplayUpdated={liveDisplayChanged}
                 onNotify={say}
               />
 

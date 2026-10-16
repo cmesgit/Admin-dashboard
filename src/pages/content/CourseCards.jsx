@@ -97,7 +97,7 @@ const CourseCards = () => {
     }
   };
 
-  const submit = async (payload, file) => {
+  const submit = async (payload, file, close = true) => {
     setBusy("form");
     setFormError("");
     try {
@@ -112,16 +112,18 @@ const CourseCards = () => {
         await createContentShowcase(data, isMultipart);
       }
       say(modal.mode === "edit" ? "Saved." : "Card added.");
-      setModal(null);
+      if (close) setModal(null);
       // Refetch rather than patching the response in: a card linked to a
       // course derives its title, price and thumbnail server-side on every
       // read, so the row this screen should show is the one the server
       // computes, not the one we sent.
       load();
+      return true;
     } catch (e) {
       // Keep the modal open with the reason — a card form holds a lot of
       // typing and closing it on failure loses all of it.
       setFormError(errText(e));
+      return false;
     } finally {
       setBusy(null);
     }

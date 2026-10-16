@@ -425,6 +425,9 @@ export const deleteContentShowcase = async (id) =>
 
 /* ── Content: Homepage Content Blocks (Hero/WhyShiksha/etc. heading+copy+image) ── */
 
+export const updateHomeDisplaySettings = async (id, display_settings) =>
+  (await api.patch(`/content/admin/home-content/${id}/`, { display_settings })).data;
+
 export const deleteHomeContentBlock  = async (id) =>
   (await api.delete(`/content/admin/home-content/${id}/`)).data;
 
