@@ -9,9 +9,7 @@
 //  2. A "Linked to a real course" chip. A card can point at nothing in
 //     particular, and until now there was no way to see which ones do.
 //
-// Heavy editing (image upload, gradient, course linking) stays in the existing
-// Showcase editor — this screen deliberately does not reimplement 497 lines of
-// form, it links to it.
+// The course-card modal owns editing and keeps advanced settings collapsed.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GripVertical, LayoutGrid, Link2, Plus, Trash2 } from "lucide-react";
 import {
@@ -30,7 +28,7 @@ const FILTERS = [
   { id: "all", label: "All" },
   { id: "showing", label: "Showing" },
   { id: "hidden", label: "Hidden" },
-  { id: "linked", label: "Linked to a course" },
+  { id: "linked", label: "Linked to a course or board" },
 ];
 
 const asList = (r) => (Array.isArray(r) ? r : r?.results || []);
@@ -145,7 +143,7 @@ const CourseCards = () => {
   const visible = useMemo(() => {
     if (filter === "showing") return cards.filter(isShowing);
     if (filter === "hidden") return cards.filter((c) => !isShowing(c));
-    if (filter === "linked") return cards.filter((c) => c.course);
+    if (filter === "linked") return cards.filter((c) => c.course || c.board);
     return cards;
   }, [cards, filter]);
 
@@ -293,24 +291,24 @@ const CourseCards = () => {
                   <GripVertical size={13} aria-hidden="true" />
                 </span>
                 {c.ribbon && <span className="cs-coursecard__ribbon">{c.ribbon}</span>}
-                {c.img && <img src={c.img} alt="" />}
+                {(c.image || c.image_url) && <img src={c.image || c.image_url} alt="" />}
               </div>
 
               <div className="cs-coursecard__body">
                 <span className="cs-coursecard__title">{c.title}</span>
                 <span className="cs-coursecard__meta">
                   {c.level_label || "No level set"}
-                  {c.price_label ? ` · ₹${c.price_label}` : " · No price"}
+                  {c.price_label ? ` · ${/^(Free|₹)/i.test(c.price_label) ? c.price_label : `₹${c.price_label}`}` : " · No price"}
                 </span>
 
-                {c.course ? (
+                {c.course || c.board ? (
                   <span className="cs-chip cs-tone-ok cs-coursecard__link">
                     <Link2 size={12} aria-hidden="true" />
-                    Linked to {c.course_title || "a real course"}
+                    Linked to {c.course_title || c.board_name || "a course or board"}
                   </span>
                 ) : (
                   <span className="cs-chip cs-tone-muted cs-coursecard__link">
-                    Not linked to a course
+                    Uses a page link
                   </span>
                 )}
               </div>
@@ -319,6 +317,7 @@ const CourseCards = () => {
                 <button
                   type="button"
                   role="switch"
+                  aria-label={`Show ${c.title} on the homepage`}
                   aria-checked={showing}
                   className={`cs-switch${showing ? " is-on" : ""}`}
                   disabled={busy === c.id}

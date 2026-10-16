@@ -1,0 +1,60 @@
+.card-editor-overlay { padding: 16px; background: var(--admin-scrim); }
+.cm-form-card.card-editor {
+  width: min(100%, 1000px); max-height: calc(100dvh - 32px); padding: 0;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--admin-surface); color: var(--admin-ink); border-radius: 16px;
+  box-shadow: var(--admin-shadow-overlay);
+}
+.card-editor__header, .card-editor__footer { flex: none; padding: 18px 24px; }
+.card-editor__header { border-bottom: 1px solid var(--admin-border); }
+.card-editor__header h2 { margin: 0 0 6px; font-size: 20px; }
+.card-editor__header p { margin: 0; color: var(--admin-body); }
+.card-editor__body { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 28px; overflow-y: auto; padding: 24px; min-height: 0; }
+.card-editor__fields { min-width: 0; }
+.card-editor__section { border: 0; min-width: 0; padding: 0; margin: 0 0 24px; }
+.card-editor__section legend { width: 100%; font-size: 15px; font-weight: 700; padding: 0 0 12px; }
+.card-editor .cm-field { margin-bottom: 14px; }
+.card-editor .cm-hint { color: var(--admin-body); margin: 0 0 14px; font-size: 12px; line-height: 1.55; }
+.card-editor .cm-field input, .card-editor .cm-field select, .card-editor .cm-field textarea { width: 100%; min-width: 0; border-color: var(--admin-border); color: var(--admin-ink); background: var(--admin-surface); }
+.card-editor .cm-field input:disabled { color: var(--admin-body); background: var(--admin-surface-sunken); }
+.card-editor .cm-check { align-items: flex-start; margin-bottom: 10px; }
+.card-editor .cm-checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; border-color: var(--admin-border); }
+.card-editor .cm-field input[type="checkbox"] { width: 16px; flex: none; }
+.card-editor .cm-check--inline { white-space: nowrap; margin-bottom: 0; }
+.card-editor [aria-invalid="true"] { border-color: var(--admin-danger) !important; }
+.card-editor__error { color: var(--admin-danger); font-size: 12px; line-height: 1.5; margin: 4px 0 8px; }
+.card-editor__error button { color: var(--admin-primary); background: none; border: 0; text-decoration: underline; cursor: pointer; }
+.card-editor__advanced { border: 1px solid var(--admin-border); border-radius: 10px; margin-bottom: 24px; }
+.card-editor__advanced summary { cursor: pointer; padding: 14px; font-weight: 600; }
+.card-editor__advanced summary small { display: block; color: var(--admin-body); font-weight: 400; margin: 6px 0 0; }
+.card-editor__advanced > fieldset { padding: 0 14px 14px; margin: 0; }
+.card-editor__advanced .confirm-cancel { margin-bottom: 14px; }
+.card-editor__preview { align-self: start; position: sticky; top: 0; min-width: 0; }
+.card-editor__preview > h3 { font-size: 14px; margin: 0 0 8px; }
+.card-editor__sample { border: 1px solid var(--admin-border); border-radius: 14px; overflow: hidden; margin: 0 0 16px; box-shadow: var(--admin-shadow-card); }
+.card-editor__art { height: 150px; position: relative; display: grid; place-items: center; color: var(--admin-surface); }
+.card-editor__ribbon, .card-editor__level { position: absolute; max-width: calc(100% - 24px); overflow-wrap: anywhere; padding: 5px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+.card-editor__ribbon { top: 12px; left: 12px; background: var(--admin-warn-tint); color: var(--admin-warn); }
+.card-editor__level { bottom: 12px; left: 12px; background: var(--admin-surface); color: var(--admin-ink); }
+.card-editor__sample-body { padding: 16px; }
+.card-editor__sample-body h3 { margin: 0 0 12px; font-size: 17px; overflow-wrap: anywhere; }
+.card-editor__sample-body p { color: var(--admin-body); font-size: 12px; line-height: 1.5; margin: 0 0 16px; overflow-wrap: anywhere; }
+.card-editor__sample-footer { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; font-size: 12px; }
+.card-editor__sample-footer > span { color: var(--admin-primary); font-weight: 600; }
+.card-editor__preview > p { overflow-wrap: anywhere; }
+.card-editor__footer { border-top: 1px solid var(--admin-border); background: var(--admin-surface); }
+.card-editor .confirm-ok { background: var(--admin-primary); color: var(--admin-surface); }
+.card-editor .confirm-cancel { background: var(--admin-surface-sunken); color: var(--admin-ink); }
+.card-editor button:disabled { opacity: .6; cursor: wait; }
+.card-editor :focus-visible { outline: 2px solid var(--admin-primary); outline-offset: 2px; }
+@media (max-width: 760px) {
+  .card-editor__body { grid-template-columns: minmax(0, 1fr); padding: 16px; gap: 0; }
+  .card-editor__preview { position: static; width: min(100%, 360px); }
+  .card-editor__header, .card-editor__footer { padding: 16px; }
+}
+@media (max-width: 480px) {
+  .card-editor-overlay { padding: 8px; }
+  .cm-form-card.card-editor { max-height: calc(100dvh - 16px); }
+  .card-editor .confirm-actions { flex-direction: column-reverse; }
+  .card-editor .confirm-actions button { width: 100%; }
+}
