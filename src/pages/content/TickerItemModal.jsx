@@ -50,6 +50,15 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
   /* The picked File is kept OUT of form state: it cannot be JSON-encoded, and
      the request only becomes multipart when one exists (see buildBody). */
   const [file, setFile] = useState(null);
+  const [imageRemoved, setImageRemoved] = useState(false);
+  const [imageInputKey, setImageInputKey] = useState(0);
+
+  const removePicture = () => {
+    setFile(null);
+    setImageRemoved(true);
+    setImageInputKey((key) => key + 1);
+    setF((p) => ({ ...p, image_url: "" }));
+  };
 
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
@@ -128,6 +137,9 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
       // `image_url` is sent as typed; the File (if any) rides alongside as
       // multipart and the server prefers it. Sending "" clears the URL.
       image_url: f.image_url.trim(),
+      // Omitting image preserves the upload. Clear it explicitly, unless a
+      // replacement File is about to be sent under the same field name.
+      ...(imageRemoved && !file ? { image: null } : {}),
     }, file);
   };
 
@@ -280,12 +292,27 @@ const TickerItemModal = ({ initial, busy, error, onCancel, onSubmit }) => {
           <span className="cs-field__label">{L.image}</span>
           <div className="cs-picker">
             <ImageUploadField
+              key={imageInputKey}
               value={file}
               onChange={setFile}
-              previewUrl={initial?.img || null}
+              previewUrl={(!imageRemoved && initial?.image) || f.image_url || null}
               previewClassName="cs-thumb"
+              disabled={busy}
             />
           </div>
+          {(file || (!imageRemoved && initial?.image) || f.image_url) && (
+            <button
+              type="button"
+              className="cs-btn-ghost"
+              disabled={busy}
+              onClick={removePicture}
+            >
+              Remove picture
+            </button>
+          )}
+          {imageRemoved && !file && !f.image_url && (
+            <p className="cs-field__hint">No picture will be shown after saving.</p>
+          )}
           <input
             className="cs-input cs-input--block"
             value={f.image_url}
