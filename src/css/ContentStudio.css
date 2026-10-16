@@ -1577,3 +1577,13 @@
 .cs-mode-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 .cs-mode-fields:disabled { opacity: .7; }
 .cs-display-choice { padding-top: 12px; border-top: 1px solid var(--admin-border-soft); }
+
+/* Match AdminLayout's phone padding instead of cancelling desktop gutters. */
+@media (max-width: 640px) {
+  .cs-editor { margin: -16px -16px -40px; min-width: 0; }
+  .cs-editor__body { min-width: 0; }
+  .cs-fields { padding: 20px 16px 40px; max-width: none; }
+  .cs-publishbar { padding: 12px 16px; }
+  .cs-button-row { grid-template-columns: minmax(0, 1fr); }
+  .cs-preview__stage { min-width: 0; }
+}

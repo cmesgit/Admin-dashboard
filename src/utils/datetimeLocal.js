@@ -22,3 +22,8 @@ export const localInputToIso = (value) => {
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString();
 };
+
+// Clearing an existing ad's start means "start now". Omitting it on PATCH
+// would preserve the old future date and leave the ad scheduled invisibly.
+export const announcementStart = (value, editing, now = () => new Date().toISOString()) =>
+  localInputToIso(value) || (editing ? now() : undefined);

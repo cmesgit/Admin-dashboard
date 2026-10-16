@@ -7,7 +7,7 @@
 // schedule a notice at all, and there was nothing on screen to say so.
 import { useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import ImageUploadField from "../../components/ImageUploadField";
-import { isoToLocalInput, localInputToIso } from "../../utils/datetimeLocal";
+import { isoToLocalInput, localInputToIso, announcementStart } from "../../utils/datetimeLocal";
 import { TICKER_SLOTS, unbuiltSlots } from "./tickerSlots";
 
 // Mirrors content.models.TickerKind, and the two rules its clean() enforces.
@@ -149,7 +149,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
       metric_value: f.metric_value.trim(),
       metric_label: f.metric_label.trim(),
       pinned: f.pinned,
-      starts_at: localInputToIso(f.starts_at) || undefined,
+      starts_at: announcementStart(f.starts_at, isEdit),
       ends_at: localInputToIso(f.ends_at),   // null clears it
       // ⚠ New items are forced to DRAFT. `StatusedContentModel.status`
       // defaults to PUBLISHED and `starts_at` to now, so without this one
@@ -187,6 +187,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
           <label className="cs-field__label" htmlFor="t-message">{L.message}</label>
           <input
             id="t-message"
+            maxLength={300}
             className="cs-input cs-input--block"
             value={f.message}
             autoFocus

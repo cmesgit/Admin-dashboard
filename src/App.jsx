@@ -69,7 +69,7 @@ const ModeratorActivity = lazy(() => import("./pages/ModeratorActivity"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 
 const Spinner = () => (
-  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+  <div role="status" style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
     <div style={{ textAlign: "center", color: "#555" }}>
       <div
         style={{
@@ -88,9 +88,13 @@ const Spinner = () => (
 );
 
 const AppLoader = ({ children }) => {
-  const { loading } = useAuth();
+  const { loading, sessionError, bootstrap } = useAuth();
 
   if (loading) return <Spinner />;
+  if (sessionError) return <main className="login-container"><section className="login-form" role="alert">
+    <h2>Couldn’t connect</h2><p>{sessionError}</p>
+    <button type="button" className="login-submit-btn" onClick={() => bootstrap()}>Try again</button>
+  </section></main>;
 
   return children;
 };
