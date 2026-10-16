@@ -8,3 +8,11 @@
   padding-top: 18px;
   border-top: 1px solid var(--admin-border-soft);
 }
+
+.ticker-ad-preview { margin-block: 16px; padding: 14px; border: 1px solid var(--admin-border); border-radius: 12px; background: var(--admin-surface-muted); }
+.ticker-ad-preview__card { display: flex; align-items: flex-start; gap: 14px; min-width: 0; }
+.ticker-ad-preview__card > img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; flex: none; }
+.ticker-ad-preview__card > div { min-width: 0; overflow-wrap: anywhere; }
+.ticker-ad-preview__card strong { display: block; margin-top: 8px; color: var(--admin-ink); }
+.ticker-ad-preview__card p { margin-block: 6px; color: var(--admin-body); }
+@media(max-width:480px) { .ticker-ad-preview__card > img { width: 56px; height: 56px; } .ticker-item-editor .cs-home__head { flex-wrap: wrap; gap: 12px; } }

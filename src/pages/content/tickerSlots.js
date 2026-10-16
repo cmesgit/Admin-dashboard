@@ -17,15 +17,23 @@
 //
 // Flip a slot to `built: true` in the phase that ships its surface. Nothing
 // else needs changing; the screen and the editor both read this.
+//
+// All eight are `true` as of 2026-09-11. Phases 5–8 shipped the last five
+// surfaces (hero, courses, dashboard, auth_login, auth_signup) and went to
+// production on 2026-09-10, but none of them flipped its flag — so for a day
+// the editor told admins that five live surfaces would render nothing. The
+// `built` mechanism is KEPT rather than deleted: a ninth slot added to
+// `content.TickerSlot` ships as a pickable id before its surface exists, and
+// this is the only place that can say so.
 export const TICKER_SLOTS = [
   { id: "navbar", label: "Navbar strip", where: "Every page, under the menu", built: true },
-  { id: "hero", label: "Homepage hero", where: "Cards inside the circle", built: false },
+  { id: "hero", label: "Homepage hero", where: "Cards inside the circle", built: true },
   { id: "home_band", label: "Homepage band", where: "Between sections", built: true },
-  { id: "courses", label: "Courses rail", where: "Course listing pages", built: false },
-  { id: "dashboard", label: "Student dashboard", where: "The right-hand rail", built: false },
+  { id: "courses", label: "Courses rail", where: "Course listing pages", built: true },
+  { id: "dashboard", label: "Student dashboard", where: "The right-hand rail", built: true },
   { id: "footer", label: "Footer strip", where: "Bottom of every page", built: true },
-  { id: "auth_login", label: "Login screen", where: "Under the sign-in form", built: false },
-  { id: "auth_signup", label: "Signup screen", where: "Under the join form", built: false },
+  { id: "auth_login", label: "Login screen", where: "Below Create one, on both login steps", built: true },
+  { id: "auth_signup", label: "Signup screen", where: "Brand panel; mentor cards below the join form", built: true },
 ];
 
 /** Slots an admin can pick that will not render anywhere yet. */

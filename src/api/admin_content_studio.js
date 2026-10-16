@@ -234,9 +234,25 @@ export const reorderShowcaseCards = async (ids) => {
  */
 
 /** The whole queue, newest slots included. Throws on failure. */
-export const getTickerItems = async (params, { signal } = {}) => {
-  const { data } = await api.get(`${BASE}/announcements/`, { params, signal });
-  return data;
+export const getTickerItems = async (params = {}, { signal } = {}) => {
+  const { search = "", ...filters } = params;
+  const items = new Map();
+  let page = 1;
+  let more = true;
+  while (more) {
+    const { data } = await api.get(`${BASE}/announcements/`, {
+      params: { ...filters, page }, signal,
+    });
+    const rows = Array.isArray(data) ? data : data?.results || [];
+    for (const row of rows) items.set(row.id, row);
+    more = !Array.isArray(data) && Boolean(data?.next);
+    page += 1;
+  }
+  const terms = search.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  return [...items.values()].filter((row) => {
+    const text = [row.message, row.body, row.kind, row.link_label, row.link_url].join(" ").toLocaleLowerCase();
+    return terms.every((term) => text.includes(term));
+  });
 };
 
 export const getTickerItem = async (id, { signal } = {}) => {

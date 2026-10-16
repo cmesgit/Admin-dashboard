@@ -36,7 +36,10 @@ const KIND_LABEL = {
 };
 
 const asList = (r) => (Array.isArray(r) ? r : r?.results || []);
-const isShowing = (it) => it.status === "published";
+const isPublished = (it) => it.status === "published";
+const isShowing = (it) => isPublished(it)
+  && (!it.starts_at || Date.parse(it.starts_at) <= Date.now())
+  && (!it.ends_at || Date.parse(it.ends_at) >= Date.now());
 
 
 /** Read-only prose for the display window.
@@ -150,14 +153,14 @@ const LiveTicker = () => {
   );
 
   const toggle = async (item) => {
-    const next = isShowing(item) ? "draft" : "published";
+    const next = isPublished(item) ? "draft" : "published";
     setBusy(item.id);
     const before = items;
     setItems((xs) => xs.map((x) => (x.id === item.id ? { ...x, status: next } : x)));
     try {
       await updateTickerItem(item.id, { status: next });
       say(next === "published"
-        ? "Now showing to visitors."
+        ? (isShowing({ ...item, status: next }) ? "Now showing to visitors." : "Published. It follows the display window.")
         : "Hidden from visitors. Nothing is deleted.");
     } catch (e) {
       setItems(before);              // revert — the server said no
@@ -233,9 +236,16 @@ const LiveTicker = () => {
           <p className="cs-sectionlist__note">
             Counts are what a visitor would see right now — items that are
             hidden, or outside their display window, are not counted. An item
-            with no places chosen shows on the navbar strip. Places marked
-            “soon” aren’t built yet: you can queue items for them now and they
-            will start showing the day that screen ships.
+            with no places chosen shows on the navbar strip.
+            {/* Only worth saying while a "soon" chip can actually appear.
+                All eight surfaces are built today, so stating the rule
+                unconditionally would have the panel explain a marker that is
+                nowhere on screen. Returns on its own if a ninth slot lands
+                ahead of its surface. */}
+            {SLOTS.some((s) => !s.built) && (
+              <> Places marked “soon” aren’t built yet: you can queue items for
+              them now and they will start showing the day that screen ships.</>
+            )}
           </p>
         </aside>
 
@@ -264,7 +274,8 @@ const LiveTicker = () => {
           {!loading && !error && visible.length > 0 && (
             <div className="cs-card cs-card--flush">
               {visible.map((it) => {
-                const showing = isShowing(it);
+                const showing = isPublished(it);
+                const liveNow = isShowing(it);
                 return (
                   <div className="cs-qrow" key={it.id}>
                     <div className="cs-qrow__text">
@@ -306,7 +317,7 @@ const LiveTicker = () => {
                       <span className="cs-switch__knob" />
                     </button>
                     <span className="cs-qrow__state">
-                      {showing ? "Showing" : "Hidden from visitors"}
+                      {!showing ? "Hidden from visitors" : liveNow ? "Showing" : (it.ends_at && Date.parse(it.ends_at) < Date.now()) ? "Expired" : "Scheduled"}
                     </span>
                     <Link
                       className="cs-btn-ghost"
