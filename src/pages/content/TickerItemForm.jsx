@@ -177,7 +177,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
         <AdPreview form={f} file={file} imageUrl={(!imageRemoved && initial?.image) || f.image_url || ""} kindLabel={kindDef?.label} />
         <p className="cs-field__hint cs-field__hint--tight">
           {isEdit
-            ? "Changing the words doesn’t change who can see it."
+            ? (initial.status === "published" ? "This advertisement is published. Saving updates its live content." : "Saving keeps this advertisement’s current visibility.")
             : "It saves as a draft — nothing appears until you switch it on."}
         </p>
 
@@ -337,7 +337,12 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
           <input
             className="cs-input cs-input--block"
             value={f.image_url}
-            onChange={(e) => set("image_url", e.target.value)}
+            onChange={(e) => {
+              setFile(null);
+              setImageRemoved(true);
+              setImageInputKey((key) => key + 1);
+              set("image_url", e.target.value);
+            }}
             placeholder="…or paste an image link"
             aria-label="Image link"
           />
