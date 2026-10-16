@@ -1,3 +1,4 @@
+import { createSaveQueue, mergeSectionEdits as mergeSections } from "../../utils/draftSaveQueue";
 // The site-pages split editor (design_handoff_content_studio Phase 5).
 //
 // ⚠ Written from scratch. The handoff bundle ships a `PageEditor.jsx` scaffold
@@ -33,6 +34,7 @@ import {
   VisibilitySwitch,
 } from "./ChapterlessFields";
 import "../../css/ContentStudio.css";
+import "../../css/Moderator.css";
 
 // The page being edited comes from the route (/content/pages/:key). This used
 // to be hardcoded to "home", so /content/pages/<anything> silently loaded,
@@ -40,18 +42,6 @@ import "../../css/ContentStudio.css";
 // harmless only for as long as the backend's PAGES registry has one entry.
 const FALLBACK_PAGE_KEY = "home";
 const AUTOSAVE_MS = 1500;
-
-/** Merge two `{section: {field: value}}` maps, the right-hand side winning.
- *
- * Both the autosave queue and the draft use this nested shape, and a plain
- * spread at the top level would drop every other field in a section. */
-const mergeSections = (base, extra) => {
-  const out = { ...base };
-  for (const [section, fields] of Object.entries(extra || {})) {
-    out[section] = { ...(out[section] || {}), ...fields };
-  }
-  return out;
-};
 
 // The renaming that makes this screen worth building. Left side: the column
 // name nobody outside the codebase should ever see. Right side: what it
@@ -109,11 +99,12 @@ const PageEditor = () => {
   const toastTimer = useRef(null);
   const saveTimer = useRef(null);
   const pending = useRef({});
+  const [queueSave] = useState(createSaveQueue);
 
-  const say = useCallback((m) => {
+  const say = useCallback((message, tone = "success") => {
     clearTimeout(toastTimer.current);
-    setToast(m);
-    toastTimer.current = setTimeout(() => setToast(null), 2600);
+    setToast({ message, tone });
+    toastTimer.current = setTimeout(() => setToast(null), tone === "error" ? 7000 : 2600);
   }, []);
 
   const mounted = useRef(true);
@@ -167,10 +158,10 @@ const PageEditor = () => {
     return current?.values?.[field] ?? "";
   }, [draft, selected, current]);
 
-  const flush = useCallback(async () => {
+  const flush = useCallback(() => queueSave(async () => {
     const payload = pending.current;
     pending.current = {};
-    if (!Object.keys(payload).length) return;
+    if (!Object.keys(payload).length) return true;
     if (mounted.current) setSaving("saving");
     try {
       const data = await savePageDraft(pageKey, payload);
@@ -192,13 +183,15 @@ const PageEditor = () => {
       // request, so without this the fields still show the new text and the bar
       // still counts them, but nothing will ever send them: Publish then
       // reports "no unpublished edits" and a reload loses the work silently.
-      pending.current = mergeSections(pending.current, payload);
-      if (!mounted.current) return;
+      pending.current = mergeSections(payload, pending.current);
+      if (!mounted.current) return false;
       setSaving("idle");
       say(`Couldn’t save — ${errText(e)}. Your changes are still here; keep
-        typing or press Publish to retry.`.replace(/\s+/g, " "));
+        typing or press Publish to retry.`.replace(/\s+/g, " "), "error");
+      return false;
     }
-  }, [applyServerState, say, pageKey]);
+    return true;
+  }), [applyServerState, say, pageKey, queueSave]);
 
   useEffect(() => { flushRef.current = flush; }, [flush]);
 
@@ -270,7 +263,7 @@ const PageEditor = () => {
       say("Order saved. Visitors see this order now.");
     } catch (e) {
       setSections(before);
-      say(`Couldn’t save the new order — ${errText(e)}`);
+      say(`Couldn’t save the new order — ${errText(e)}`, "error");
     }
   };
 
@@ -297,7 +290,7 @@ const PageEditor = () => {
         : `“${s.label}” is hidden from the home page.`);
     } catch (e) {
       setSections(before);
-      say(`Couldn’t change that — ${errText(e)}`);
+      say(`Couldn’t change that — ${errText(e)}`, "error");
     }
   };
 
@@ -321,7 +314,7 @@ const PageEditor = () => {
       applyServerState(await getPageDraft(pageKey));
       say(`“${current.label}” is back to its built-in wording.`);
     } catch (e) {
-      say(`Couldn’t delete that — ${errText(e)}`);
+      say(`Couldn’t delete that — ${errText(e)}`, "error");
     } finally {
       setBusy(false);
     }
@@ -329,12 +322,12 @@ const PageEditor = () => {
 
   const openChecklist = async () => {
     clearTimeout(saveTimer.current);
-    await flush();
+    if (!(await flush())) return;
     try {
       setChecklist(await getPageChecklist(pageKey));
       setChecklistOpen(true);
     } catch (e) {
-      say(errText(e));
+      say(errText(e), "error");
     }
   };
 
@@ -357,20 +350,22 @@ const PageEditor = () => {
       setSaving("idle");
       say("Unpublished edits discarded.");
     } catch (e) {
-      say(`Couldn’t discard — ${errText(e)}`);
+      say(`Couldn’t discard — ${errText(e)}`, "error");
     }
   };
 
   const doPublish = async () => {
     setPublishing(true);
     try {
+      clearTimeout(saveTimer.current);
+      if (!(await flush())) return;
       const res = await publishPage(pageKey);
       say(`Published ${res.section_count} section${res.section_count === 1 ? "" : "s"}.`);
       setChecklistOpen(false);
       setChecklist(null);
       applyServerState(await getPageDraft(pageKey));
     } catch (e) {
-      say(e?.response?.data?.detail || errText(e));
+      say(e?.response?.data?.detail || errText(e), "error");
       // A refusal means the checklist on screen is now wrong — it went on
       // showing everything passing with Publish still armed, so the only way to
       // find the second blocker was to click again and read another one-line
@@ -718,7 +713,7 @@ const PageEditor = () => {
         />
       )}
 
-      <Toast message={toast} />
+      <Toast message={toast?.message} tone={toast?.tone} />
     </div>
   );
 };
