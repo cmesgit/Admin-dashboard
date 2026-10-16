@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AlertCircle, CalendarClock, Clock, FileText, HelpCircle, Image as ImageIcon,
-  Layout, PenLine, Undo2,
+  Layout, PenLine, Undo2, Megaphone,
 } from "lucide-react";
 import {
   getActivity, getCalendar, getInbox, restoreRevision,
@@ -16,6 +16,7 @@ import { errText } from "../../utils/errText";
 import Toast from "../../components/Toast";
 import { describeChange } from "./activityWords";
 import "../../css/ContentStudio.css";
+import "../../css/Moderator.css";
 
 const KIND_ICON = {
   post: FileText, affair: FileText, answer: HelpCircle, notice: AlertCircle,
@@ -23,6 +24,7 @@ const KIND_ICON = {
 };
 
 const START_ACTIONS = [
+  { to: "/content/ticker/new", icon: Megaphone, title: "Create an advertisement", sub: "Choose a picture, placement and display dates." },
   { to: "/content/blogs/new", icon: PenLine, title: "Write a post", sub: "A blog article or a chapter." },
   // Straight to the Studio screens. Routing through /content?tab= meant
   // downloading and evaluating the 42KB ContentPanel chunk just to render a
@@ -36,20 +38,29 @@ const START_ACTIONS = [
 /** One independently-loading panel's state. */
 const useAsync = (fn, deps = []) => {
   const [state, setState] = useState({ data: null, loading: true, error: "" });
+  const sequence = useRef(0);
+  const mounted = useRef(false);
   const run = useCallback(() => {
-    let alive = true;
-    setState((s) => ({ ...s, loading: true }));
-    fn()
-      .then((data) => { if (alive) setState({ data, loading: false, error: "" }); })
-      .catch((e) => { if (alive) setState({ data: null, loading: false, error: errText(e) }); });
-    return () => { alive = false; };
+    const request = ++sequence.current;
+    setState((s) => ({ ...s, loading: true, error: "" }));
+    Promise.resolve().then(fn)
+      .then((data) => {
+        if (mounted.current && request === sequence.current) setState({ data, loading: false, error: "" });
+      })
+      .catch((e) => {
+        if (mounted.current && request === sequence.current) setState({ data: null, loading: false, error: errText(e) });
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
-  useEffect(() => run(), [run]);
+  useEffect(() => {
+    mounted.current = true;
+    run();
+    return () => { mounted.current = false; sequence.current += 1; };
+  }, [run]);
   return [state, run];
 };
 
-const Panel = ({ title, icon: Icon, count, children, state, empty }) => (
+const Panel = ({ title, icon: Icon, count, children, state, empty, onRetry }) => (
   <section className="cs-card">
     <header className="cs-card__head">
       {Icon && <Icon size={15} aria-hidden="true" />}
@@ -58,7 +69,9 @@ const Panel = ({ title, icon: Icon, count, children, state, empty }) => (
     </header>
     {state.loading && <p className="cs-muted">Loading…</p>}
     {!state.loading && state.error && (
-      <p className="cs-error" role="alert">{state.error}</p>
+      <div><p className="cs-error" role="alert">{state.error}</p>
+        {onRetry && <button type="button" className="cs-btn-ghost" onClick={onRetry}>Try again</button>}
+      </div>
     )}
     {!state.loading && !state.error && (count === 0 ? <p className="cs-muted">{empty}</p> : children)}
   </section>
@@ -67,7 +80,7 @@ const Panel = ({ title, icon: Icon, count, children, state, empty }) => (
 const ContentStudioHome = () => {
   const navigate = useNavigate();
   const [inbox, reloadInbox] = useAsync(getInbox, []);
-  const [calendar] = useAsync(() => getCalendar(), []);
+  const [calendar, reloadCalendar] = useAsync(() => getCalendar(), []);
   const [activity, reloadActivity] = useAsync(() => getActivity(8), []);
   const [undoing, setUndoing] = useState(null);
   // Admin-dashboard has no toast library — the convention here is a local
@@ -76,10 +89,10 @@ const ContentStudioHome = () => {
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
-  const say = useCallback((message) => {
+  const say = useCallback((message, tone = "success") => {
     clearTimeout(toastTimer.current);
-    setToast(message);
-    toastTimer.current = setTimeout(() => setToast(null), 2500);
+    setToast({ message, tone });
+    toastTimer.current = setTimeout(() => setToast(null), tone === "error" ? 7000 : 2500);
   }, []);
 
   useEffect(() => () => clearTimeout(toastTimer.current), []);
@@ -92,7 +105,7 @@ const ContentStudioHome = () => {
       reloadActivity();
       reloadInbox();
     } catch (e) {
-      say(errText(e));
+      say(errText(e), "error");
     } finally {
       setUndoing(null);
     }
@@ -110,7 +123,7 @@ const ContentStudioHome = () => {
         <div>
           <h1 className="cs-home__greeting">Content</h1>
           <p className="cs-home__sub">
-            Everything on the website that isn’t a course — and what’s waiting on you.
+            Manage website pages, advertisements, articles and featured course cards.
           </p>
         </div>
         <Link to="/content/blogs/new" className="cs-btn-primary">
@@ -123,6 +136,7 @@ const ContentStudioHome = () => {
         title="Needs you"
         count={inboxItems.length}
         state={inbox}
+        onRetry={reloadInbox}
         empty="Nothing is waiting. Everything is published or deliberately hidden."
       >
         <ul className="cs-list">
@@ -172,6 +186,7 @@ const ContentStudioHome = () => {
           icon={CalendarClock}
           count={calendar.data?.days?.length || 0}
           state={calendar}
+          onRetry={reloadCalendar}
           empty="Nothing is scheduled."
         >
           <div className="cs-week">
@@ -222,6 +237,7 @@ const ContentStudioHome = () => {
           icon={Clock}
           count={activityCount}
           state={activity}
+          onRetry={reloadActivity}
           empty="No changes recorded yet."
         >
           {activityDays.map((day) => (
@@ -266,7 +282,7 @@ const ContentStudioHome = () => {
         </Panel>
       </div>
 
-      <Toast message={toast} />
+      <Toast message={toast?.message} tone={toast?.tone} />
     </div>
   );
 };

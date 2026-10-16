@@ -59,10 +59,10 @@ function Editor({ id }) {
       <header className="cs-home__head">
         <div>
           <h1 className="dashboard-title">{id ? "Edit advertisement" : "New advertisement"}</h1>
-          <p className="cs-home__sub">Live ticker · Choose its picture, placement and display window.</p>
+          <p className="cs-home__sub">Choose its picture, where it appears and its display dates.</p>
         </div>
         <button type="button" className="cs-btn-ghost" onClick={cancel} disabled={busy}>
-          <ArrowLeft size={15} aria-hidden="true" /> Back to live ticker
+          <ArrowLeft size={15} aria-hidden="true" /> Back to advertisements
         </button>
       </header>
 
