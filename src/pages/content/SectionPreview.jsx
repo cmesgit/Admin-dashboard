@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 // Live preview of a homepage section (design_handoff_content_studio Phase 5b).
 //
 // ⚠ Renders the DRAFT, never the live row. A preview of what is already
@@ -68,7 +69,7 @@ const SectionPreview = ({ device, onDevice, values, sectionLabel }) => {
                   <img src={img} alt="" />
                 </div>
               )}
-              {body && <p className="cs-site__body">{body}</p>}
+              {body && <div className="cs-site__body" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(body) }} />}
               {(ctaOne || ctaTwo) && (
                 <div className="cs-site__ctas">
                   {ctaOne && <span className="cs-site__btn">{ctaOne}</span>}
@@ -81,7 +82,7 @@ const SectionPreview = ({ device, onDevice, values, sectionLabel }) => {
       </div>
 
       <p className="cs-preview__note">
-        This is {sectionLabel} as it would look with your unpublished changes.
+        Content preview for {sectionLabel}, including your unpublished choices. The public page supplies its section layout and built-in artwork.
       </p>
     </aside>
   );

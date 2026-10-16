@@ -1,3 +1,4 @@
+import CollectionDisplayChoice from "./CollectionDisplayChoice";
 // The little badges pinned on top of a section's artwork.
 //
 // Not a list: each badge sits in a fixed SLOT that maps 1:1 to a pre-tested CSS
@@ -12,7 +13,7 @@
 //
 // "Floater" is deliberately never said out loud. To a writer these are just the
 // small badges on the picture.
-import { memo, useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useImperativeHandle, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import {
   createHomeFloater, deleteHomeFloater, getHomeFloaters, updateHomeFloater,
@@ -44,7 +45,7 @@ const ICON_KEYS = [
 
 const asList = (r) => (Array.isArray(r) ? r : r?.results || []);
 
-const SectionFloaters = ({ section, slots = [], onNotify }) => {
+const SectionFloaters = ({ section, slots = [], onNotify, blockId, displaySettings = {}, onDisplayUpdated, editorRef, onDraftChange, onBusyChange }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -74,24 +75,28 @@ const SectionFloaters = ({ section, slots = [], onNotify }) => {
     return () => { cancelled = true; };
   }, [section, slots.length, reloadKey]);
 
-  if (!slots.length) return null;
 
   const bySlot = Object.fromEntries(rows.map((r) => [r.slot, r]));
 
   const save = async () => {
+    if (!editing) return true;
+    if (busy) return false;
     const { id, ...payload } = editing;
     if (!payload.label.trim() && !payload.icon) {
-      return onNotify("Give it a label or pick an icon first.");
+      onNotify("Give it a label or pick an icon first."); return false;
     }
     setBusy("save");
     try {
       if (id) await updateHomeFloater(id, payload);
       else await createHomeFloater({ ...payload, section });
+      onDisplayUpdated?.({ floaters: "custom" });
       onNotify(id ? "Saved." : "Badge added.");
       setEditing(null);
       reload();
+      return true;
     } catch (e) {
       onNotify(errText(e));
+      return false;
     } finally {
       setBusy(null);
     }
@@ -101,6 +106,7 @@ const SectionFloaters = ({ section, slots = [], onNotify }) => {
     setBusy(`del-${row.id}`);
     try {
       await deleteHomeFloater(row.id);
+      onDisplayUpdated?.({ floaters: "custom" });
       onNotify("Badge removed.");
       setRows((xs) => xs.filter((x) => x.id !== row.id));
     } catch (e) {
@@ -110,19 +116,27 @@ const SectionFloaters = ({ section, slots = [], onNotify }) => {
     }
   };
 
+  useEffect(() => { onDraftChange?.(Boolean(editing)); }, [editing, onDraftChange]);
+  useEffect(() => { onBusyChange?.(Boolean(busy)); }, [busy, onBusyChange]);
+  useEffect(() => () => { onDraftChange?.(false); onBusyChange?.(false); }, [onDraftChange, onBusyChange]);
+  useImperativeHandle(editorRef, () => ({ save, cancel: () => setEditing(null) }));
+  if (!slots.length) return null;
   return (
     <section className="cs-subcard cs-items">
       <div className="cs-items__head">
         <p className="cs-subcard__title">Small badges on the picture</p>
       </div>
 
+      <CollectionDisplayChoice blockId={blockId} collection="floaters" label="Badges" mode={displaySettings.floaters || (rows.length ? "custom" : "default")} onUpdated={onDisplayUpdated} onNotify={onNotify} busy={Boolean(busy)} />
+
       {loading && <p className="cs-muted">Loading…</p>}
       {error && <p className="cs-error" role="alert">{error}</p>}
 
       {!loading && (
         <p className="cs-field__hint">
-          Each badge has one fixed position, so there is nothing to drag. Leave
-          one empty to hide it.
+          Each badge has one fixed position, so there is nothing to drag.
+          Remove a badge to hide it from the site. Removing the last badge leaves
+          this section empty. Choose “Use default” to restore the built-in badges.
         </p>
       )}
 

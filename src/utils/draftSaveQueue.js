@@ -16,3 +16,16 @@ export function mergeSectionEdits(base, extra) {
   }
   return out;
 }
+
+// The API may accept some sections and reject others in the same 200 response.
+// A partial rejection must keep pending edits and prevent navigation/publishing.
+export function assertDraftAccepted(data) {
+  const rejected = data?.rejected || {};
+  if (Object.keys(rejected).length) {
+    const detail = `Some edits need attention: ${Object.values(rejected).join(" ")}`;
+    const error = new Error(detail);
+    error.response = { data: { detail } };
+    throw error;
+  }
+  return data;
+}
