@@ -26,6 +26,7 @@ import TrackChips from "../components/TrackChips";
 import { errText } from "../utils/errText";
 import { formatDate } from "../utils/formatDate";
 import { buildBody } from "../utils/buildBody";
+import { resolveCourseVideo } from "../utils/courseVideo";
 import "../css/Courses.css";
 import "../css/Content.css"; // for the collapsible SEO section (cms-details) + live preview panel
 
@@ -97,6 +98,7 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
   // Holds "PUBLISHED" while the confirm-to-override dialog is open for an
   // incomplete course; the status field itself isn't updated until confirmed.
   const [publishConfirm, setPublishConfirm] = useState(null);
+  const [playDemoPreview, setPlayDemoPreview] = useState(false);
 
   useEffect(() => {
     if (type !== "course") return;
@@ -146,6 +148,7 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
       ]
     : [];
   const showNavPreview = hasCompetitiveCategory || !!board;
+  const demoVideo = resolveCourseVideo(form.promo_video_url);
 
   return (
     <div className="confirm-overlay" onClick={busy ? undefined : onCancel}>
@@ -329,9 +332,13 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
             </label>
 
             <label className="cm-field">
-              <span>Promo video URL</span>
-              <input value={form.promo_video_url || ""} onChange={set("promo_video_url")} placeholder="https://…" />
+              <span>Course preview video</span>
+              <input type="url" value={form.promo_video_url || ""} onChange={(e) => { set("promo_video_url")(e); setPlayDemoPreview(false); }} placeholder="https://www.youtube.com/watch?v=…" aria-describedby="course-demo-help" />
             </label>
+            <p className="cm-hint" id="course-demo-help">
+              Shown on the public course page. Paste an HTTPS YouTube, Vimeo, Bunny embed, or direct MP4/WebM link. Other HTTPS links open in a new tab.
+            </p>
+            {form.promo_video_url && !demoVideo && <p className="cm-form-error">Enter a valid HTTPS video URL.</p>}
 
             <h4 className="cm-subheading">Course details</h4>
             <div className="cm-row">
@@ -453,6 +460,22 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
           <aside className="cms-preview-panel">
             <span className="cms-preview-panel-label">Live preview</span>
             <PlacementBadge items={placementItems} />
+            {demoVideo && (
+              <div className="cm-video-preview">
+                <strong>Public course page video</strong>
+                {demoVideo.type === "link" ? (
+                  <a href={demoVideo.href} target="_blank" rel="noopener noreferrer">Open video link ↗</a>
+                ) : playDemoPreview ? (
+                  demoVideo.type === "file" ? (
+                    <video controls playsInline src={demoVideo.src} />
+                  ) : (
+                    <iframe src={demoVideo.src} title="Course preview video" allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
+                  )
+                ) : (
+                  <button type="button" onClick={() => setPlayDemoPreview(true)}>Play preview ▶</button>
+                )}
+              </div>
+            )}
             {form.is_featured && (
               <FeaturedCardPreview
                 title={form.title}
@@ -484,7 +507,7 @@ function FormModal({ type, mode, initial, busy, error, onSubmit, onCancel, board
 
         <div className="confirm-actions">
           <button className="confirm-cancel" onClick={onCancel} disabled={busy}>Cancel</button>
-          <button className="confirm-ok" onClick={() => onSubmit(form, file, assetId)} disabled={busy}>
+          <button className="confirm-ok" onClick={() => onSubmit(form, file, assetId)} disabled={busy || (isCourse && !!form.promo_video_url && !demoVideo)}>
             {busy ? "Saving…" : mode === "edit" ? "Save" : "Create"}
           </button>
         </div>
@@ -1577,7 +1600,7 @@ const Courses = () => {
           display_order: form.display_order === "" || form.display_order == null ? 0 : parseInt(form.display_order, 10) || 0,
           seo_title: form.seo_title || "",
           seo_description: form.seo_description || "",
-          promo_video_url: form.promo_video_url || "",
+          promo_video_url: (form.promo_video_url || "").trim(),
           subscription_duration_days: Math.max(1, parseInt(form.subscription_duration_days, 10) || 30),
           status: form.status || "DRAFT",
           // Both are writable CourseSerializer fields that this form never

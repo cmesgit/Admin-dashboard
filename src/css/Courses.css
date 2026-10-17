@@ -245,6 +245,23 @@
   color: #8a8f98;
   line-height: 1.45;
 }
+.cm-video-preview {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  color: #1f2937;
+  font-size: .8rem;
+}
+.cm-video-preview video, .cm-video-preview iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 8px;
+}
+.cm-video-preview button { cursor: pointer; padding: 9px; }
 .cm-file-name {
   display: block;
   margin-top: 6px;
