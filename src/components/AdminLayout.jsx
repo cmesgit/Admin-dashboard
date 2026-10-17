@@ -67,6 +67,7 @@ const navGroups = [
       { to: "/users", icon: Users, label: "Users" },
       { to: "/approvals", icon: UserCheck, label: "Teacher Approvals" },
       { to: "/roles", icon: ShieldCheck, label: "Roles & Permissions" },
+      { to: "/research", icon: BookOpen, label: "Research Hub", isNew: true },
       { to: "/moderator-activity", icon: Gavel, label: "Moderator Activity", isNew: true },
     ],
   },
