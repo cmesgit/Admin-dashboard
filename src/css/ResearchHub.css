@@ -19,3 +19,6 @@
 .research-admin .mod-btn.danger { background: var(--admin-danger); border-color: var(--admin-danger); }
 .research-admin button:disabled { opacity: .6; cursor: not-allowed; }
 @media (max-width: 600px) { .research-admin { padding: 8px; } .research-panel { padding: 16px; } .research-actions label { width: 100%; } }
+.research-progress { padding: 16px; margin-block: 18px; border: 1px solid var(--admin-border); border-radius: 10px; background: var(--admin-surface-muted); }
+.research-review-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 14px; }
+.research-review-card { padding: 16px; margin-block: 12px; border: 1px solid var(--admin-border); border-radius: 10px; overflow-wrap: anywhere; }
