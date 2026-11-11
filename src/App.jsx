@@ -49,6 +49,7 @@ const Approvals = lazy(() => import("./pages/Approvals"));
 const Payments = lazy(() => import("./pages/Payments"));
 const EnrollmentRequests = lazy(() => import("./pages/EnrollmentRequests"));
 const PaymentSettings = lazy(() => import("./pages/PaymentSettings"));
+const PublicSiteSettings = lazy(() => import("./pages/PublicSiteSettings"));
 const SkillCourses = lazy(() => import("./pages/SkillCourses"));
 const AdSubscriptions = lazy(() => import("./pages/AdSubscriptions"));
 const AgreementLetter = lazy(() => import("./pages/AgreementLetter"));
@@ -169,6 +170,7 @@ const App = () => {
             <Route path="enrollments" element={<EnrollmentManagement />} />
             <Route path="payments" element={<Payments />} />
             <Route path="payment-settings" element={<PaymentSettings />} />
+            <Route path="public-site" element={<PublicSiteSettings />} />
             <Route path="counselor-approvals" element={<CounselorApprovals />} />
             <Route path="counseling-sessions" element={<CounselingSessions />} />
             <Route path="skill-experts" element={<SkillExperts />} />
