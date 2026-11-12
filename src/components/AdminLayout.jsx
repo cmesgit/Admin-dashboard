@@ -42,6 +42,7 @@ import {
   Layout,
   Tag,
   Paperclip,
+  Globe,
 } from "lucide-react";
 import { getEnrollmentRequests } from "../api/admin";
 import CommandPalette from "./CommandPalette";
@@ -122,6 +123,7 @@ const navGroups = [
     items: [
       { to: "/payments", icon: CreditCard, label: "Payments" },
       { to: "/payment-settings", icon: Settings, label: "Payment Settings" },
+      { to: "/public-site", icon: Globe, label: "Public Site" },
       { to: "/ad-subscriptions", icon: Megaphone, label: "Ad Subscriptions" },
     ],
   },
@@ -176,6 +178,7 @@ const studioNavGroups = [
       { to: "/content/cards", icon: LayoutDashboard, label: "Course cards" },
       { to: "/content/exams", icon: GraduationCap, label: "Exams" },
       { to: "/content/ticker", icon: Megaphone, label: "Advertisements" },
+      { to: "/content/menu", icon: Menu, label: "Courses menu" },
     ],
   },
   {
