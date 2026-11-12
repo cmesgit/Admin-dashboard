@@ -673,8 +673,21 @@ const PageEditor = () => {
               )}
 
               {current.supports_list_items ? (
+                // Key is PREFIXED, not bare `current.key`. This element and
+                // <SectionFloaters> below are siblings in the same parent, and
+                // both used to key on `current.key` alone — so on any section
+                // that renders both (Teachers & Students, Collaborate,
+                // Resources & Support…) React saw two children with the key
+                // "teachers_students". React's documented behaviour for a
+                // duplicate key is that children "may be duplicated and/or
+                // omitted", and here it duplicated: the panel reappeared
+                // without bound, ~150 copies a second, until the tab died.
+                // "Add one" looked broken because the dialog was being
+                // unmounted the instant it opened.
+                // Sections that render only ONE of the two never collided,
+                // which is why Hero looked fine and this went unnoticed.
                 <SectionListItems
-                  key={current.key}
+                  key={`items-${current.key}`}
                   editorRef={itemsEditor}
                   onDraftChange={itemsDirtyChanged}
                   onBusyChange={itemsBusyChanged}
@@ -702,7 +715,7 @@ const PageEditor = () => {
               {/* The badges pinned on this section's artwork. Renders nothing
                   for the fourteen sections that have no slots. */}
               <SectionFloaters
-                key={current.key}
+                key={`floaters-${current.key}`}
                 editorRef={floatersEditor}
                 onDraftChange={floatersDirtyChanged}
                 onBusyChange={floatersBusyChanged}
