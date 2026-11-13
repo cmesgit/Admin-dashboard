@@ -1,7 +1,7 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    src/css/Verification.css   —   /verification
    Explore community verification, admin side.
-   Spec: design_handoff_explore_verification/README.md §5.
+   Spec: shiksha-backend/docs/EXPLORE_VERIFICATION.md §5.
 
    ⚠ Every colour resolves through --admin-*, declared in src/css/index.css.
    This app has its own token system and the teacher/student

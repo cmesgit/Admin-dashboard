@@ -2,7 +2,7 @@
 // src/pages/VerificationAdmin.jsx   —   /verification
 //
 // "Settings and reviewers." The admin half of Explore community verification.
-// Spec: design_handoff_explore_verification/README.md §5.
+// Spec: shiksha-backend/docs/EXPLORE_VERIFICATION.md §5.
 //
 // Three tabs: Settings, Reviewers, Needs attention. The design's fourth tab,
 // "Research papers", is the EXISTING /research screen and is deliberately not

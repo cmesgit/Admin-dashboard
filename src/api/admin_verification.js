@@ -1,5 +1,5 @@
 // Admin API for Explore community verification.
-// Spec: design_handoff_explore_verification/README.md §5.
+// Spec: shiksha-backend/docs/EXPLORE_VERIFICATION.md §5.
 //
 // ⚠ Every endpoint 404s unless BOTH are true: the feature flag is on, and the
 // caller is a superuser or holds an active ADMIN role. `is_staff` is NOT
