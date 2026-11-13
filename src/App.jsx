@@ -68,6 +68,7 @@ const Students = lazy(() => import("./pages/Students"));
 const StudentDetail = lazy(() => import("./pages/StudentDetail"));
 const TeacherActivity = lazy(() => import("./pages/TeacherActivity"));
 const ResearchHub = lazy(() => import("./pages/ResearchHub"));
+const VerificationAdmin = lazy(() => import("./pages/VerificationAdmin"));
 const ModeratorActivity = lazy(() => import("./pages/ModeratorActivity"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 
@@ -130,6 +131,7 @@ const App = () => {
             <Route path="students/:id" element={<StudentDetail />} />
             <Route path="teacher-activity" element={<TeacherActivity />} />
             <Route path="research" element={<ResearchHub />} />
+            <Route path="verification" element={<VerificationAdmin />} />
             <Route path="moderator-activity" element={<ModeratorActivity />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="live-streams" element={<LiveStreams />} />
