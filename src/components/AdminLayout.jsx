@@ -4,6 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import {
   LayoutDashboard,
   Users,
+  BadgeCheck,
   BookOpen,
   ShieldCheck,
   UserCheck,
@@ -69,6 +70,12 @@ const navGroups = [
       { to: "/approvals", icon: UserCheck, label: "Teacher Approvals" },
       { to: "/roles", icon: ShieldCheck, label: "Roles & Permissions" },
       { to: "/research", icon: BookOpen, label: "Research Hub", isNew: true },
+      // Explore community verification. Always listed: the screen itself
+      // explains the two reasons it may be unreachable (feature off, or not
+      // a superuser/ADMIN), which is more useful than a nav entry that is
+      // silently absent. Both cases 404 at the API, so the screen cannot
+      // tell them apart and says so.
+      { to: "/verification", icon: BadgeCheck, label: "Verification", isNew: true },
       { to: "/moderator-activity", icon: Gavel, label: "Moderator Activity", isNew: true },
     ],
   },
