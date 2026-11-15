@@ -371,7 +371,7 @@ const Students = () => {
         </div>
       )}
 
-      <div className="dashboard-card users-table-card">
+      <div className="dashboard-card adm-table-card">
         {loading ? (
           <div className="dashboard-loading">Loading students...</div>
         ) : students.length === 0 ? (
@@ -392,10 +392,10 @@ const Students = () => {
           </div>
         ) : (
           <>
-            <div className="users-count">
+            <div className="adm-count">
               {totalCount} student{totalCount !== 1 ? "s" : ""} found
             </div>
-            <table className="users-table">
+            <table className="adm-table">
               <thead>
                 <tr>
                   {bulkReady && <th className="stu-check-col" />}

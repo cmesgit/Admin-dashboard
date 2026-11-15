@@ -72,8 +72,8 @@ const AdSubscriptions = () => {
       {msg && <div style={{ color: "#16a34a", margin: "0 0 12px" }}>{msg}</div>}
       {err && <div style={{ color: "#dc2626", margin: "0 0 12px" }}>{err}</div>}
 
-      <div className="dashboard-card payments-table-card">
-        <div className="payments-count">
+      <div className="dashboard-card adm-table-card">
+        <div className="adm-count">
           {rows.length} awaiting review
         </div>
         {loading ? (
@@ -81,7 +81,7 @@ const AdSubscriptions = () => {
         ) : rows.length === 0 ? (
           <div className="dashboard-loading">No subscriptions awaiting review.</div>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr>
                 <th>Expert</th><th>Amount</th><th>UPI ref</th>

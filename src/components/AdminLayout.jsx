@@ -45,12 +45,17 @@ import {
   Globe,
 } from "lucide-react";
 import { getEnrollmentRequests } from "../api/admin";
+import { getAdminQueue } from "../api/admin_queue";
 import CommandPalette from "./CommandPalette";
 import "../css/ContentStudioChrome.css";
 import { getAdminSupportTickets } from "../api/admin_communication";
 import { getReviewQueue } from "../api/admin_question_bank";
 import { getScholarshipStats } from "../api/admin_scholarship";
 const NewCourseWizard = lazy(() => import("./NewCourseWizard"));
+// Lazy so an admin WITHOUT admin_v2_enabled downloads neither the shell nor
+// AdminV2.css. The flag-off path has to stay exactly as it was, and that
+// includes what ships over the wire during the rollout.
+const AdminV2Shell = lazy(() => import("./AdminV2Shell"));
 import "../css/AdminLayout.css";
 
 // 7-group nav mirroring the LMS Admin Console handoff. `isNew` renders the
@@ -281,17 +286,25 @@ const AdminLayout = () => {
   // restores `user` from localStorage and never refetches /accounts/me/. An
   // admin who flips the flag sees no new nav row until they sign out and in.
   const quizHubOn = !!user?.feature_flags?.public_quiz_hub_enabled;
+  // design_handoff_admin_counsellor Phase 1 — the ten-area chrome. Frozen at
+  // login for the same reason as the two flags above. Navigation only: every
+  // route stays reachable at its current path whichever way this is set.
+  const adminV2On = !!user?.feature_flags?.admin_v2_enabled;
   const groups = buildNav(studioOn, quizHubOn);
 
   // Close the mobile overlay on every navigation, so picking a nav link
   // doesn't leave the sidebar covering the page it just opened.
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
-  // ⌘K / Ctrl-K opens the palette from anywhere in the console. Bound only
-  // while the Studio is on, so the shortcut doesn't swallow the browser's own
-  // behaviour for admins who don't have the feature.
+  // ⌘K / Ctrl-K opens the palette from anywhere in the console.
+  //
+  // It used to be bound only while content_studio_enabled was on, because the
+  // palette could only search the CMS — a shortcut that swallowed the
+  // browser's own ⌘K to offer nothing would have been worse than no shortcut.
+  // Phase 5 pointed it at the console-wide search (people + courses + the CMS
+  // half when that flag allows), so it now has something to find for every
+  // admin and the gate is gone.
   useEffect(() => {
-    if (!studioOn) return undefined;
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -300,13 +313,37 @@ const AdminLayout = () => {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [studioOn]);
+  }, []);
 
   // Live nav count pills: pending enrollment requests + open support tickets
   // + scholarship items needing attention (flagged sessions + pending
   // verifications). Guarded so a missing/optional endpoint never blanks
   // the sidebar.
+  // design_handoff_admin_counsellor Phase 2. With v2 on, one aggregate call
+  // replaces the four below — and corrects them: the old `enroll` badge passed
+  // no status so it counted approved and rejected rows, then measured only the
+  // first page of 50. `support` could never exceed 200 because that list view
+  // hard-slices. The server now does .count() on an explicit filter per kind.
+  // Keyed by BOTH area id and item kind, so an area tab and a row inside it
+  // can each carry their own number.
   useEffect(() => {
+    if (!adminV2On) return undefined;
+    const ac = new AbortController();
+    getAdminQueue({ signal: ac.signal })
+      .then((q) => {
+        const next = { todo: q.total };
+        for (const g of q.groups || []) {
+          next[g.kind] = g.count;
+          next[g.area] = (next[g.area] || 0) + g.count;
+        }
+        setBadges(next);
+      })
+      .catch(() => { /* a dead queue must not blank the nav */ });
+    return () => ac.abort();
+  }, [adminV2On]);
+
+  useEffect(() => {
+    if (adminV2On) return undefined;
     let alive = true;
     Promise.allSettled([
       getEnrollmentRequests(),
@@ -328,7 +365,7 @@ const AdminLayout = () => {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [adminV2On]);
 
   const handleLogout = async () => {
     await logout();
@@ -336,6 +373,47 @@ const AdminLayout = () => {
   };
 
   const avatarInitials = (user?.email || "AD").slice(0, 2).toUpperCase();
+
+  // The "New course" wizard is Academy-only and contextual — see the long
+  // comment on the v1 header button below. Computed once so both chromes
+  // apply the identical rule rather than drifting apart.
+  const showNewCourse = location.pathname === "/"
+    || (location.pathname.startsWith("/courses")
+        && new URLSearchParams(location.search).get("tab") !== "skill");
+
+  // design_handoff_admin_counsellor Phase 1. The v2 chrome replaces the
+  // sidebar and header wholesale, so it returns early — but it reuses this
+  // component's badge fetch, palette state and course wizard rather than
+  // duplicating them.
+  if (adminV2On) {
+    return (
+      <>
+        <Suspense fallback={null}>
+          <AdminV2Shell
+            user={user}
+            location={location}
+            badges={badges}
+            flags={{ studioOn, quizHubOn }}
+            onLogout={handleLogout}
+            onOpenPalette={() => setPaletteOpen(true)}
+            onNewCourse={showNewCourse ? () => setWizardOpen(true) : null}
+          />
+        </Suspense>
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+        {wizardOpen && (
+          <Suspense fallback={<p role="status">Opening course form…</p>}>
+            <NewCourseWizard
+              onClose={() => setWizardOpen(false)}
+              onCreated={(course) => {
+                setWizardOpen(false);
+                if (course?.id) navigate("/courses");
+              }}
+            />
+          </Suspense>
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="admin-layout">
@@ -358,17 +436,18 @@ const AdminLayout = () => {
           </button>
         </div>
 
-        {studioOn && (
-          <button
-            type="button"
-            className="cs-search-trigger"
-            onClick={() => setPaletteOpen(true)}
-          >
-            <Search size={14} aria-hidden="true" />
-            <span className="cs-search-trigger__label">Search everything</span>
-            <span className="cs-search-trigger__key">⌘K</span>
-          </button>
-        )}
+        {/* No longer gated on content_studio_enabled: the palette searches
+            people and courses now, not just the CMS, so every admin has
+            something to find. */}
+        <button
+          type="button"
+          className="cs-search-trigger"
+          onClick={() => setPaletteOpen(true)}
+        >
+          <Search size={14} aria-hidden="true" />
+          <span className="cs-search-trigger__label">Search everything</span>
+          <span className="cs-search-trigger__key">⌘K</span>
+        </button>
 
         <nav className="sidebar-nav">
           {groups.map((group, gi) => (
@@ -422,9 +501,7 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      {studioOn && (
-        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
-      )}
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       <div className="admin-main">
         <header className="admin-header">
@@ -450,9 +527,7 @@ const AdminLayout = () => {
               made it look like a Skill Dev flow that inexplicably wanted a
               board. The tab is read from the URL, which is why Courses.jsx
               keeps it in a search param. */}
-          {(location.pathname === "/"
-            || (location.pathname.startsWith("/courses")
-                && new URLSearchParams(location.search).get("tab") !== "skill")) && (
+          {showNewCourse && (
             <button className="admin-new-btn" onClick={() => setWizardOpen(true)}>
               <Plus size={16} />
               New course

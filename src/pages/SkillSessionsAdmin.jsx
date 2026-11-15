@@ -90,13 +90,13 @@ const SkillSessionsAdmin = () => {
         })}
       </div>
 
-      <div className="dashboard-card payments-table-card">
+      <div className="dashboard-card adm-table-card">
         {loading ? (
           <div className="dashboard-loading">Loading...</div>
         ) : sessions.length === 0 ? (
           <div className="dashboard-loading">No sessions{status ? ` with status “${status}”` : ""}.</div>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr>
                 <th>Learner</th><th>Expert</th><th>Status</th>

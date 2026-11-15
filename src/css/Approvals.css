@@ -1,38 +1,12 @@
-.approvals-table-card {
-  padding: 0;
-  overflow-x: auto;
-}
+/* ⚠ The `.approvals-table*` / `.approvals-count` base rules moved to
+   index.css — see the `.adm-table` block there. Screen-specific rules
+   only below. */
 
-.approvals-count {
-  padding: 14px 20px;
-  font-size: 0.85rem;
-  color: #6b7280;
-  border-bottom: 1px solid #e8ebf1;
-}
 
-.approvals-table {
-  width: 100%;
-  border-collapse: collapse;
-}
 
-.approvals-table th {
-  text-align: left;
-  padding: 12px 20px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid #e8ebf1;
-  background: #fafafa;
-}
 
-.approvals-table td {
-  padding: 14px 20px;
-  font-size: 0.9rem;
-  color: #1f2937;
-  border-bottom: 1px solid #e8ebf1;
-}
+
+
 
 .approvals-name {
   font-weight: 500;

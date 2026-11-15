@@ -73,14 +73,14 @@ const CounselingSessions = ({ embedded = false }) => {
 
       {err && <div style={{ color: "#dc2626", marginBottom: 10, fontWeight: 600 }}>{err}</div>}
 
-      <div className={embedded ? "" : "dashboard-card payments-table-card"}>
-        <div className="payments-count">{rows.length} session{rows.length !== 1 ? "s" : ""} shown{rows.length === 200 ? " (capped at 200 — narrow your filters)" : ""}</div>
+      <div className={embedded ? "" : "dashboard-card adm-table-card"}>
+        <div className="adm-count">{rows.length} session{rows.length !== 1 ? "s" : ""} shown{rows.length === 200 ? " (capped at 200 — narrow your filters)" : ""}</div>
         {loading ? (
           <div className="dashboard-loading">Loading...</div>
         ) : rows.length === 0 ? (
           <div className="dashboard-loading">No sessions match.</div>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr>
                 <th>When</th><th>Student</th><th>Counsellor</th>

@@ -5,17 +5,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FileText, HelpCircle, Image as ImageIcon, Layout, Search, Tag,
+  BookOpen, FileText, HelpCircle, Image as ImageIcon, Layout, Search, Tag,
+  Users,
 } from "lucide-react";
-import { searchContent } from "../api/admin_content_studio";
+import { searchAdmin } from "../api/admin_search";
 import "../css/ContentStudioChrome.css";
 
 const KIND_ICON = {
+  // CMS kinds, from the content search this still delegates to.
   post: FileText,
   answer: HelpCircle,
   page: Layout,
   label: Tag,
   picture: ImageIcon,
+  // Added in Phase 5: the halves the artboard's own placeholder promises.
+  person: Users,
+  course: BookOpen,
 };
 
 const CommandPalette = ({ open, onClose }) => {
@@ -54,7 +59,7 @@ const CommandPalette = ({ open, onClose }) => {
     setLoading(true);
     setFailed(false);
     const timer = setTimeout(() => {
-      searchContent(term, { signal: controller.signal })
+      searchAdmin(term, { signal: controller.signal })
         .then((data) => {
           setResults(data.results || []);
           setCursor(0);
@@ -127,7 +132,7 @@ const CommandPalette = ({ open, onClose }) => {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Search posts, pages, answers, labels and pictures"
+            placeholder="Find a student, course, teacher or page"
             aria-label="Search all content"
           />
           <button className="cs-palette__esc" onClick={onClose} aria-label="Close search">

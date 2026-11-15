@@ -92,15 +92,15 @@ const Users = () => {
         </select>
       </div>
 
-      <div className="dashboard-card users-table-card">
+      <div className="dashboard-card adm-table-card">
         {loading ? (
           <div className="dashboard-loading">Loading users...</div>
         ) : users.length === 0 ? (
           <div className="users-empty">No users found.</div>
         ) : (
           <>
-            <div className="users-count">{totalCount} user{totalCount !== 1 ? "s" : ""} found</div>
-            <table className="users-table">
+            <div className="adm-count">{totalCount} user{totalCount !== 1 ? "s" : ""} found</div>
+            <table className="adm-table">
               <thead>
                 <tr>
                   <th>Email</th>
