@@ -49,13 +49,13 @@ const GroupSessionAttendance = () => {
         to see who actually attended and for how long.
       </p>
 
-      <div className="dashboard-card payments-table-card">
+      <div className="dashboard-card adm-table-card">
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
         ) : sessions.length === 0 ? (
           <div className="dashboard-loading">No group sessions yet.</div>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr>
                 <th>Topic</th><th>Host</th><th>Type</th><th>Status</th>

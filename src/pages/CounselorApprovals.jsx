@@ -92,14 +92,14 @@ const CounselorApprovals = ({ embedded = false }) => {
       {msg && <div style={{ color: "#16a34a", marginBottom: 10, fontWeight: 600 }}>{msg}</div>}
       {err && !active && <div style={{ color: "#dc2626", marginBottom: 10, fontWeight: 600 }}>{err}</div>}
 
-      <div className={embedded ? "" : "dashboard-card payments-table-card"}>
-        <div className="payments-count">{rows.length} application{rows.length !== 1 ? "s" : ""}</div>
+      <div className={embedded ? "" : "dashboard-card adm-table-card"}>
+        <div className="adm-count">{rows.length} application{rows.length !== 1 ? "s" : ""}</div>
         {loading ? (
           <div className="dashboard-loading">Loading...</div>
         ) : rows.length === 0 ? (
           <div className="dashboard-loading">No {tab} applications.</div>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr>
                 <th>Counsellor</th><th>Email</th><th>Specializations</th>

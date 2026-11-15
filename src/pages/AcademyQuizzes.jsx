@@ -270,7 +270,7 @@ export default function AcademyQuizzes() {
         ))}
       </div>
 
-      <div className="dashboard-card approvals-table-card">
+      <div className="dashboard-card adm-table-card">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -283,7 +283,7 @@ export default function AcademyQuizzes() {
         ) : rows.length === 0 ? (
           <div className="approvals-empty">No quizzes match these filters.</div>
         ) : (
-          <table className="approvals-table">
+          <table className="adm-table">
             <thead>
               <tr>
                 <th>Quiz</th><th>Subject</th><th>Teacher</th><th>Mode</th>

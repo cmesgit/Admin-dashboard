@@ -87,7 +87,7 @@ const EnrollmentManagement = () => {
       {msg && <div style={{ color: "#16a34a", margin: "0 0 12px" }}>{msg}</div>}
       {err && <div style={{ color: "#dc2626", margin: "0 0 12px" }}>{err}</div>}
 
-      <div className="dashboard-card payments-table-card">
+      <div className="dashboard-card adm-table-card">
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
           <input value={q} onChange={(e) => setQ(e.target.value)}
             placeholder="Search course, student, batch…"
@@ -96,7 +96,7 @@ const EnrollmentManagement = () => {
             style={{ padding: "8px 12px", border: "1px solid #d7dbe0", borderRadius: 8 }}>
             {STATUSES.map((s) => <option key={s} value={s}>{s === "all" ? "All statuses" : s}</option>)}
           </select>
-          <span className="payments-count">{view.length}</span>
+          <span className="adm-count">{view.length}</span>
         </div>
 
         {loading ? (
@@ -104,7 +104,7 @@ const EnrollmentManagement = () => {
         ) : view.length === 0 ? (
           <div className="dashboard-loading">No enrollments.</div>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr>
                 <th>Student</th><th>Course</th><th>Batch</th>

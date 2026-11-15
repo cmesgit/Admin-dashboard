@@ -1,0 +1,410 @@
+/* Admin v2 Home — the "things waiting for you" queue.
+ * design_handoff_admin_counsellor Phase 2.
+ *
+ * ⚠ Every colour resolves through an --admin-* custom property (CLAUDE.md,
+ * Content Studio rule 1). No literal hex.
+ *
+ * ⚠ This screen is a lazy route chunk, so it imports its own CSS — the
+ * lazy-chunk trap (CLAUDE.md rule 9 / academy rule 9) means a screen that
+ * relies on another route's stylesheet renders unstyled on a hard refresh.
+ */
+
+.todo {
+  max-width: 900px;
+}
+
+.todo__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.todo__h1 {
+  font-family: var(--admin-font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--admin-ink);
+  line-height: 1.2;
+}
+
+.todo__sub {
+  margin-top: 6px;
+  color: var(--admin-body);
+  font-size: 14px;
+}
+
+.todo__retry {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.todo__retry:hover:not(:disabled) {
+  border-color: var(--admin-primary);
+  color: var(--admin-primary);
+}
+
+.todo__retry:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── Filter chips ──────────────────────────────────────────────────── */
+
+.todo__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.todo__chip {
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.todo__chip:hover {
+  border-color: var(--admin-primary-edge);
+}
+
+.todo__chip.is-on {
+  background: var(--admin-ink);
+  border-color: var(--admin-ink);
+  color: var(--admin-surface);
+}
+
+/* ── The list ──────────────────────────────────────────────────────── */
+
+.todo__groups {
+  display: grid;
+  gap: 14px;
+}
+
+.todo__group {
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.todo__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+}
+
+/* ── The preview rows inside a group ───────────────────────────────── */
+
+.todo__items {
+  list-style: none;
+  border-top: 1px solid var(--admin-border-soft);
+}
+
+.todo__item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--admin-border-soft);
+  font-size: 14px;
+}
+
+.todo__item:last-child {
+  border-bottom: 0;
+}
+
+.todo__item-title {
+  font-weight: 600;
+  color: var(--admin-ink-2);
+  /* One line each: these are previews, and a wrapped three-line question
+     text would push the next group off the screen. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 48%;
+  flex-shrink: 0;
+}
+
+.todo__item-sub {
+  flex: 1;
+  min-width: 0;
+  color: var(--admin-body);
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo__item-at {
+  flex-shrink: 0;
+  color: var(--admin-body-faint);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Inline decisions ──────────────────────────────────────────────── */
+
+.todo__acts,
+.todo__decline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.todo__act {
+  padding: 5px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-ink-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.todo__act:hover:not(:disabled) {
+  border-color: var(--admin-primary);
+  color: var(--admin-primary);
+}
+
+.todo__act:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.todo__act--yes {
+  background: var(--admin-primary);
+  border-color: var(--admin-primary);
+  color: var(--admin-surface);
+}
+
+.todo__act--yes:hover:not(:disabled) {
+  background: var(--admin-primary-dark);
+  border-color: var(--admin-primary-dark);
+  color: var(--admin-surface);
+}
+
+.todo__act--no {
+  background: var(--admin-danger);
+  border-color: var(--admin-danger);
+  color: var(--admin-surface);
+}
+
+.todo__act--no:hover:not(:disabled) {
+  filter: brightness(0.92);
+  color: var(--admin-surface);
+}
+
+.todo__reason {
+  width: 220px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-ink-2);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.todo__reason:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 1px var(--admin-primary);
+}
+
+/* ── Outcome notice ────────────────────────────────────────────────── */
+
+.todo__notice {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.todo__notice--ok {
+  border: 1px solid var(--admin-success);
+  background: var(--admin-success-tint);
+  color: var(--admin-success);
+}
+
+.todo__notice--warn {
+  border: 1px solid var(--admin-warn-edge);
+  background: var(--admin-warn-tint);
+  color: var(--admin-warn);
+}
+
+.todo__more {
+  display: block;
+  padding: 10px 18px;
+  border-top: 1px solid var(--admin-border-soft);
+  background: var(--admin-surface-muted);
+  color: var(--admin-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.todo__more:hover {
+  background: var(--admin-primary-tint);
+}
+
+.todo__kind {
+  width: 150px;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-body-soft);
+}
+
+.todo__where {
+  flex: 1;
+  min-width: 0;
+  color: var(--admin-ink-2);
+  font-size: 14px;
+}
+
+.todo__count {
+  min-width: 26px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--admin-primary-tint);
+  color: var(--admin-primary-deep);
+  font-size: 13px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.todo__open {
+  flex-shrink: 0;
+  padding: 7px 15px;
+  border-radius: 8px;
+  background: var(--admin-primary);
+  color: var(--admin-surface);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.todo__open:hover {
+  background: var(--admin-primary-dark);
+}
+
+/* ── All clear / note ──────────────────────────────────────────────── */
+
+.todo__clear {
+  display: flex;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--admin-success);
+  background: var(--admin-success-tint);
+  color: var(--admin-success);
+}
+
+.todo__clear strong {
+  color: var(--admin-ink);
+  font-size: 15px;
+}
+
+.todo__clear p {
+  margin-top: 4px;
+  color: var(--admin-body);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.todo__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 11px 14px;
+  border-radius: 9px;
+  border: 1px solid var(--admin-warn-edge);
+  background: var(--admin-warn-tint);
+  color: var(--admin-warn);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1024px) {
+  .todo__head {
+    flex-direction: column;
+  }
+
+  .todo__retry {
+    margin-left: 0;
+  }
+
+  .todo__row {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .todo__kind {
+    width: auto;
+  }
+
+  .todo__where {
+    flex-basis: 100%;
+    order: 3;
+  }
+
+  /* Stack the preview row rather than squeezing three columns into 375px,
+     where the title ellipsis would eat most of the name. */
+  .todo__item {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .todo__item-title,
+  .todo__item-sub {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  /* The buttons stop being a right-hand cluster and sit under the row —
+     margin-left:auto is meaningless once the item is a column. */
+  .todo__acts,
+  .todo__decline {
+    margin-left: 0;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  .todo__reason {
+    width: 100%;
+  }
+}

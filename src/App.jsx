@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 // app is 38 admin pages behind a login wall, so nobody pays for Recordings'
 // or Analytics' JS on first paint just to see Overview.
 const Overview = lazy(() => import("./pages/Overview"));
+const AdminTodo = lazy(() => import("./pages/AdminTodo"));
 const Users = lazy(() => import("./pages/Users"));
 const UserDetail = lazy(() => import("./pages/UserDetail"));
 const Courses = lazy(() => import("./pages/Courses"));
@@ -26,6 +27,9 @@ const LiveTicker = lazy(() => import("./pages/content/LiveTicker"));
 const TickerItemEditor = lazy(() => import("./pages/content/TickerItemEditor"));
 const NavMenu = lazy(() => import("./pages/content/NavMenu"));
 const ContentHistory = lazy(() => import("./pages/content/ContentHistory"));
+const Redirects = lazy(() => import("./pages/content/Redirects"));
+const Forms = lazy(() => import("./pages/content/Forms"));
+const BlockLibrary = lazy(() => import("./pages/content/BlockLibrary"));
 const ContentSchedule = lazy(() => import("./pages/content/ContentSchedule"));
 const SkillCMSPanel = lazy(() => import("./pages/skillcms/SkillCMSPanel"));
 const ScholarshipPanel = lazy(() => import("./pages/scholarship/ScholarshipPanel"));
@@ -103,6 +107,22 @@ const AppLoader = ({ children }) => {
   return children;
 };
 
+/** `/` is the Home area in both chromes, but it shows a different screen.
+ *
+ *  design_handoff_admin_counsellor Phase 2: with admin_v2_enabled on, Home is
+ *  the "things waiting for you" queue. With it off it is Overview, unchanged.
+ *
+ *  Branching here rather than giving the queue its own path keeps ONE home —
+ *  a second URL would mean the post-login landing page and the Home nav row
+ *  disagreed about where home is. Overview is NOT retired: its stats tiles,
+ *  payment-mode card and "Live now" panel have no counterpart on the queue
+ *  screen yet.
+ */
+const HomeScreen = () => {
+  const { user } = useAuth();
+  return user?.feature_flags?.admin_v2_enabled ? <AdminTodo /> : <Overview />;
+};
+
 const App = () => {
   return (
     <AppLoader>
@@ -116,7 +136,7 @@ const App = () => {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Overview />} />
+            <Route index element={<HomeScreen />} />
             <Route path="users" element={<Users />} />
             <Route path="users/:id" element={<UserDetail />} />
             <Route path="courses" element={<Courses />} />
@@ -160,6 +180,9 @@ const App = () => {
             <Route path="content/ticker/:id/edit" element={<TickerItemEditor />} />
             <Route path="content/menu" element={<NavMenu />} />
             <Route path="content/history" element={<ContentHistory />} />
+            <Route path="content/redirects" element={<Redirects />} />
+            <Route path="content/forms" element={<Forms />} />
+            <Route path="content/blocks" element={<BlockLibrary />} />
             <Route path="content/schedule" element={<ContentSchedule />} />
             <Route path="content/blogs/new" element={<BlogEditor />} />
             <Route path="content/blogs/:id" element={<BlogEditor />} />

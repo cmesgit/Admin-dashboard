@@ -97,14 +97,14 @@ const Payments = () => {
               <option value="FAILED">Failed</option>
             </select>
           </div>
-          <div className="dashboard-card payments-table-card">
-            <div className="payments-count">{orders.length} order{orders.length !== 1 ? "s" : ""}</div>
+          <div className="dashboard-card adm-table-card">
+            <div className="adm-count">{orders.length} order{orders.length !== 1 ? "s" : ""}</div>
             {loading ? (
               <div className="dashboard-loading">Loading...</div>
             ) : orders.length === 0 ? (
               <div className="dashboard-loading">No orders found.</div>
             ) : (
-              <table className="payments-table">
+              <table className="adm-table adm-table--wide">
                 <thead>
                   <tr><th>User</th><th>Course</th><th>Amount</th><th>Status</th><th>Date</th></tr>
                 </thead>

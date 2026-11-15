@@ -58,6 +58,21 @@
   --admin-shadow-pop: 0 20px 48px rgba(15, 23, 42, 0.20);
   --admin-shadow-overlay: 0 30px 70px rgba(15, 23, 42, 0.35);
   --admin-scrim: rgba(15, 23, 42, 0.45);
+
+  /* Admin v2 chrome (design_handoff_admin_counsellor).
+     The v2 console puts the brand bar and the area tabs on a dark surface,
+     which the palette had no tokens for — every existing --admin-* colour
+     assumes dark-on-light. These are that missing half, and they exist so the
+     new chrome can comply with the no-literal-hex rule rather than forcing an
+     exception. Nothing outside .av2-* should need them. */
+  --admin-nav-bg: #1b2130;
+  --admin-nav-bg-2: #232a3b;
+  --admin-nav-ink: #ffffff;
+  --admin-nav-ink-soft: #aab2c5;
+  --admin-nav-border: #2f3850;
+  --admin-nav-field: #2a3146;
+  --admin-nav-active-bg: #ffffff;
+  --admin-nav-active-ink: #1b2130;
 }
 
 *,
@@ -141,54 +156,75 @@ button {
   padding: 0 20px;
 }
 
-/* ── Shared data-table primitives ───────────────────────────────────────
-   Same story as the layout primitives above, one level down. These lived only
-   in Payments.css, which only Payments.jsx imports — but
-   EnrollmentManagement.jsx renders `.payments-table-card` / `.payments-table`
-   too and imported no stylesheet at all. With per-route CSS chunks that meant
-   /enrollments rendered a bare table (no padding, no borders, no header
-   chrome, and no horizontal-scroll container) unless you happened to visit
-   /payments first. That is the "enrollment list is far too cramped" report.
+/* ── ONE data table (design_handoff_admin_counsellor, Admin v2 Phase 4) ──
 
-   `min-width` is the other half of it: the card scrolls on overflow, but with
-   `width: 100%` and no floor the columns just compressed and wrapped instead
-   of ever reaching that scroll. An 8-column table needs a width to defend. */
-.payments-table-card {
+   ⚠ THESE RULES LIVE IN index.css ON PURPOSE — do not move them into a
+   per-screen stylesheet. Every route is its own lazy CSS chunk, so a table
+   styled from another route's file renders bare (no padding, no borders, no
+   header chrome, no scroll container) on a hard refresh. That is exactly how
+   /enrollments once rendered unless you happened to visit /payments first —
+   the "enrollment list is far too cramped" report.
+
+   The single definition for every data table in this console. Use
+   `.adm-table-card` > optional `.adm-count` > `.adm-table`.
+
+   It replaced three near-identical families — `payments-table` (rendered by
+   12 screens), `users-table` and `approvals-table`. `users-table` and
+   `approvals-table` were byte-for-byte the same rule and `payments-table`
+   differed only by `white-space: nowrap`: one design that had been
+   copy-pasted and drifted, which is why the console never looked quite
+   consistent. All 44 call sites across 17 files now use these names.
+
+   ⚠ Colours resolve through tokens, and two SHIFTED slightly in the
+   migration: #e8ebf1 → --admin-border (#e2e6ee) and #fafafa →
+   --admin-surface-muted (#fbfcfe). The text colours mapped exactly.
+
+   ⚠ Do not add a screen-local copy of these rules. That divergence is
+   exactly what produced the three families in the first place. */
+.adm-table-card {
   padding: 0;
   overflow-x: auto;
 }
 
-.payments-count {
+.adm-count {
   padding: 14px 20px;
   font-size: 0.85rem;
-  color: #6b7280;
-  border-bottom: 1px solid #e8ebf1;
+  color: var(--admin-body);
+  border-bottom: 1px solid var(--admin-border);
 }
 
-.payments-table {
+.adm-table {
   width: 100%;
-  min-width: 760px;
   border-collapse: collapse;
 }
 
-.payments-table th {
+.adm-table th {
   text-align: left;
   padding: 12px 20px;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--admin-body);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-bottom: 1px solid #e8ebf1;
-  background: #fafafa;
+  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-surface-muted);
   white-space: nowrap;
 }
 
-.payments-table td {
+.adm-table td {
   padding: 14px 20px;
   font-size: 0.9rem;
-  color: #1f2937;
-  border-bottom: 1px solid #e8ebf1;
+  color: var(--admin-ink-2);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+/* ⚠ OPT-IN, and it must stay opt-in. A wide table defends a floor width so
+   its card scrolls instead of the columns compressing and wrapping. Only the
+   12 screens that carried `payments-table`'s min-width before the migration
+   have `--wide`; the users/approvals screens never had it and must not
+   silently gain one. */
+.adm-table--wide {
+  min-width: 760px;
 }
 
 .payments-user {

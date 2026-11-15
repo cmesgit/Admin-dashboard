@@ -61,14 +61,14 @@ const SkillCourses = () => {
       {msg && <div style={{ color: "#16a34a", marginBottom: 10 }}>{msg}</div>}
       {err && <div style={{ color: "#dc2626", marginBottom: 10 }}>{err}</div>}
 
-      <div className="dashboard-card payments-table-card">
-        <div className="payments-count">{courses.length} course{courses.length !== 1 ? "s" : ""}</div>
+      <div className="dashboard-card adm-table-card">
+        <div className="adm-count">{courses.length} course{courses.length !== 1 ? "s" : ""}</div>
         {loading ? (
           <div className="dashboard-loading">Loading...</div>
         ) : courses.length === 0 ? (
           <div className="dashboard-loading">No courses with status "{status}".</div>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr>
                 <th>Title</th><th>Teacher</th><th>Level</th>

@@ -1,0 +1,239 @@
+/* /content/redirects — design_handoff_admin_counsellor, Admin v2 Phase 5.
+ *
+ * ⚠ Imports Content.css for `.mod-toast`. Every route is its own lazy CSS
+ * chunk, so a screen that renders <Toast> without pulling in the file that
+ * defines it shows an UNSTYLED toast on a hard refresh — the trap recorded
+ * in CLAUDE.md. The table itself needs no rules: it uses `.adm-table` from
+ * index.css, the single definition for every data table in this console.
+ *
+ * ⚠ Colours resolve through --admin-* tokens. No literal hex.
+ */
+@import "./Content.css";
+
+.rdr {
+  max-width: 1000px;
+}
+
+.rdr__h1 {
+  font-family: var(--admin-font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--admin-ink);
+}
+
+.rdr__sub {
+  margin-top: 6px;
+  max-width: 68ch;
+  color: var(--admin-body);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* The "these are not 301s" caveat. Deliberately a warning tint rather than a
+   neutral one — an admin who assumes server-side redirects will wonder for
+   months why rankings never move. */
+.rdr__note {
+  margin: 14px 0 18px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: 1px solid var(--admin-warn-edge);
+  background: var(--admin-warn-tint);
+  color: var(--admin-warn);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 68ch;
+}
+
+/* ── Add row ───────────────────────────────────────────────────────── */
+
+.rdr__add {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px;
+  margin-bottom: 18px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 12px;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.rdr__field {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rdr__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-body);
+}
+
+.rdr__input {
+  width: 100%;
+  padding: 8px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-ink-2);
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.rdr__input:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 1px var(--admin-primary);
+}
+
+.rdr__input--bad {
+  border-color: var(--admin-danger);
+}
+
+.rdr__err {
+  font-size: 12px;
+  color: var(--admin-danger);
+  line-height: 1.4;
+}
+
+.rdr__arrow {
+  color: var(--admin-body-faint);
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.rdr__perm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--admin-ink-2);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.rdr__add-btn {
+  padding: 9px 16px;
+  margin-bottom: 1px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--admin-primary);
+  color: var(--admin-surface);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rdr__add-btn:hover:not(:disabled) {
+  background: var(--admin-primary-dark);
+}
+
+.rdr__add-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.rdr__search {
+  max-width: 320px;
+  margin-bottom: 14px;
+}
+
+/* ── States ────────────────────────────────────────────────────────── */
+
+.rdr__failed {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: 1px solid var(--admin-danger);
+  background: var(--admin-danger-tint);
+  color: var(--admin-danger);
+  font-size: 13.5px;
+}
+
+.rdr__empty {
+  padding: 26px;
+  border: 1px dashed var(--admin-border-strong);
+  border-radius: 12px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-body);
+  font-size: 14px;
+}
+
+.rdr__empty strong {
+  color: var(--admin-ink);
+}
+
+.rdr__empty p {
+  margin-top: 5px;
+  line-height: 1.5;
+}
+
+/* ── Table cells ───────────────────────────────────────────────────── */
+
+.rdr__path {
+  font-size: 12.5px;
+  color: var(--admin-ink-2);
+  background: var(--admin-surface-sunken);
+  padding: 2px 7px;
+  border-radius: 5px;
+  word-break: break-all;
+}
+
+.rdr__ext {
+  margin-left: 5px;
+  color: var(--admin-body-faint);
+  vertical-align: middle;
+}
+
+.rdr__pill {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-body);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rdr__pill--on {
+  border-color: var(--admin-success);
+  background: var(--admin-success-tint);
+  color: var(--admin-success);
+}
+
+.rdr__del {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-body);
+  cursor: pointer;
+}
+
+.rdr__del:hover {
+  border-color: var(--admin-danger);
+  color: var(--admin-danger);
+}
+
+@media (max-width: 1024px) {
+  .rdr__add {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rdr__arrow {
+    display: none;
+  }
+}
