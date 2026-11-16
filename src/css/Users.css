@@ -1,3 +1,10 @@
+/* ⚠ The table base rules live in index.css as `.adm-table` — the single
+   definition for every data table in this console. This screen renders
+   `.adm-table-card` / `.adm-count` / `.adm-table`; only the rules unique to
+   it remain below (`.users-row` hover/click affordances). Do not re-add a
+   local copy of the base rules — that divergence is what left three
+   near-identical table families in the app. */
+
 .users-controls {
   display: flex;
   gap: 12px;
@@ -53,41 +60,10 @@
   cursor: pointer;
 }
 
-.users-table-card {
-  padding: 0;
-  overflow-x: auto;
-}
 
-.users-count {
-  padding: 14px 20px;
-  font-size: 0.85rem;
-  color: #6b7280;
-  border-bottom: 1px solid #e8ebf1;
-}
 
-.users-table {
-  width: 100%;
-  border-collapse: collapse;
-}
 
-.users-table th {
-  text-align: left;
-  padding: 12px 20px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid #e8ebf1;
-  background: #fafafa;
-}
 
-.users-table td {
-  padding: 14px 20px;
-  font-size: 0.9rem;
-  color: #1f2937;
-  border-bottom: 1px solid #e8ebf1;
-}
 
 .users-row {
   cursor: pointer;

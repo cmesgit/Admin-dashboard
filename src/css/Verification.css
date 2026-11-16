@@ -1,0 +1,288 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   src/css/Verification.css   —   /verification
+   Explore community verification, admin side.
+   Spec: shiksha-backend/docs/EXPLORE_VERIFICATION.md §5.
+
+   ⚠ Every colour resolves through --admin-*, declared in src/css/index.css.
+   This app has its own token system and the teacher/student
+   shared/tokens.css must never be referenced from here, or vice versa.
+   Nothing below is a literal hex.
+
+   ⚠ Icons are lucide-react. This app has no react-icons dependency and
+   importing it fails the build outright.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.vfa { font-family: var(--admin-font-body); color: var(--admin-ink); }
+
+.vfa-eyebrow {
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--admin-primary);
+  margin: 0 0 6px;
+}
+.vfa-title {
+  font-family: var(--admin-font-display);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  color: var(--admin-ink);
+  margin: 0 0 20px;
+}
+.vfa-lede { color: var(--admin-body); font-size: 14px; margin: 0 0 6px; max-width: 70ch; }
+.vfa-flowing { color: var(--admin-success); font-weight: 600; font-size: 14px; margin: 0 0 20px; }
+.vfa-loading { color: var(--admin-body); padding: 40px 0; }
+.vfa-none { color: var(--admin-body-soft); font-size: 14px; margin: 0 0 18px; }
+.vfa-aside { color: var(--admin-body-soft); font-size: 13px; }
+
+/* ── tabs ──────────────────────────────────────────────────────────────────── */
+.vfa-tabs {
+  display: flex;
+  flex-wrap: wrap;             /* four entries do not fit on a narrow window */
+  gap: 2px;
+  border-bottom: 1px solid var(--admin-border);
+  margin-bottom: 24px;
+}
+.vfa-tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 12px 16px;
+  min-height: 44px;
+  font: 600 14px var(--admin-font-body);
+  color: var(--admin-body);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+.vfa-tab:hover { color: var(--admin-ink); }
+.vfa-tab.active { color: var(--admin-primary); border-bottom-color: var(--admin-primary); }
+.vfa-count { color: var(--admin-primary); font-weight: 700; }
+.vfa-link { margin-left: auto; color: var(--admin-body-soft); }
+
+/* ── summary box ───────────────────────────────────────────────────────────── */
+.vfa-summary {
+  background: var(--admin-primary-tint);
+  border: 1px solid var(--admin-primary-edge);
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+}
+.vfa-summary h2 {
+  font-size: 11.5px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--admin-primary-deep);
+  margin: 0 0 10px;
+}
+.vfa-summary ol { margin: 0; padding-left: 20px; }
+.vfa-summary li { font-size: 14px; line-height: 1.7; color: var(--admin-ink); }
+.vfa-dirty {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--admin-warn);
+}
+
+/* ── setting groups ────────────────────────────────────────────────────────── */
+.vfa-group { margin-bottom: 26px; }
+.vfa-group > h2 {
+  font-family: var(--admin-font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--admin-ink);
+  margin: 0 0 10px;
+}
+.vfa-sechead {
+  font-family: var(--admin-font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--admin-ink);
+  margin: 26px 0 12px;
+}
+
+.vfa-row, .vfa-card {
+  display: flex;
+  flex-wrap: wrap;             /* control drops below the label on a phone */
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 8px;
+}
+.vfa-card { margin-bottom: 10px; box-shadow: var(--admin-shadow-card); }
+.vfa-tight { padding: 12px 18px; }
+.vfa-stack { flex-direction: column; align-items: stretch; }
+
+.vfa-rowtext { flex: 1 1 280px; min-width: 0; }
+.vfa-rowtext h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--admin-ink);
+  margin: 0 0 2px;
+  overflow-wrap: anywhere;     /* names and titles are user-supplied */
+}
+.vfa-rowtext p { font-size: 13px; color: var(--admin-body); margin: 0; line-height: 1.55; overflow-wrap: anywhere; }
+.vfa-wants { color: var(--admin-primary) !important; font-weight: 600; }
+
+/* ── controls ──────────────────────────────────────────────────────────────── */
+.vfa-control { display: flex; align-items: center; gap: 10px; }
+.vfa-onoff { font-size: 13px; font-weight: 600; color: var(--admin-body); }
+
+.vfa-toggle {
+  appearance: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 50px;
+  border: 0;
+  background: var(--admin-surface-sunken);
+  position: relative;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: background 0.15s ease;
+}
+.vfa-toggle > span {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-card);
+  transition: transform 0.15s ease;
+}
+.vfa-toggle.on { background: var(--admin-success); }
+.vfa-toggle.on > span { transform: translateX(20px); }
+
+.vfa-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--admin-border);
+  border-radius: 50px;
+  padding: 3px;
+  flex: 0 0 auto;
+}
+.vfa-step button {
+  appearance: none;
+  width: 38px; height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--admin-surface-muted);
+  color: var(--admin-ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.vfa-step button:hover:not(:disabled) { background: var(--admin-primary-tint); }
+.vfa-step button:disabled { opacity: 0.4; cursor: not-allowed; }
+.vfa-step span { min-width: 64px; text-align: center; font-weight: 700; font-size: 14px; }
+
+.vfa-segment { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.vfa-segment button {
+  appearance: none;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 50px;
+  padding: 0 16px;
+  min-height: 40px;
+  font: 600 13px var(--admin-font-body);
+  color: var(--admin-ink);
+  cursor: pointer;
+}
+.vfa-segment button.on {
+  background: var(--admin-primary-tint);
+  border-color: var(--admin-primary);
+  color: var(--admin-primary-deep);
+}
+
+/* ── buttons ───────────────────────────────────────────────────────────────── */
+.vfa-btn {
+  appearance: none;
+  border: 0;
+  background: var(--admin-primary);
+  color: var(--admin-surface);
+  font: 600 13.5px var(--admin-font-body);
+  padding: 0 18px;
+  min-height: 40px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.vfa-btn:hover:not(:disabled) { background: var(--admin-primary-dark); }
+.vfa-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.vfa-btn.ghost {
+  background: var(--admin-surface);
+  color: var(--admin-ink);
+  border: 1px solid var(--admin-border);
+}
+.vfa-btn.ghost:hover:not(:disabled) { border-color: var(--admin-primary); background: var(--admin-surface-muted); }
+.vfa-btn.danger { background: var(--admin-danger); }
+.vfa-btn.danger:hover:not(:disabled) { filter: brightness(0.92); }
+
+.vfa-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.vfa-save { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 24px 0 8px; }
+.vfa-savenote { font-size: 13px; color: var(--admin-body); }
+
+/* ── pills ─────────────────────────────────────────────────────────────────── */
+.vfa-pill {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+.vfa-ok { background: var(--admin-success-tint); color: var(--admin-success); }
+.vfa-warn { background: var(--admin-warn-tint); color: var(--admin-warn); }
+.vfa-bad { background: var(--admin-danger-tint); color: var(--admin-danger); }
+
+/* ── needs attention ───────────────────────────────────────────────────────── */
+.vfa-flagrow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 6px; }
+.vfa-progress { font-size: 13px; color: var(--admin-body); }
+.vfa-card.vfa-stack h3 {
+  font-family: var(--admin-font-display);
+  font-size: 17px; font-weight: 700;
+  color: var(--admin-ink);
+  margin: 0 0 2px;
+  overflow-wrap: anywhere;
+}
+.vfa-tags { font-size: 13px; color: var(--admin-body); margin: 0 0 10px; }
+.vfa-note {
+  background: var(--admin-danger-tint);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+.vfa-note strong { display: block; font-size: 12.5px; color: var(--admin-danger); margin-bottom: 3px; }
+.vfa-note p { margin: 0; font-size: 13.5px; color: var(--admin-danger); overflow-wrap: anywhere; }
+
+.vfa-assign {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  border-top: 1px solid var(--admin-border-soft);
+  padding-top: 12px; margin-top: 10px;
+}
+
+/* ── blank / error states ──────────────────────────────────────────────────── */
+.vfa-blank {
+  text-align: center;
+  max-width: 54ch;
+  margin: 60px auto;
+  color: var(--admin-body);
+}
+.vfa-blank h2 {
+  font-family: var(--admin-font-display);
+  font-size: 22px; font-weight: 700;
+  color: var(--admin-ink);
+  margin: 12px 0 10px;
+}
+.vfa-blank p { font-size: 14px; line-height: 1.65; margin: 0 0 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .vfa-toggle, .vfa-toggle > span { transition: none; }
+}

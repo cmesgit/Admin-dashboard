@@ -56,13 +56,13 @@ function WebhookEventsPanel() {
         </span>
       </div>
 
-      <div className="dashboard-card payments-table-card">
+      <div className="dashboard-card adm-table-card">
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
         ) : rows.length === 0 ? (
           <div className="dashboard-loading">No webhook events match this filter.</div>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr>
                 <th></th><th>Event type</th><th>Room</th><th>Session</th>
@@ -176,13 +176,13 @@ const LiveStreams = () => {
             ))}
           </div>
 
-          <div className="dashboard-card payments-table-card">
+          <div className="dashboard-card adm-table-card">
             {loading ? (
               <div className="dashboard-loading">Loading…</div>
             ) : rows.length === 0 ? (
               <div className="dashboard-loading">No streams to show.</div>
             ) : (
-              <table className="payments-table">
+              <table className="adm-table adm-table--wide">
                 <thead>
                   <tr>
                     <th>Session</th><th>Course · Subject</th><th>Batch</th>

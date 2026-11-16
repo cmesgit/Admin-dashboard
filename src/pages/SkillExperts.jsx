@@ -265,7 +265,7 @@ const SkillExperts = () => {
         />
       )}
 
-      <div className="dashboard-card payments-table-card">
+      <div className="dashboard-card adm-table-card">
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
           <input value={q} onChange={(e) => setQ(e.target.value)}
             placeholder="Search by name, email or subject…"
@@ -276,7 +276,7 @@ const SkillExperts = () => {
             <option value="advertised">Advertised</option>
             <option value="suspended">Suspended</option>
           </select>
-          <span className="payments-count">{view.length} of {rows.length}</span>
+          <span className="adm-count">{view.length} of {rows.length}</span>
           <button type="button" onClick={() => setListing(true)}
             style={{ padding: "8px 14px", cursor: "pointer", fontWeight: 600 }}>
             + List a teacher
@@ -288,7 +288,7 @@ const SkillExperts = () => {
         ) : view.length === 0 ? (
           <div className="dashboard-loading">No experts found.</div>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr><th>Expert</th><th>Category</th><th>Rating</th><th>Sessions</th><th>Subscription</th><th>Status</th><th></th></tr>
             </thead>

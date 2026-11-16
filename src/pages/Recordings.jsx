@@ -408,7 +408,7 @@ const Recordings = () => {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search recordings by title…" />
       </div>
 
-      <div className="dashboard-card payments-table-card">
+      <div className="dashboard-card adm-table-card">
         {loading ? (
           <div className="dashboard-loading">Loading…</div>
         ) : loadError ? (
@@ -427,7 +427,7 @@ const Recordings = () => {
         ) : rows.length === 0 ? (
           <div className="dashboard-loading">No recordings found.</div>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr>
                 <th>Title</th><th>Course · Subject</th><th>Batch</th>

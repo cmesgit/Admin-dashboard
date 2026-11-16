@@ -122,7 +122,7 @@ function FacultyTab({ search }) {
 
   return (
     <>
-      <table className="approvals-table">
+      <table className="adm-table">
         <thead>
           <tr><th>Applicant</th><th>Subjects</th><th>Experience</th><th>Applied</th><th>Documents</th><th>Actions</th></tr>
         </thead>
@@ -211,7 +211,7 @@ function StudentTab({ search }) {
       <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 10 }}>
         Students self-enroll for free — no approval needed. This list is read-only.
       </div>
-      <table className="approvals-table">
+      <table className="adm-table">
         <thead>
           <tr><th>Name</th><th>Email</th><th>Joined</th><th>Status</th></tr>
         </thead>
@@ -251,7 +251,7 @@ const Approvals = () => {
         ))}
       </div>
 
-      <div className="dashboard-card approvals-table-card">
+      <div className="dashboard-card adm-table-card">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}

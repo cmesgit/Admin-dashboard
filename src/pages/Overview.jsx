@@ -184,7 +184,7 @@ const Overview = () => {
       </div>
 
       {/* Recent sessions history */}
-      <div className="dashboard-card payments-table-card" style={{ marginTop: 24 }}>
+      <div className="dashboard-card adm-table-card" style={{ marginTop: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <h3 style={{ margin: 0 }}>Recent sessions</h3>
           <Link to="/skill-sessions" style={{ color: "#4f6df5", fontWeight: 600, fontSize: 13, textDecoration: "none" }}>
@@ -194,7 +194,7 @@ const Overview = () => {
         {recent.length === 0 ? (
           <p className="ud-empty" style={{ color: "#6b7280" }}>No sessions yet.</p>
         ) : (
-          <table className="payments-table">
+          <table className="adm-table adm-table--wide">
             <thead>
               <tr><th>Learner</th><th>Expert</th><th>Status</th><th>Booked</th></tr>
             </thead>
