@@ -24,7 +24,7 @@ const KINDS = [
 ];
 
 const blank = {
-  message: "", body: "", kind: "", slots: [], level: "info",
+  message: "", body: "", caption: "", kind: "", slots: [], level: "info",
   link_label: "", link_url: "", metric_value: "", metric_label: "",
   pinned: false, starts_at: "", ends_at: "", image_url: "",
 };
@@ -59,7 +59,9 @@ function AdPreview({ form, file, imageUrl, kindLabel }) {
       <div className="ticker-ad-preview__card">
         {(file || imageUrl) && <img ref={imageRef} src={file ? undefined : imageUrl} alt="Advertisement preview" />}
         <div>
-          <span className="cs-chip cs-tone-info">{kindLabel || "Plain text"}</span>
+          <span className="cs-chip cs-tone-info">
+            {kindLabel || "Plain text"}{form.caption ? ` · ${form.caption}` : ""}
+          </span>
           <strong>{form.message || "Your advertisement title"}</strong>
           {form.body && <p>{form.body}</p>}
           {form.link_url && <span className="cs-muted">{form.link_label || "Explore"} ↗ {form.link_url}</span>}
@@ -141,6 +143,7 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
     return onSubmit({
       message: f.message.trim(),
       body: f.body.trim(),
+      caption: f.caption.trim(),
       kind: f.kind,
       slots: f.slots,
       level: f.level,
@@ -260,6 +263,24 @@ const TickerItemForm = ({ initial, busy, error, onCancel, onSubmit, onDirtyChang
             Add the teacher’s public profile link below so visitors can meet
             them. Login and signup show their photo, name and subject.
           </p>
+        )}
+
+        {f.kind && (
+          <div className="cs-field">
+            <label className="cs-field__label" htmlFor="t-caption">Caption (optional)</label>
+            <input
+              id="t-caption"
+              maxLength={60}
+              className="cs-input cs-input--block"
+              value={f.caption}
+              onChange={(e) => set("caption", e.target.value)}
+              placeholder="e.g. Enrolling now"
+            />
+            <p className="cs-field__hint">
+              A short line shown right next to the card style above — unlike
+              the featured number below, every card style can carry one.
+            </p>
+          </div>
         )}
 
         {f.kind && (
