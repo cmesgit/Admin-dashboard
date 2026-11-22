@@ -288,6 +288,7 @@ const LiveTicker = () => {
                         {it.kind ? (
                           <span className="cs-chip cs-tone-info">
                             {KIND_LABEL[it.kind] || it.kind}
+                            {it.caption ? ` · ${it.caption}` : ""}
                           </span>
                         ) : (
                           <span className="cs-chip cs-tone-muted">Plain text</span>
