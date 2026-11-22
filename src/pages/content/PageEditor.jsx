@@ -609,7 +609,11 @@ const PageEditor = () => {
                   1.5s — and Remove appeared to do nothing at all, because
                   clearing `image_url` on a section whose picture is an uploaded
                   `image` is a no-op the server correctly dedupes away. */}
-              {"img" in defaults && <div>
+              {/* Hero's visual is now the fixed illustrative floating-stack
+                  composition (Hero.jsx) — it has no slot for a CMS picture,
+                  so the field is hidden here rather than left to silently do
+                  nothing when an admin uploads one. */}
+              {current.key !== "hero" && "img" in defaults && <div>
                 <DisplayChoice label="Picture" value={modeFor("image")} onChange={(mode) => setMode("image", mode)} />
                 {modeFor("image") === "custom" && <>
               <PictureField
@@ -700,8 +704,12 @@ const PageEditor = () => {
               ) : null}
 
               {/* The badges pinned on this section's artwork. Renders nothing
-                  for the fourteen sections that have no slots. */}
-              <SectionFloaters
+                  for the fourteen sections that have no slots. Hero itself
+                  still has slots server-side (cap/book/play), but its new
+                  fixed illustrative visual has nowhere to show them — so this
+                  screen hides the control here rather than offer a toggle
+                  with no visible effect. */}
+              {current.key !== "hero" && <SectionFloaters
                 key={current.key}
                 editorRef={floatersEditor}
                 onDraftChange={floatersDirtyChanged}
@@ -712,7 +720,7 @@ const PageEditor = () => {
                 displaySettings={current.values?.display_settings || {}}
                 onDisplayUpdated={liveDisplayChanged}
                 onNotify={say}
-              />
+              />}
 
               {current.block_id && (
                 <div className="cs-fields__danger">
