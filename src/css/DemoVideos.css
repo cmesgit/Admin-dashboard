@@ -1,0 +1,168 @@
+/* /content/demo-videos — landing-page demo clips.
+ *
+ * ⚠ Imports Content.css for `.mod-toast`: every route is its own lazy CSS
+ * chunk, so a screen rendering <Toast> without pulling in the file that
+ * defines it shows an UNSTYLED toast on a hard refresh.
+ *
+ * ⚠ Colours resolve through --admin-* tokens. No literal hex.
+ */
+@import "./Content.css";
+
+.dvp { max-width: 1100px; }
+
+.dvp__h1 {
+  font-family: var(--admin-font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--admin-ink);
+}
+.dvp__h2 {
+  font-family: var(--admin-font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--admin-ink);
+  margin-bottom: 4px;
+}
+.dvp__sub {
+  margin-top: 6px;
+  max-width: 68ch;
+  color: var(--admin-body);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.dvp__add {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: 12px;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-card);
+}
+.dvp__field { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 5px; }
+.dvp__field--narrow { flex: 0 1 140px; min-width: 120px; }
+.dvp__label { font-size: 12px; font-weight: 600; color: var(--admin-body); }
+.dvp__input {
+  width: 100%;
+  padding: 8px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  color: var(--admin-ink-2);
+  font: inherit;
+  font-size: 13.5px;
+}
+.dvp__input:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 1px var(--admin-primary);
+}
+.dvp__input--bad { border-color: var(--admin-danger); }
+.dvp__err { font-size: 12px; color: var(--admin-danger); line-height: 1.4; }
+
+.dvp__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--admin-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dvp__btn:hover:not(:disabled) { background: var(--admin-primary-dark); }
+.dvp__btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.dvp__btn--ghost {
+  background: var(--admin-surface-muted);
+  color: var(--admin-ink-2);
+}
+.dvp__btn--ghost:hover:not(:disabled) { background: var(--admin-surface-sunken); }
+
+.dvp__failed {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: 1px solid var(--admin-warn-edge);
+  background: var(--admin-warn-tint);
+  color: var(--admin-warn);
+  font-size: 13px;
+}
+.dvp__empty {
+  padding: 28px;
+  border: 1px dashed var(--admin-border);
+  border-radius: 12px;
+  color: var(--admin-body);
+  font-size: 14px;
+}
+.dvp__empty strong { color: var(--admin-ink); }
+
+.dvp__cell { display: flex; align-items: center; gap: 12px; min-width: 260px; }
+.dvp__thumb {
+  width: 96px;
+  height: 54px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 6px;
+  background: var(--admin-surface-sunken);
+}
+.dvp__thumb--none { display: inline-block; }
+.dvp__title { font-weight: 600; color: var(--admin-ink); }
+.dvp__meta { margin-top: 2px; font-size: 12.5px; color: var(--admin-body); }
+.dvp__meta code { font-size: 12px; }
+
+.dvp__pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-body);
+  font-size: 12px;
+  font-weight: 600;
+}
+.dvp__pill--on { background: var(--admin-success-tint); color: var(--admin-success); }
+.dvp__pill--wait { background: var(--admin-warn-tint); color: var(--admin-warn); }
+
+.dvp__actions { display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
+.dvp__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--admin-body);
+  cursor: pointer;
+}
+.dvp__icon:hover { background: var(--admin-surface-muted); color: var(--admin-ink); }
+.dvp__icon--danger:hover { background: var(--admin-danger-tint); color: var(--admin-danger); }
+
+.dvp__modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.dvp__card {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px;
+  border-radius: 14px;
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-card);
+}
+.dvp__row-end { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }

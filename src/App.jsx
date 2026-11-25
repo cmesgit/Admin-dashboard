@@ -28,6 +28,7 @@ const TickerItemEditor = lazy(() => import("./pages/content/TickerItemEditor"));
 const NavMenu = lazy(() => import("./pages/content/NavMenu"));
 const ContentHistory = lazy(() => import("./pages/content/ContentHistory"));
 const Redirects = lazy(() => import("./pages/content/Redirects"));
+const DemoVideos = lazy(() => import("./pages/content/DemoVideos"));
 const Forms = lazy(() => import("./pages/content/Forms"));
 const BlockLibrary = lazy(() => import("./pages/content/BlockLibrary"));
 const ContentSchedule = lazy(() => import("./pages/content/ContentSchedule"));
@@ -181,6 +182,7 @@ const App = () => {
             <Route path="content/menu" element={<NavMenu />} />
             <Route path="content/history" element={<ContentHistory />} />
             <Route path="content/redirects" element={<Redirects />} />
+            <Route path="content/demo-videos" element={<DemoVideos />} />
             <Route path="content/forms" element={<Forms />} />
             <Route path="content/blocks" element={<BlockLibrary />} />
             <Route path="content/schedule" element={<ContentSchedule />} />

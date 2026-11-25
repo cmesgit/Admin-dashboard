@@ -171,6 +171,9 @@ export const ADMIN_V2_AREAS = [
       { group: "Library" },
       { to: "/content/pictures", icon: ImageIcon, label: "Media library", was: "Pictures", needs: "studio" },
       { to: "/content/blocks", icon: Blocks, label: "Blocks", was: "(new)" },
+      // The clips behind the homepage "Watch a demo" button. Not Studio-gated:
+      // the API is plain staff-only CRUD with no Studio flag.
+      { to: "/content/demo-videos", icon: Video, label: "Demo videos", was: "(new)" },
       { to: "/content/labels", icon: Tag, label: "Labels", was: "Labels", needs: "studio" },
       { group: "Structure" },
       { to: "/content/menu", icon: Menu, label: "Menus", was: "Courses menu", needs: "studio" },
